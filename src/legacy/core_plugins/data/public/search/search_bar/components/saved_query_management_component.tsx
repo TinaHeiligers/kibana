@@ -36,9 +36,11 @@ import {
 import { i18n } from '@kbn/i18n';
 import React, { FunctionComponent, useEffect, useState, Fragment } from 'react';
 import { sortBy } from 'lodash';
+import { data } from 'src/legacy/core_plugins/data/public/setup';
 import { SavedQuery } from '../index';
-import { getAllSavedQueries, deleteSavedQuery } from '../lib/saved_query_service';
 import { Query } from '../../../query';
+
+const { savedQueryService } = data.search.services;
 
 const pageCount = 50;
 
@@ -68,7 +70,7 @@ export const SavedQueryManagementComponent: FunctionComponent<Props> = ({
 
   useEffect(() => {
     const fetchQueries = async () => {
-      const allSavedQueries = await getAllSavedQueries();
+      const allSavedQueries = await savedQueryService.getAllSavedQueries();
       const sortedAllSavedQueries = sortBy(allSavedQueries, 'attributes.title');
       setSavedQueries(sortedAllSavedQueries);
     };
@@ -109,7 +111,7 @@ export const SavedQueryManagementComponent: FunctionComponent<Props> = ({
       onClearSavedQuery();
     }
 
-    deleteSavedQuery(savedQuery.id);
+    savedQueryService.deleteSavedQuery(savedQuery.id);
   };
 
   const savedQueryPopoverButton = (

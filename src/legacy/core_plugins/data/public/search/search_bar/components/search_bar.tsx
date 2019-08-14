@@ -27,11 +27,13 @@ import { get, isEqual } from 'lodash';
 
 import { toastNotifications } from 'ui/notify';
 import { UiSettingsClientContract } from 'src/core/public';
+import { data } from 'plugins/data/setup';
 import { IndexPattern, Query, QueryBar, FilterBar } from '../../../../../data/public';
 import { SavedQuery, SavedQueryAttributes } from '../index';
-import { saveQuery } from '../lib/saved_query_service';
 import { SavedQueryMeta, SaveQueryForm } from './save_query_form';
 import { SavedQueryManagementComponent } from './saved_query_management_component';
+
+const { savedQueryService } = data.search.services;
 
 interface DateRange {
   from: string;
@@ -244,9 +246,9 @@ class SearchBarUI extends Component<SearchBarProps, State> {
     try {
       let response;
       if (this.props.savedQuery && !saveAsNew) {
-        response = await saveQuery(savedQueryAttributes, { overwrite: true });
+        response = await savedQueryService.saveQuery(savedQueryAttributes, { overwrite: true });
       } else {
-        response = await saveQuery(savedQueryAttributes);
+        response = await savedQueryService.saveQuery(savedQueryAttributes);
       }
 
       toastNotifications.addSuccess(`Your query "${response.attributes.title}" was saved`);
