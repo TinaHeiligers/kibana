@@ -18,6 +18,7 @@
  */
 
 import _ from 'lodash';
+import { filterComparators } from '@kbn/es-query';
 let excludedAttributes;
 let comparators;
 
@@ -29,6 +30,14 @@ let comparators;
  * @returns {bool} Filters are the same
  */
 export function compareFilters(first, second, comparatorOptions) {
+  // pseudo-implementation of deduplicating saved query filters, possibly have to do a deep comparison.
+  if ((first.meta.type || second.type) && first.type !== second.type) {
+    return false;
+  }
+  if (first.type && filterComparators[first.type]) {
+    return filterComparators[first.type](first, second);
+  }
+
   excludedAttributes = ['$$hashKey', 'meta'];
   comparators = _.defaults(comparatorOptions || {}, {
     state: false,

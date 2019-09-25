@@ -24,3 +24,9 @@ export * from './query';
 export * from './range';
 export * from './saved_query';
 export * from './lib';
+
+import { compareSavedQueryFilter } from './saved_query';
+
+export const filterComparators = {
+  savedQuery: compareSavedQueryFilter
+};

@@ -21,6 +21,7 @@ import _ from 'lodash';
 import { migrateFilter } from './migrate_filter';
 import { filterMatchesIndex } from './filter_matches_index';
 import { buildEsQuery } from './build_es_query';
+import { getTime } from '../filters/saved_query';
 
 /**
  * Create a filter that can be reversed for filters with negate set
@@ -47,7 +48,6 @@ const translateToQuery = function (filter, {
   queryStringOptions = {},
   dateFormatTZ = null,
   ignoreFilterIfFieldNotInIndex = false,
-  allSavedQueries = [],
 }) {
   if (!filter) return;
 
@@ -56,9 +56,11 @@ const translateToQuery = function (filter, {
   }
   if (filter.meta && filter.meta.type && filter.meta.type === 'savedQuery') {
     // do stuff: generate raw dsl that's done in the savedQuery filter constructor at the moment
-    const savedQuery = allSavedQueries.find((savedQuery) => filter.meta.key === savedQuery.id);
+    const savedQuery = filter.meta.params;
     const query = _.get(savedQuery, 'attributes.query');
-    const filters = _.get(savedQuery, 'attributes.filters', []);
+    const queryFilters = _.get(savedQuery, 'attributes.filters', []);
+    const timeFilter = getTime(savedQuery.timeFilter);
+    const filters = [...queryFilters, timeFilter];
     const convertedQuery = buildEsQuery(
       indexPattern,
       [query],
@@ -93,8 +95,7 @@ export function buildQueryFromFilters(
   ignoreFilterIfFieldNotInIndex,
   allowLeadingWildcards,
   queryStringOptions,
-  dateFormatTZ,
-  allSavedQueries) {
+  dateFormatTZ) {
   return {
     must: [],
     filter: filters
@@ -102,7 +103,7 @@ export function buildQueryFromFilters(
       .filter(filter => !ignoreFilterIfFieldNotInIndex || filterMatchesIndex(filter, indexPattern))
       .map((filter) => translateToQuery(
         filter,
-        { indexPattern, allowLeadingWildcards, queryStringOptions, dateFormatTZ, ignoreFilterIfFieldNotInIndex, allSavedQueries }))
+        { indexPattern, allowLeadingWildcards, queryStringOptions, dateFormatTZ, ignoreFilterIfFieldNotInIndex }))
       .map(cleanFilter)
       .map(filter => {
         return migrateFilter(filter, indexPattern);
@@ -113,7 +114,7 @@ export function buildQueryFromFilters(
       .filter(filter => !ignoreFilterIfFieldNotInIndex || filterMatchesIndex(filter, indexPattern))
       .map((filter) => translateToQuery(
         filter,
-        { indexPattern, allowLeadingWildcards, queryStringOptions, dateFormatTZ, ignoreFilterIfFieldNotInIndex, allSavedQueries }))
+        { indexPattern, allowLeadingWildcards, queryStringOptions, dateFormatTZ, ignoreFilterIfFieldNotInIndex }))
       .map(cleanFilter)
       .map(filter => {
         return migrateFilter(filter, indexPattern);
