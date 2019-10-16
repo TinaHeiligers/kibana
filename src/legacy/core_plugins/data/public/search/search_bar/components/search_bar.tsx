@@ -82,6 +82,8 @@ export interface SearchBarOwnProps {
   onClearSavedQuery?: () => void;
 
   onRefresh?: (payload: { dateRange: TimeRange }) => void;
+  // Used only in React context within the filter editor
+  onQueryChange?: (payload: { dateRange: TimeRange; query?: Query }) => void;
 }
 
 export type SearchBarProps = SearchBarOwnProps & SearchBarInjectedDeps;
@@ -105,8 +107,8 @@ class SearchBarUI extends Component<SearchBarProps, State> {
     showAutoRefreshOnly: false,
   };
 
-  private savedQueryService!: SavedQueryService;
   private services = this.props.kibana.services;
+  private savedQueryService = createSavedQueryService(this.services.savedObjects.client);
   public filterBarRef: Element | null = null;
   public filterBarWrapperRef: Element | null = null;
 
@@ -300,6 +302,9 @@ class SearchBarUI extends Component<SearchBarProps, State> {
       dateRangeFrom: queryAndDateRange.dateRange.from,
       dateRangeTo: queryAndDateRange.dateRange.to,
     });
+    if (this.props.onQueryChange) {
+      this.props.onQueryChange(queryAndDateRange);
+    }
   };
 
   public onQueryBarSubmit = (queryAndDateRange: { dateRange?: TimeRange; query?: Query }) => {
@@ -345,9 +350,6 @@ class SearchBarUI extends Component<SearchBarProps, State> {
     if (this.filterBarRef) {
       this.setFilterBarHeight();
       this.ro.observe(this.filterBarRef);
-    }
-    if (this.services.savedObjects) {
-      this.savedQueryService = createSavedQueryService(this.services.savedObjects.client);
     }
   }
 

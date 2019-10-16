@@ -50,11 +50,11 @@ interface Props {
   savedObjects?: CoreStart['savedObjects'];
   showSaveQuery?: boolean;
   savedQueryService?: SavedQueryService;
-  timeHistory?: TimeHistoryContract;
   // TODO: Only for filter-bar directive!
   uiSettings?: CoreStart['uiSettings'];
   docLinks?: CoreStart['docLinks'];
   pluginDataStart?: DataPublicPluginStart;
+  timeHistory: TimeHistoryContract;
 }
 
 function FilterBarUI(props: Props) {
@@ -110,7 +110,6 @@ function FilterBarUI(props: Props) {
           uiSettings={uiSettings!}
           savedQueryService={props.savedQueryService!}
           showSaveQuery={props.showSaveQuery}
-          timeHistory={props.timeHistory!}
         />
       </EuiFlexItem>
     ));
@@ -149,7 +148,7 @@ function FilterBarUI(props: Props) {
           ownFocus={true}
         >
           <EuiFlexItem grow={false}>
-            <div style={{ width: 400 }}>
+            <div style={{ minWidth: 400 }}>
               <FilterEditor
                 filter={newFilter}
                 indexPatterns={props.indexPatterns}

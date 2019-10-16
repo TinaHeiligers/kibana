@@ -85,6 +85,7 @@ module.directive('kbnTopNavHelper', (reactDirective) => {
       ['intl', { watchDepth: 'reference' }],
 
       ['onQuerySubmit', { watchDepth: 'reference' }],
+      ['onQueryChange', { watchDepth: 'reference' }],
       ['onFiltersUpdated', { watchDepth: 'reference' }],
       ['onRefreshChange', { watchDepth: 'reference' }],
       ['onClearSavedQuery', { watchDepth: 'reference' }],
@@ -93,6 +94,7 @@ module.directive('kbnTopNavHelper', (reactDirective) => {
 
       ['indexPatterns', { watchDepth: 'collection' }],
       ['filters', { watchDepth: 'collection' }],
+
 
       // All modifiers default to true.
       // Set to false to hide subcomponents.

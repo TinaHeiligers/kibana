@@ -25,9 +25,8 @@ import { EuiPopover } from '@elastic/eui';
 import { TimeHistoryContract } from 'ui/timefilter';
 import { Filter } from '@kbn/es-query';
 import { TimeRange } from 'src/plugins/data/common/types';
-import { IndexPattern, Query } from '../../../../../data/public';
+import { IndexPattern, Query } from '../../..';
 import { SearchBar } from '../../../search/search_bar/components/search_bar';
-import { SavedQueryService } from '../../../search/search_bar/lib/saved_query_service';
 /*
 TODO: figure out how to import and use the Stateful SearchBar. So far, the following cause webpack errors:
 // import { SearchBarProps } from '../../../../../../core_plugins/data/public';
@@ -43,76 +42,75 @@ interface Props {
   indexPatterns: IndexPattern[];
   showSaveQuery: boolean;
   timeHistory?: TimeHistoryContract; // I need some other way of accessing timeHistory rather than passing it down all the way from the search bar
+  onChange: (item: any) => void;
 }
-export const SavedQueryEditor: FunctionComponent<Props> = ({
+export const SearchBarEditor: FunctionComponent<Props> = ({
   uiSettings,
   currentSavedQuery,
   indexPatterns,
   showSaveQuery,
   timeHistory,
+  onChange,
 }) => {
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const closePopover = () => setIsPopoverOpen(false);
-  const openPopover = () => setIsPopoverOpen(true);
+  const [data, setData] = useState({ dateRange: {}, query: {}, filters: [] });
   const onClearSavedQuery = () => {
     // console.log('saved query cleared');
   };
-  const onQueryChange = (queryAndDateRange: { dateRange: TimeRange; query?: Query }) => {
+  const onQueryDataChange = (queryAndDateRange: { dateRange: TimeRange; query?: Query }) => {
     const dateRange = queryAndDateRange.dateRange;
-    const query = queryAndDateRange.query;
+    const query = queryAndDateRange.query
+      ? queryAndDateRange.query
+      : { query: '', language: 'kuery' };
     // console.log('queryAndDateRange changed with dateRange:', dateRange);
     // console.log('queryAndDateRange changed with query:', query);
+    // add to the items on the search bar data
+    const newData = { ...data, dateRange, query };
+    setData(newData);
+    // onChange(queryAndDateRange);
     return queryAndDateRange;
   };
-  const onFiltersUpdated = (filters: Filter[]) => {
+  const onFiltersUpdated = (newFilters: Filter[] | any) => {
     // I seem to get the filters back and can update them from here.
-    // console.log('filtersUpdated, filters?', filters);
-    return filters;
+    // console.log('filtersUpdated, filters?', newFilters);
+    if (newFilters.length > 0) {
+      const newData = { ...data, filters: newFilters };
+      setData(newData);
+    }
+    return newFilters;
   };
   return (
-    <EuiPopover
-      id={`popoverFor_compound_filter`}
-      button={
-        <EuiButtonEmpty size="xs" onClick={openPopover} iconType={'plusInCircleFilled'}>
-          View
-        </EuiButtonEmpty>
-      }
-      isOpen={isPopoverOpen}
-      closePopover={closePopover}
-      anchorPosition="rightCenter"
-    >
-      <div className="savedQueryFilterEditor">
-        <SearchBar
-          indexPatterns={indexPatterns}
-          showFilterBar={true}
-          filters={
-            currentSavedQuery &&
-            currentSavedQuery.length > 0 &&
-            currentSavedQuery[0].attributes.filters &&
-            currentSavedQuery[0].attributes.filters.length > 0
-              ? currentSavedQuery[0].attributes.filters
-              : []
-          }
-          onFiltersUpdated={onFiltersUpdated}
-          showQueryInput={true}
-          query={
-            currentSavedQuery && currentSavedQuery.length > 0
-              ? {
-                  language: currentSavedQuery[0].attributes.query.language,
-                  query: currentSavedQuery[0].attributes.query.query,
-                }
-              : { language: uiSettings.get('search:queryLanguage'), query: '' }
-          }
-          onQuerySubmit={onQueryChange}
-          showSaveQuery={showSaveQuery}
-          savedQuery={
-            currentSavedQuery && currentSavedQuery.length > 0 ? currentSavedQuery[0] : undefined
-          }
-          onClearSavedQuery={onClearSavedQuery}
-          showDatePicker={true}
-          timeHistory={timeHistory!}
-        />
-      </div>
-    </EuiPopover>
+    <div className="savedQueryFilterEditor">
+      <SearchBar
+        indexPatterns={indexPatterns}
+        showFilterBar={true}
+        filters={
+          currentSavedQuery &&
+          currentSavedQuery.length > 0 &&
+          currentSavedQuery[0].attributes.filters &&
+          currentSavedQuery[0].attributes.filters.length > 0
+            ? currentSavedQuery[0].attributes.filters
+            : []
+        }
+        onFiltersUpdated={onFiltersUpdated}
+        showQueryInput={true}
+        query={
+          currentSavedQuery && currentSavedQuery.length > 0
+            ? {
+                language: currentSavedQuery[0].attributes.query.language,
+                query: currentSavedQuery[0].attributes.query.query,
+              }
+            : { language: uiSettings.get('search:queryLanguage'), query: '' }
+        }
+        onQueryChange={onQueryDataChange}
+        showSaveQuery={showSaveQuery}
+        savedQuery={
+          currentSavedQuery && currentSavedQuery.length > 0 ? currentSavedQuery[0] : undefined
+        }
+        onClearSavedQuery={onClearSavedQuery}
+        showDatePicker={true}
+        timeHistory={timeHistory!}
+        customSubmitButton={null}
+      />
+    </div>
   );
 };

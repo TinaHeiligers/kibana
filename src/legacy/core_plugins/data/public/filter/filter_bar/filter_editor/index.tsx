@@ -17,6 +17,7 @@
  * under the License.
  */
 
+// TODO: won't have anything besides
 import {
   EuiButton,
   EuiButtonEmpty,
@@ -63,7 +64,7 @@ import { PhrasesValuesInput } from './phrases_values_input';
 import { RangeValueInput } from './range_value_input';
 import { SavedQueryService } from '../../../search/search_bar/lib/saved_query_service';
 import { SavedQueryOption, SavedQueryPicker } from './saved_query_picker';
-import { SavedQueryEditor } from './saved_query_editor';
+import { SearchBarEditor } from './search_bar_editor';
 
 interface Props {
   filter: Filter;
@@ -254,35 +255,36 @@ class FilterEditorUI extends Component<Props, State> {
             )}
 
             <EuiSpacer size="m" />
-
-            <EuiFlexGroup direction="rowReverse" alignItems="center" responsive={false}>
-              <EuiFlexItem grow={false}>
-                <EuiButton
-                  fill
-                  onClick={this.onSubmit}
-                  isDisabled={!this.isFilterValid()}
-                  data-test-subj="saveFilter"
-                >
-                  <FormattedMessage
-                    id="data.filter.filterEditor.saveButtonLabel"
-                    defaultMessage="Save"
-                  />
-                </EuiButton>
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                <EuiButtonEmpty
-                  flush="right"
-                  onClick={this.props.onCancel}
-                  data-test-subj="cancelSaveFilter"
-                >
-                  <FormattedMessage
-                    id="data.filter.filterEditor.cancelButtonLabel"
-                    defaultMessage="Cancel"
-                  />
-                </EuiButtonEmpty>
-              </EuiFlexItem>
-              <EuiFlexItem />
-            </EuiFlexGroup>
+            {!this.state.isSavedQueryEditorOpen && (
+              <EuiFlexGroup direction="rowReverse" alignItems="center" responsive={false}>
+                <EuiFlexItem grow={false}>
+                  <EuiButton
+                    fill
+                    onClick={this.onSubmit}
+                    isDisabled={!this.isFilterValid()}
+                    data-test-subj="saveFilter"
+                  >
+                    <FormattedMessage
+                      id="data.filter.filterEditor.saveButtonLabel"
+                      defaultMessage="Save"
+                    />
+                  </EuiButton>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiButtonEmpty
+                    flush="right"
+                    onClick={this.props.onCancel}
+                    data-test-subj="cancelSaveFilter"
+                  >
+                    <FormattedMessage
+                      id="data.filter.filterEditor.cancelButtonLabel"
+                      defaultMessage="Cancel"
+                    />
+                  </EuiButtonEmpty>
+                </EuiFlexItem>
+                <EuiFlexItem />
+              </EuiFlexGroup>
+            )}
           </EuiForm>
         </div>
       </div>
@@ -481,17 +483,17 @@ class FilterEditorUI extends Component<Props, State> {
     );
     this.onSavedQueryChange(selectedSavedQuery, savedQueries);
   };
-  // SavedQueryPicker is a list of the saved queries and allows for a single option to be selected. Once selected, the saved query is set on state
-  // SavedQueryEditor is the Editor UI for the selected saved query and implements the SearchBar UI. Uses the saved query on state to view the contents
+
+  // renders a custom instantiation of the search bar
   private renderSavedQueryEditor() {
     return (
       <EuiFlexGroup responsive={false} gutterSize="s">
         <EuiFlexItem>
-          <SavedQueryPicker
+          {/* <SavedQueryPicker
             savedQueryService={this.props.savedQueryService}
             onChange={this.onSavedQuerySelected}
-          />
-          <SavedQueryEditor
+          /> */}
+          <SearchBarEditor
             currentSavedQuery={this.state.selectedSavedQuery}
             uiSettings={this.props.uiSettings}
             indexPatterns={
@@ -501,11 +503,15 @@ class FilterEditorUI extends Component<Props, State> {
             }
             showSaveQuery={this.props.showSaveQuery!}
             timeHistory={this.props.timeHistory!}
+            onChange={this.validateQueryDataAndSubmit}
           />
         </EuiFlexItem>
       </EuiFlexGroup>
     );
   }
+  private validateQueryDataAndSubmit = (queryBarData: any) => {
+    if (queryBarData) this.setState({ params: { ...queryBarData } });
+  };
 
   private toggleCustomEditor = () => {
     const isCustomEditorOpen = !this.state.isCustomEditorOpen;
