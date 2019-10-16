@@ -481,8 +481,8 @@ class FilterEditorUI extends Component<Props, State> {
     );
     this.onSavedQueryChange(selectedSavedQuery, savedQueries);
   };
-  // SavedQueryPicker is a list of the saved queries and allows for a single option to be selected.
-  // SavedQueryEditor is the Editor UI for the selected saved query and implements the SearchBar UI
+  // SavedQueryPicker is a list of the saved queries and allows for a single option to be selected. Once selected, the saved query is set on state
+  // SavedQueryEditor is the Editor UI for the selected saved query and implements the SearchBar UI. Uses the saved query on state to view the contents
   private renderSavedQueryEditor() {
     return (
       <EuiFlexGroup responsive={false} gutterSize="s">
@@ -501,7 +501,6 @@ class FilterEditorUI extends Component<Props, State> {
             }
             showSaveQuery={this.props.showSaveQuery!}
             timeHistory={this.props.timeHistory!}
-            savedQueryService={this.props.savedQueryService}
           />
         </EuiFlexItem>
       </EuiFlexGroup>
@@ -568,11 +567,7 @@ class FilterEditorUI extends Component<Props, State> {
   private getSavedQueryFromFilter() {
     if (this.isSavedQueryFilterType()) {
       const savedQueryfilter = { ...this.props.filter };
-      if (
-        savedQueryfilter &&
-        savedQueryfilter.meta.params &&
-        savedQueryfilter.meta.params.savedQuery
-      ) {
+      if (savedQueryfilter && savedQueryfilter.meta.params) {
         return getSavedQueryFromFilter(savedQueryfilter);
       }
     }
@@ -641,12 +636,16 @@ class FilterEditorUI extends Component<Props, State> {
   };
 
   private onSavedQueryChange = (selectedSavedQuery: SavedQuery[], savedQueries: SavedQuery[]) => {
+    // Reset selectedOperator and field when the operator type changes
     // set the selected saved query to the params?
+    // the conditional checks to see if a different one has been selected and that it has a type.
+    // TODO: change the params into a shape of { savedQuery: {...selectedSavedQuery}}
     const params =
       get(this.state.selectedSavedQuery && this.state.selectedSavedQuery[0], 'id') ===
       get(selectedSavedQuery[0], 'id')
         ? this.state.params
         : selectedSavedQuery[0];
+
     this.setState(state => ({ ...state, selectedSavedQuery, params }));
   };
 

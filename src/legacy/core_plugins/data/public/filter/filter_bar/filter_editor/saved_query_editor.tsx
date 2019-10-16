@@ -43,7 +43,6 @@ interface Props {
   indexPatterns: IndexPattern[];
   showSaveQuery: boolean;
   timeHistory?: TimeHistoryContract; // I need some other way of accessing timeHistory rather than passing it down all the way from the search bar
-  savedQueryService: SavedQueryService;
 }
 export const SavedQueryEditor: FunctionComponent<Props> = ({
   uiSettings,
@@ -51,17 +50,18 @@ export const SavedQueryEditor: FunctionComponent<Props> = ({
   indexPatterns,
   showSaveQuery,
   timeHistory,
-  savedQueryService,
 }) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-
   const closePopover = () => setIsPopoverOpen(false);
   const openPopover = () => setIsPopoverOpen(true);
   const onClearSavedQuery = () => {
     // console.log('saved query cleared');
   };
   const onQueryChange = (queryAndDateRange: { dateRange: TimeRange; query?: Query }) => {
-    // console.log('query changed with queryAndDateRange:', queryAndDateRange);
+    const dateRange = queryAndDateRange.dateRange;
+    const query = queryAndDateRange.query;
+    // console.log('queryAndDateRange changed with dateRange:', dateRange);
+    // console.log('queryAndDateRange changed with query:', query);
     return queryAndDateRange;
   };
   const onFiltersUpdated = (filters: Filter[]) => {
@@ -71,7 +71,7 @@ export const SavedQueryEditor: FunctionComponent<Props> = ({
   };
   return (
     <EuiPopover
-      id="SavedQueryFilterPopover"
+      id={`popoverFor_compound_filter`}
       button={
         <EuiButtonEmpty size="xs" onClick={openPopover} iconType={'plusInCircleFilled'}>
           View

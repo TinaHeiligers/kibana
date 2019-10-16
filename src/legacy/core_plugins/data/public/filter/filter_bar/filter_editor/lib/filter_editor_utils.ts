@@ -78,7 +78,7 @@ export function getOperatorFromFilter(filter: Filter) {
 }
 
 export function getSavedQueryFromFilter(filter: SavedQueryFilter): SavedQuery[] {
-  return [filter.meta.params.savedQuery];
+  return [filter.meta.params];
 }
 
 export function getQueryDslFromFilter(filter: Filter) {
