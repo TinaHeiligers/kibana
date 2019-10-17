@@ -474,14 +474,13 @@ class FilterEditorUI extends Component<Props, State> {
     }
   }
 
-  public onSavedQuerySelected = (
-    selectedOption: SavedQueryOption[],
-    savedQueries: SavedQuery[]
-  ) => {
-    const selectedSavedQuery = savedQueries.filter(
-      savedQuery => savedQuery.id === selectedOption[0].label
-    );
-    this.onSavedQueryChange(selectedSavedQuery, savedQueries);
+  public onSavedQuerySelected = (selectedSavedQuery: SavedQuery[]) => {
+    const params =
+      get(this.state.selectedSavedQuery && this.state.selectedSavedQuery[0], 'id') ===
+      get(selectedSavedQuery[0], 'id')
+        ? this.state.params
+        : selectedSavedQuery[0];
+    this.setState(state => ({ ...state, selectedSavedQuery, params }));
   };
 
   // renders a custom instantiation of the search bar
@@ -503,6 +502,7 @@ class FilterEditorUI extends Component<Props, State> {
             }
             showSaveQuery={this.props.showSaveQuery!}
             timeHistory={this.props.timeHistory!}
+            onSelected={this.onSavedQuerySelected}
             onChange={this.validateQueryDataAndSubmit}
           />
         </EuiFlexItem>

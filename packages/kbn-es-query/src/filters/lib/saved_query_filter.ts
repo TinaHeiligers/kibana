@@ -48,8 +48,12 @@ export interface SavedQuery {
   attributes: SavedQueryAttributes;
 }
 
+interface SavedQueryParams {
+  savedQuery: SavedQuery;
+}
+
 export type SavedQueryFilterMeta = FilterMeta & {
-  params?: SavedQuery; // the full saved query
+  params?: SavedQueryParams; // the full saved query
 };
 
 export type SavedQueryFilter = Filter & {

@@ -43,6 +43,7 @@ interface Props {
   showSaveQuery: boolean;
   timeHistory?: TimeHistoryContract; // I need some other way of accessing timeHistory rather than passing it down all the way from the search bar
   onChange: (item: any) => void;
+  onSelected: (savedQuery: SavedQuery[]) => void;
 }
 export const SearchBarEditor: FunctionComponent<Props> = ({
   uiSettings,
@@ -51,6 +52,7 @@ export const SearchBarEditor: FunctionComponent<Props> = ({
   showSaveQuery,
   timeHistory,
   onChange,
+  onSelected,
 }) => {
   const [data, setData] = useState({ dateRange: {}, query: {}, filters: [] });
   const onClearSavedQuery = () => {
