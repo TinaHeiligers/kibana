@@ -24,6 +24,8 @@ import {
   PhrasesFilter,
   RangeFilter,
   SavedQueryFilter,
+  KibanaQueryBarDataParams,
+  KibanaQueryBarDataFilter,
 } from './lib';
 import { RangeFilterParams } from './lib/range_filter';
 import { SavedQuery } from './lib/saved_query_filter';
@@ -58,4 +60,8 @@ export function buildRangeFilter(
   formattedValue?: string
 ): RangeFilter;
 
+export function buildKibanaQueryBarDataFilter(
+  kibanaQueryBarData: KibanaQueryBarDataParams
+): KibanaQueryBarDataFilter;
+// TODO: remove
 export function buildSavedQueryFilter(savedQuery: SavedQuery): SavedQueryFilter;

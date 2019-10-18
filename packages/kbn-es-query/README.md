@@ -73,11 +73,19 @@ buildRangeFilter(field, params, indexPattern)
 Creates a filter (`RangeFilter`) where the value for the given field is in the given range. `params` should contain `lt`, `lte`, `gt`, and/or `gte`.
 
 ```javascript
+buildKibanaQueryBarDataFilter(kibanaQueryBarData)
+```
+
+Creates a filter (`KibanaQueryBarDataFilter`) corresponding to the query-text, filters and timefilter obtained from the Kibana Querybar. `kibanaQueryBarData` is provided through the filter meta `params` and should be an object containing the `query` object, `filter` array and `timefilter` object.
+***
+_DO NOT USE_
+```javascript
 buildSavedQueryFilter(savedQueryId)
 ```
 
 Creates a filter (`SavedQueryFilter`) corresponding to a saved query. `params` should be an object containing the saved query.
 
+***
 ## kuery
 
 This folder contains the code corresponding to generating Elasticsearch queries using the Kibana query language.

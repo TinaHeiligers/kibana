@@ -16,12 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import { Filter, FilterMeta } from './meta_filter';
 
-export * from './exists';
-export * from './phrase';
-export * from './phrases';
-export * from './query';
-export * from './range';
-export * from './kibana_query_bar_data';
-export * from './saved_query'; // TODO: remove
-export * from './lib';
+export interface Query {
+  query: string | { [key: string]: any };
+  language: string;
+}
+
+interface TimeRange {
+  from: string;
+  to: string;
+}
+
+export interface KibanaQueryBarDataParams {
+  query?: Query;
+  filters: Filter[];
+  timefilter: TimeRange;
+}
+
+export type KibanaQueryBarDataFilterMeta = FilterMeta & {
+  params?: KibanaQueryBarDataParams;
+};
+
+export type KibanaQueryBarDataFilter = Filter & {
+  meta: KibanaQueryBarDataFilterMeta;
+};
+
+export const isKibanaQueryBarDataFilter = (filter: any): filter is KibanaQueryBarDataFilter =>
+  filter && filter.meta && filter.meta.type === 'kibanaQueryBarData';

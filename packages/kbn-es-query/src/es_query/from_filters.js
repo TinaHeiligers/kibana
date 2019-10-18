@@ -32,9 +32,9 @@ const calculateBounds = function (timeRange) {
 };
 
 /**
- * Translate a saved query timefilter into a query
+ * Translate a timefilter into a query
  * @param  {Object} indexPattern - The indexPattern from which to extract the time filter
- * @param  {Object} timeRange - The saved query time range bounds
+ * @param  {Object} timeRange - The time range bounds
  * @return {Object} the query version of that filter
  */
 const getEsTimeFilter = function (indexPattern, timeRange) {
@@ -76,7 +76,19 @@ const filterNegate = function (reverse) {
     return filter.meta && filter.meta.negate === reverse;
   };
 };
+
 /**
+ * TODO: remove
+ * Check if a filter is a kibana query bar data filter
+ * @param {Object} filter The filter we're checking the type of
+ * @returns {boolean}
+ */
+const isKibanaQueryBarDataFilter = function (filter) {
+  return filter.meta && filter.meta.type && filter.meta.type === 'kibanaQueryBarData';
+};
+
+/**
+ * TODO: remove
  * Check if a filter is a saved query
  * @param {Object} filter The filter we're checking the type of
  * @returns {boolean}
@@ -103,6 +115,39 @@ export const translateToQuery = function (filter, {
     // we have dsl so we simply return it
     return filter.query;
   }
+
+  if (isKibanaQueryBarDataFilter(filter)) {
+    const queryBarData = { ... filter.meta.params };
+    const query = _.get(queryBarData, 'query');
+    let filters = _.get(queryBarData, 'filters', []);
+    // at this point we need to extract the contents of any fitlers that may themselves be Kibana query bar data filters
+    filters = filters.map((filter) => {
+      if (isKibanaQueryBarDataFilter(filter)) {
+        return translateToQuery(
+          filter,
+          { indexPattern, allowLeadingWildcards, queryStringOptions, dateFormatTZ, ignoreFilterIfFieldNotInIndex },
+        );
+      } else {
+        return filter;
+      }
+    });
+    // timefilter addition
+    let timefilter = _.get(queryBarData, 'timefilter');
+    if (timefilter) {
+      const timeRange = { from: timefilter.from, to: timefilter.to };
+      timefilter = getEsTimeFilter(indexPattern, timeRange);
+      filters = [...filters, timefilter];
+    }
+    const convertedQuery = buildEsQuery(
+      indexPattern,
+      [query],
+      filters,
+      { allowLeadingWildcards, queryStringOptions, dateFormatTZ, ignoreFilterIfFieldNotInIndex },
+    );
+
+    filter = { ...convertedQuery };
+  }
+  // TODO: remove
   if (isSavedQueryFilter(filter)) {
     // generate raw dsl from the savedQuery filter
     // Maybe TODO: move to an extractSavedQuery function
@@ -146,6 +191,7 @@ export const translateToQuery = function (filter, {
  * @returns {object}
  */
 const cleanFilter = function (filter) {
+  // TODO: remove 'savedQuery' conditional and command
   if (filter.meta && filter.meta.type && filter.meta.type === 'savedQuery') {
     return _.omit(filter, ['meta', '$state', 'saved_query']);
   }
@@ -167,7 +213,7 @@ export function buildQueryFromFilters(
       .map((filter) => translateToQuery(
         filter,
         { indexPattern, allowLeadingWildcards, queryStringOptions, dateFormatTZ, ignoreFilterIfFieldNotInIndex }))
-      .map(cleanFilter)
+      .map(cleanFilter) // this is where the meta and $state is removed. Up until before this map function, we still know what type of filter we're working with
       .map(filter => {
         return migrateFilter(filter, indexPattern);
       }),

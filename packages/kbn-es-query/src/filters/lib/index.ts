@@ -36,6 +36,13 @@ import {
 } from './range_filter';
 import { MatchAllFilter, isMatchAllFilter } from './match_all_filter';
 import { MissingFilter, isMissingFilter } from './missing_filter';
+import {
+  KibanaQueryBarDataFilter,
+  KibanaQueryBarDataFilterMeta,
+  KibanaQueryBarDataParams,
+  isKibanaQueryBarDataFilter,
+} from './kibana_query_bar_data_filter';
+// TODO: remove
 import { SavedQueryFilter, SavedQueryFilterMeta, isSavedQueryFilter } from './saved_query_filter';
 
 export {
@@ -61,6 +68,11 @@ export {
   isMatchAllFilter,
   MissingFilter,
   isMissingFilter,
+  KibanaQueryBarDataFilter,
+  KibanaQueryBarDataFilterMeta,
+  KibanaQueryBarDataParams,
+  isKibanaQueryBarDataFilter,
+  // TODO: remove
   SavedQueryFilter,
   SavedQueryFilterMeta,
   isSavedQueryFilter,
@@ -88,5 +100,7 @@ export enum FILTERS {
   RANGE = 'range',
   GEO_BOUNDING_BOX = 'geo_bounding_box',
   GEO_POLYGON = 'geo_polygon',
+  KIBANA_QUERY_BAR_DATA = 'kibanaQueryBarData',
+  // TODO: remove
   SAVED_QUERY = 'savedQuery',
 }

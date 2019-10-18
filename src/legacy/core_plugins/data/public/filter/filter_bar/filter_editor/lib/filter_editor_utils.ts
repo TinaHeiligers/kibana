@@ -23,7 +23,8 @@ import {
   buildPhraseFilter,
   buildPhrasesFilter,
   buildRangeFilter,
-  buildSavedQueryFilter,
+  buildKibanaQueryBarDataFilter,
+  buildSavedQueryFilter, // TODO: remove
   FieldFilter,
   Filter,
   FilterMeta,
@@ -31,7 +32,9 @@ import {
   PhraseFilter,
   PhrasesFilter,
   RangeFilter,
-  SavedQueryFilter,
+  KibanaQueryBarDataFilter,
+  SavedQueryFilter, // TODO: remove
+  KibanaQueryBarDataParams,
 } from '@kbn/es-query';
 import { omit, get } from 'lodash';
 import { Ipv4Address } from '../../../../../../../../plugins/kibana_utils/public';
@@ -106,6 +109,9 @@ export function getFilterParams(filter: Filter) {
         from: (filter as RangeFilter).meta.params.gte,
         to: (filter as RangeFilter).meta.params.lt,
       };
+    case 'kibanaQueryBarData':
+      return (filter as KibanaQueryBarDataFilter).meta.params;
+    // TODO: remove
     case 'savedQuery':
       return (filter as SavedQueryFilter).meta.params;
   }
@@ -208,6 +214,19 @@ export function buildCustomFilter(
   return filter;
 }
 
+export function buildFilterFromKibanaQueryBarData(
+  disabled: boolean,
+  params: KibanaQueryBarDataParams,
+  alias: string | null,
+  store: FilterStateStore
+): Filter {
+  const filter = buildKibanaQueryBarDataFilter(params);
+  filter.meta.disabled = disabled;
+  filter.meta.alias = alias;
+  filter.$state = { store };
+  return filter;
+}
+// TODO: remove
 export function buildFilterFromSavedQuery(
   disabled: boolean,
   params: SavedQuery,

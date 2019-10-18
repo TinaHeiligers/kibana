@@ -17,11 +17,14 @@
  * under the License.
  */
 
-export * from './exists';
-export * from './phrase';
-export * from './phrases';
-export * from './query';
-export * from './range';
-export * from './kibana_query_bar_data';
-export * from './saved_query'; // TODO: remove
-export * from './lib';
+
+export function buildKibanaQueryBarDataFilter(kibanaQueryBarData) {
+  const filter = {
+    meta: {
+      type: 'kibanaQueryBarData',
+      key: 'KQBD', // might need to change this
+      params: { kibanaQueryBarData }
+    },
+  };
+  return filter;
+}
