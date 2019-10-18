@@ -17,14 +17,18 @@
  * under the License.
  */
 
-
-export function buildKibanaQueryBarDataFilter(kibanaQueryBarData) {
+// NOTE: the value can end up being a very long string. Strongly encourage users to provide an alias or add a default on the front end that can be changed
+export function buildKibanaQueryBarDataFilter(kibanaQueryBarData, alias) {
   const filter = {
     meta: {
       type: 'kibanaQueryBarData',
       key: 'KQBD', // might need to change this
-      params: { kibanaQueryBarData }
+      value: JSON.stringify(kibanaQueryBarData),
+      params: { ...kibanaQueryBarData }
     },
   };
+  if (alias) {
+    filter.meta.alias = alias;
+  }
   return filter;
 }

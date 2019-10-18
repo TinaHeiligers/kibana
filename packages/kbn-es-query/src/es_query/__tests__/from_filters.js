@@ -142,7 +142,53 @@ describe('build query', function () {
 
       expect(result.filter).to.eql(expectedESQueries);
     });
-
+    it('should convert kibana query bar data into an ES query', function () {
+      const kibanaQueryBarDataFilter = {
+        '$state': {
+          store: 'appState',
+        },
+        meta: {
+          alias: 'Bytes more than 2000',
+          disabled: false,
+          key: 'KQBD',
+          negate: false,
+          params: {
+            query: {
+              language: 'kuery',
+              query: 'bytes >= 2000'
+            }
+          },
+          type: 'kibanaQueryBarData',
+          value: '{"query":{"language":"kuery","query":"bytes >= 2000"}}',
+        }
+      };
+      const expectedESQueries = [
+        {
+          bool: {
+            must: [],
+            filter: [
+              {
+                bool: {
+                  should: [
+                    {
+                      range: {
+                        bytes: {
+                          gte: 2000
+                        }
+                      }
+                    }
+                  ],
+                  minimum_should_match: 1
+                }
+              }
+            ],
+            should: [],
+            must_not: []
+          }
+        }];
+      const result = buildQueryFromFilters([kibanaQueryBarDataFilter]);
+      expect(result.filter).to.eql(expectedESQueries);
+    });
     it('should convert a saved query filter into an ES query', function () {
       const savedQueryFilter = {
         '$state': {
@@ -200,6 +246,45 @@ describe('build query', function () {
     });
   });
   describe('translateToQuery', function () {
+    it('should extract the contents of Kibana querybar data', function () {
+      const kibanaQueryBarDataFilter = {
+        '$state': {
+          store: 'appState',
+        },
+        meta: {
+          alias: '>2000 bytes',
+          disabled: false,
+          key: 'KQBD',
+          negate: false,
+          params: {
+            query: {
+              language: 'kuery',
+              query: 'bytes >= 2000'
+            }
+          },
+          type: 'kibanaQueryBarData',
+          value: '{"query":{"language":"kuery","query":"bytes >= 2000"}}',
+        },
+      };
+      const expectedResult = {
+        bool: {
+          filter: [
+            {
+              bool: {
+                minimum_should_match: 1,
+                should: [{ range: { bytes: { gte: 2000 } } }],
+              }
+            }
+          ],
+          must: [],
+          must_not: [],
+          should: [],
+        }
+      };
+      const result = translateToQuery(kibanaQueryBarDataFilter, { indexPattern });
+      expect(result).to.eql(expectedResult);
+    });
+
     it('should extract the contents of a saved query', function () {
       const savedQueryFilter = {
         '$state': {
@@ -244,6 +329,83 @@ describe('build query', function () {
         }
       };
       const result = translateToQuery(savedQueryFilter, { indexPattern });
+      expect(result).to.eql(expectedResult);
+    });
+    it('should extract and translate kibana querybar data filters that contain kibana querybar data filters', function () {
+      const kibanaQueryBarDataFilter = {
+        '$state': {
+          store: 'appState',
+        },
+        meta: {
+          alias: 'nested KQBD',
+          disabled: false,
+          key: 'Compound',
+          negate: false,
+          params: {
+            filters: [
+              {
+                '$state': {
+                  store: 'appState',
+                },
+                meta: {
+                  alias: null,
+                  disabled: false,
+                  key: 'KQBD',
+                  negate: false,
+                  params: {
+                    query: {
+                      language: 'kuery',
+                      query: 'response.keyword: 200'
+                    }
+                  },
+                  type: 'kibanaQueryBarData',
+                  value: '{"query":{"language":"kuery","query":"response.keyword: 200"}}',
+                },
+                saved_query: 'Ok response'
+              }],
+            query: {
+              language: 'kuery',
+              query: ''
+            }
+          },
+          type: 'kibanaQueryBarData',
+          value: '{"query":{"language":"kuery","query":""}}',
+        }
+      };
+      const expectedResult = {
+        bool: {
+          filter: [
+            {
+              match_all: {}
+            },
+            {
+              bool: {
+                filter: [
+                  {
+                    bool: {
+                      minimum_should_match: 1,
+                      should: [
+                        {
+                          match: {
+                            'response.keyword': 200
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ],
+                must: [],
+                must_not: [],
+                should: [],
+              }
+            }
+          ],
+          must: [],
+          must_not: [],
+          should: [],
+        }
+      };
+      const result = translateToQuery(kibanaQueryBarDataFilter, { indexPattern });
       expect(result).to.eql(expectedResult);
     });
 

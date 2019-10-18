@@ -134,6 +134,65 @@ describe('build query', function () {
       expect(result).to.eql(expectedResult);
     });
 
+    it('should build an Elasticsearch query from kibana query bar data', function () {
+      const filters = {
+        meta: {
+          alias: null,
+          disabled: false,
+          key: 'KQBD',
+          negate: false,
+          params: {
+            query: {
+              language: 'kuery',
+              query: 'bytes >= 2000'
+            }
+          },
+          type: 'kibanaQueryBarData',
+          value: '{"query":{"language":"kuery","query":"bytes >= 2000"}}',
+          alias: '2000 bytes and more'
+        }
+      };
+      const config = {
+        allowLeadingWildcards: true,
+        queryStringOptions: {},
+      };
+      const expectedResult = {
+        bool: {
+          must: [],
+          filter: [
+            {
+              bool: {
+                must: [],
+                filter: [
+                  {
+                    bool: {
+                      should: [
+                        {
+                          range: {
+                            bytes: {
+                              gte: 2000
+                            }
+                          }
+                        }
+                      ],
+                      minimum_should_match: 1
+                    }
+                  }
+                ],
+                should: [],
+                must_not: []
+              }
+            }
+          ],
+          should: [],
+          must_not: [],
+        }
+      };
+      const result = buildEsQuery(indexPattern, [], [filters], config);
+
+      expect(result).to.eql(expectedResult);
+    });
+
     it('should build an Elasticsearch query from a saved query', function () {
       const filters = {
         meta: {

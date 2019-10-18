@@ -36,44 +36,46 @@ describe('Filter Manager', function () {
 
     it('should return a kibana querybar data filter when passed a kibana querybar data object', function () {
       const kibanaQueryBarTestItem = {
-        id: 'foo',
-        attributes: {
-          title: 'foo',
-          description: 'bar',
-          query: {
-            language: 'kuery',
-            query: 'response:200',
-          },
-          filters: [
-            {
-              query: {
-                match_phrase: {
-                  'extension.keyword': {
-                    'query': 'css'
-                  }
+        query: {
+          language: 'kuery',
+          query: 'response:200',
+        },
+        filters: [
+          {
+            query: {
+              match_phrase: {
+                'extension.keyword': {
+                  'query': 'css'
                 }
-              },
-              $state: { store: FilterStateStore.APP_STATE },
-              meta: {
-                disabled: false,
-                negate: false,
-                alias: null,
-              },
-            },
-          ],
-          timefilter: {
-            range: {
-              timestamp: {
-                gte: '1940-02-01T00:00:00.000Z',
-                lte: '2000-02-01T00:00:00.000Z',
-                format: 'strict_date_optional_time',
               }
             },
-          }
+            $state: { store: FilterStateStore.APP_STATE },
+            meta: {
+              disabled: false,
+              negate: false,
+              alias: null,
+            },
+          },
+        ],
+        timefilter: {
+          range: {
+            timestamp: {
+              gte: '1940-02-01T00:00:00.000Z',
+              lte: '2000-02-01T00:00:00.000Z',
+              format: 'strict_date_optional_time',
+            }
+          },
         }
       };
-      expected = { meta: { type: 'savedQuery', key: 'foo', params: { savedQuery: { ...savedQueryTestItem } } }, saved_query: 'foo' };
-      const actual = buildSavedQueryFilter(savedQueryTestItem);
+      expected = {
+        meta: {
+          type: 'kibanaQueryBarData',
+          key: 'KQBD',
+          params: kibanaQueryBarTestItem,
+          value: JSON.stringify(kibanaQueryBarTestItem),
+        }
+      };
+      const actual = buildKibanaQueryBarDataFilter(kibanaQueryBarTestItem);
       expect(actual).to.eql(expected);
     });
   });
