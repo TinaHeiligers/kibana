@@ -33,10 +33,10 @@ import {
   EuiTabs,
   EuiTab,
 } from '@elastic/eui';
-import { FieldFilter, Filter } from '@kbn/es-query';
+import { FieldFilter, Filter, KibanaQueryBarData } from '@kbn/es-query';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage, InjectedIntl, injectI18n } from '@kbn/i18n/react';
-import { get } from 'lodash';
+import { get, isEqual } from 'lodash';
 import React, { Component } from 'react';
 import { UiSettingsClientContract } from 'kibana/public';
 import { TimeHistoryContract } from 'ui/timefilter';
@@ -56,6 +56,8 @@ import {
   isFilterValid,
   buildFilterFromSavedQuery,
   getSavedQueryFromFilter,
+  getKibanaQueryBarDataFromFilter,
+  buildFilterFromKibanaQueryBarData,
 } from './lib/filter_editor_utils';
 import { Operator } from './lib/filter_operators';
 import { PhraseValueInput } from './phrase_value_input';
@@ -85,10 +87,11 @@ interface State {
   customLabel: string | null;
   queryDsl: string;
   isCustomEditorOpen: boolean;
-  isSavedQueryEditorOpen: boolean;
+  isKibanaQueryBarDataEditorOpen: boolean;
   isRegularEditorOpen: boolean;
   isNewFilter: boolean;
   selectedSavedQuery?: SavedQuery[];
+  selectedKibanaQueryBarData?: KibanaQueryBarData;
 }
 
 class FilterEditorUI extends Component<Props, State> {
@@ -103,10 +106,10 @@ class FilterEditorUI extends Component<Props, State> {
       customLabel: props.filter.meta.alias,
       queryDsl: JSON.stringify(getQueryDslFromFilter(props.filter), null, 2),
       isCustomEditorOpen: this.isUnknownFilterType(),
-      isSavedQueryEditorOpen: this.isSavedQueryFilterType(),
+      isKibanaQueryBarDataEditorOpen: this.isKibanaQueryBarDataFilterType(),
       isRegularEditorOpen: this.isRegularFilterType(),
       isNewFilter: !props.filter.meta.type,
-      selectedSavedQuery: this.getSavedQueryFromFilter(),
+      selectedKibanaQueryBarData: getKibanaQueryBarDataFromFilter(props.filter),
     };
   }
 
@@ -136,8 +139,8 @@ class FilterEditorUI extends Component<Props, State> {
           <EuiForm>
             <EuiTabs display="condensed">
               <EuiTab
-                disabled={!this.state.isNewFilter && this.isSavedQueryFilterType()}
-                onClick={this.toggleRegularEditor}
+                disabled={!this.state.isNewFilter && this.isKibanaQueryBarDataFilterType()}
+                onClick={this.openRegularEditor}
                 aria-label={
                   this.state.isNewFilter
                     ? i18n.translate('data.filter.filterEditor.tab.create', {
@@ -162,8 +165,8 @@ class FilterEditorUI extends Component<Props, State> {
               </EuiTab>
               {this.props.showSaveQuery && (
                 <EuiTab
-                  disabled={!this.state.isNewFilter && !this.isSavedQueryFilterType()}
-                  onClick={this.toggleSavedQueryEditor}
+                  disabled={!this.state.isNewFilter && !this.isKibanaQueryBarDataFilterType()}
+                  onClick={this.openKibanaQueryBarDataEditor}
                   aria-label={
                     this.state.isNewFilter
                       ? i18n.translate('data.filter.filterEditor.tab.useSavedQuery', {
@@ -190,8 +193,8 @@ class FilterEditorUI extends Component<Props, State> {
             </EuiTabs>
             <EuiFlexGroup direction={'rowReverse'}>
               <EuiFlexItem grow={false}>
-                {/* only render this is the saved Query editor is not open */}
-                {!this.state.isSavedQueryEditorOpen && (
+                {/* only render the option for using DSL when we're not working with KibanaQueryBarData filters */}
+                {!this.state.isKibanaQueryBarDataEditorOpen && (
                   <EuiButtonEmpty size="xs" onClick={this.toggleCustomEditor}>
                     {this.state.isCustomEditorOpen ? (
                       this.state.isNewFilter ? (
@@ -221,7 +224,7 @@ class FilterEditorUI extends Component<Props, State> {
               </EuiFlexItem>
             </EuiFlexGroup>
             {/* only show the index pattern if we're not working with a saved query filter */}
-            {!this.state.isSavedQueryEditorOpen && this.renderIndexPatternInput()}
+            {!this.state.isKibanaQueryBarDataEditorOpen && this.renderIndexPatternInput()}
 
             {this.renderEditor()}
 
@@ -292,8 +295,8 @@ class FilterEditorUI extends Component<Props, State> {
   private renderEditor() {
     if (this.state.isCustomEditorOpen) {
       return this.renderCustomEditor();
-    } else if (this.state.isSavedQueryEditorOpen) {
-      return this.renderSavedQueryEditor();
+    } else if (this.state.isKibanaQueryBarDataEditorOpen) {
+      return this.renderKibanaQueryBarDataEditor();
     } else {
       return this.renderRegularEditor();
     }
@@ -473,22 +476,23 @@ class FilterEditorUI extends Component<Props, State> {
     }
   }
 
-  public onSavedQuerySelected = (selectedSavedQuery: SavedQuery[]) => {
-    const params =
-      get(this.state.selectedSavedQuery && this.state.selectedSavedQuery[0], 'id') ===
-      get(selectedSavedQuery[0], 'id')
-        ? this.state.params
-        : selectedSavedQuery[0];
-    this.setState(state => ({ ...state, selectedSavedQuery, params }));
+  public onKibanaQueryBarDataSelected = (selectedKibanaQueryBarData: KibanaQueryBarData) => {
+    // if what we're getting isn't the same as what we have on state, then change state
+    // note that on state, we potentially have a duplicate of the selectedKibanaQueryBarData as the params. Params, however, change with other filter types.
+    if (
+      isEqual(this.state.params, this.state.selectedKibanaQueryBarData) &&
+      !isEqual(selectedKibanaQueryBarData, this.state.selectedKibanaQueryBarData)
+    ) {
+      const updatedParams = selectedKibanaQueryBarData;
+      this.setState({ selectedKibanaQueryBarData, params: updatedParams });
+    }
   };
-  public onChange = () => {};
-  private renderSavedQueryEditor() {
+
+  private renderKibanaQueryBarDataEditor() {
     return (
-      <div className="savedQueryFilterEditor">
+      <div className="kibanaQueryBarDataEditor">
         <SearchBarEditor
-          currentSavedQuery={
-            this.state.selectedSavedQuery ? this.state.selectedSavedQuery[0] : undefined
-          }
+          currentKibanaQueryBarData={this.state.selectedKibanaQueryBarData}
           uiSettings={this.props.uiSettings}
           indexPatterns={
             this.state.selectedIndexPattern
@@ -497,50 +501,84 @@ class FilterEditorUI extends Component<Props, State> {
           }
           showSaveQuery={this.props.showSaveQuery!}
           timeHistory={this.props.timeHistory!}
-          onSelectionChange={this.onSavedQuerySelected}
-          onChange={this.onChange}
+          onSelectionChange={this.onKibanaQueryBarDataSelected}
         />
       </div>
     );
   }
 
+  // TOGGLE EDITORS OPEN AND CLOSED
+
+  private openCustomEditor = () => {
+    this.setState({ isCustomEditorOpen: true });
+  };
+
+  private closeCustomEditor = () => {
+    this.setState({ isCustomEditorOpen: false });
+  };
+
   private toggleCustomEditor = () => {
+    this.closeKibanaQueryBarDataEditor();
     const isCustomEditorOpen = !this.state.isCustomEditorOpen;
     this.setState({ isCustomEditorOpen });
   };
 
-  private toggleRegularEditor = () => {
-    // close the saved query editor if it is open
-    if (this.state.isSavedQueryEditorOpen) {
-      this.toggleSavedQueryEditor();
-    }
-    if (this.state.isCustomEditorOpen) {
-      this.toggleCustomEditor();
-    }
-    const isRegularEditorOpen = !this.state.isRegularEditorOpen;
-    this.setState({ isRegularEditorOpen });
+  private openRegularEditor = () => {
+    this.closeKibanaQueryBarDataEditor();
+    this.closeCustomEditor();
+    this.setState({ isRegularEditorOpen: true });
   };
 
-  private toggleSavedQueryEditor = () => {
-    // close the custom query editor if it is open
-    if (this.state.isCustomEditorOpen) {
-      this.toggleCustomEditor();
-    }
-    if (this.state.isRegularEditorOpen) {
-      this.toggleRegularEditor();
-    }
-    const isSavedQueryEditorOpen = !this.state.isSavedQueryEditorOpen;
-    this.setState({ isSavedQueryEditorOpen });
+  private closeRegularEditor = () => {
+    this.setState({ isRegularEditorOpen: false });
   };
+
+  // private toggleRegularEditor = () => {
+  //   // close the saved query editor if it is open
+  //   if (this.state.isKibanaQueryBarDataEditorOpen) {
+  //     this.closeKibanaQueryBarDataEditor();
+  //   }
+  //   if (this.state.isCustomEditorOpen) {
+  //     this.toggleCustomEditor();
+  //   }
+  //   const isRegularEditorOpen = !this.state.isRegularEditorOpen;
+  //   this.setState({ isRegularEditorOpen });
+  // };
+
+  private closeKibanaQueryBarDataEditor = () => {
+    this.setState({ isKibanaQueryBarDataEditorOpen: false });
+  };
+  private openKibanaQueryBarDataEditor = () => {
+    this.closeCustomEditor();
+    this.closeRegularEditor();
+    this.setState({ isKibanaQueryBarDataEditorOpen: true });
+  };
+
+  // private toggleKibanaQueryBarDataEditor = () => {
+  //   // close the custom query editor if it is open
+  //   if (this.state.isCustomEditorOpen) {
+  //     this.toggleCustomEditor();
+  //   }
+  //   if (this.state.isRegularEditorOpen) {
+  //     this.toggleRegularEditor();
+  //   }
+  //   const isKibanaQueryBarDataEditorOpen = !this.state.isKibanaQueryBarDataEditorOpen;
+  //   this.setState({ isKibanaQueryBarDataEditorOpen });
+  // };
 
   private isUnknownFilterType() {
     const { type } = this.props.filter.meta;
     return !!type && !['phrase', 'phrases', 'range', 'exists', 'savedQuery'].includes(type);
   }
 
-  private isSavedQueryFilterType = () => {
+  // private isSavedQueryFilterType = () => {
+  //   const { type } = this.props.filter.meta;
+  //   return !!type && ['savedQuery'].includes(type);
+  // };
+
+  private isKibanaQueryBarDataFilterType = () => {
     const { type } = this.props.filter.meta;
-    return !!type && ['savedQuery'].includes(type);
+    return !!type && ['kibanaQueryBarData'].includes(type);
   };
 
   private isRegularFilterType = () => {
@@ -561,28 +599,34 @@ class FilterEditorUI extends Component<Props, State> {
     return getOperatorFromFilter(this.props.filter);
   }
 
-  private getSavedQueryFromFilter() {
-    if (this.isSavedQueryFilterType()) {
-      const savedQueryfilter = { ...this.props.filter };
-      if (
-        savedQueryfilter &&
-        savedQueryfilter.meta.params &&
-        savedQueryfilter.meta.params.savedQuery
-      ) {
-        return getSavedQueryFromFilter(savedQueryfilter);
-      }
+  private getKibanaQueryBarDataFromFilter() {
+    if (this.isKibanaQueryBarDataFilterType()) {
+      return getKibanaQueryBarDataFromFilter({ ...this.props.filter });
     }
   }
+
+  // private getSavedQueryFromFilter() {
+  //   if (this.isSavedQueryFilterType()) {
+  //     const savedQueryfilter = { ...this.props.filter };
+  //     if (
+  //       savedQueryfilter &&
+  //       savedQueryfilter.meta.params &&
+  //       savedQueryfilter.meta.params.savedQuery
+  //     ) {
+  //       return getSavedQueryFromFilter(savedQueryfilter);
+  //     }
+  //   }
+  // }
 
   private isFilterValid() {
     const {
       isCustomEditorOpen,
-      isSavedQueryEditorOpen,
+      isKibanaQueryBarDataEditorOpen,
       queryDsl,
       selectedIndexPattern: indexPattern,
       selectedField: field,
       selectedOperator: operator,
-      selectedSavedQuery,
+      selectedKibanaQueryBarData,
       params,
     } = this.state;
 
@@ -592,8 +636,8 @@ class FilterEditorUI extends Component<Props, State> {
       } catch (e) {
         return false;
       }
-    } else if (isSavedQueryEditorOpen) {
-      return !!selectedSavedQuery && selectedSavedQuery[0].id === params.id;
+    } else if (isKibanaQueryBarDataEditorOpen) {
+      return !!selectedKibanaQueryBarData && isEqual(selectedKibanaQueryBarData, params);
     }
 
     return isFilterValid(indexPattern, field, operator, params);
@@ -649,9 +693,9 @@ class FilterEditorUI extends Component<Props, State> {
       useCustomLabel,
       customLabel,
       isCustomEditorOpen,
-      isSavedQueryEditorOpen,
+      isKibanaQueryBarDataEditorOpen,
       queryDsl,
-      selectedSavedQuery,
+      selectedKibanaQueryBarData,
     } = this.state;
 
     const { $state } = this.props.filter;
@@ -677,8 +721,8 @@ class FilterEditorUI extends Component<Props, State> {
         $state.store
       );
       this.props.onSubmit(filter);
-    } else if (isSavedQueryEditorOpen && selectedSavedQuery) {
-      const filter = buildFilterFromSavedQuery(
+    } else if (isKibanaQueryBarDataEditorOpen && selectedKibanaQueryBarData) {
+      const filter = buildFilterFromKibanaQueryBarData(
         this.props.filter.meta.disabled,
         params,
         alias,

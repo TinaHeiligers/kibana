@@ -17,6 +17,8 @@
  * under the License.
  */
 
+// UI for selecting a saved query by title.
+
 import React, { Fragment, useState, useEffect, FunctionComponent } from 'react';
 import { EuiSelectable, EuiLoadingContent, EuiText, EuiSpacer } from '@elastic/eui';
 

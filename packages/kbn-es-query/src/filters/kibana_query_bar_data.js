@@ -18,7 +18,7 @@
  */
 
 // NOTE: the value can end up being a very long string. Strongly encourage users to provide an alias or add a default on the front end that can be changed
-export function buildKibanaQueryBarDataFilter(kibanaQueryBarData, alias) {
+export function buildKibanaQueryBarDataFilter(kibanaQueryBarData) {
   const filter = {
     meta: {
       type: 'kibanaQueryBarData',
@@ -27,8 +27,5 @@ export function buildKibanaQueryBarDataFilter(kibanaQueryBarData, alias) {
       params: { ...kibanaQueryBarData }
     },
   };
-  if (alias) {
-    filter.meta.alias = alias;
-  }
   return filter;
 }

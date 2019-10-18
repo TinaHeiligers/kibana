@@ -1,0 +1,9 @@
+@import '@elastic/eui/src/components/form/variables';
+
+.kbnKibanaQueryBarDataEditor__text {
+  padding: $euiSizeM $euiSizeM ($euiSizeM / 2) $euiSizeM;
+}
+.kibanaQueryBarDataEditor {
+  width: calc(95vw - #{$euiSizeXXL * 11});
+  overflow-y: visible;
+}

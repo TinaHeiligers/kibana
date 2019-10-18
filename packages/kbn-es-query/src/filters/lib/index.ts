@@ -39,7 +39,7 @@ import { MissingFilter, isMissingFilter } from './missing_filter';
 import {
   KibanaQueryBarDataFilter,
   KibanaQueryBarDataFilterMeta,
-  KibanaQueryBarDataParams,
+  KibanaQueryBarData,
   isKibanaQueryBarDataFilter,
 } from './kibana_query_bar_data_filter';
 // TODO: remove
@@ -70,7 +70,7 @@ export {
   isMissingFilter,
   KibanaQueryBarDataFilter,
   KibanaQueryBarDataFilterMeta,
-  KibanaQueryBarDataParams,
+  KibanaQueryBarData,
   isKibanaQueryBarDataFilter,
   // TODO: remove
   SavedQueryFilter,

@@ -34,7 +34,7 @@ import {
   RangeFilter,
   KibanaQueryBarDataFilter,
   SavedQueryFilter, // TODO: remove
-  KibanaQueryBarDataParams,
+  KibanaQueryBarData,
 } from '@kbn/es-query';
 import { omit, get } from 'lodash';
 import { Ipv4Address } from '../../../../../../../../plugins/kibana_utils/public';
@@ -82,6 +82,10 @@ export function getOperatorFromFilter(filter: Filter) {
 
 export function getSavedQueryFromFilter(filter: SavedQueryFilter): SavedQuery[] {
   return [filter.meta.params.savedQuery];
+}
+
+export function getKibanaQueryBarDataFromFilter(filter: KibanaQueryBarDataFilter) {
+  return filter.meta.type === 'kibanaQueryBarData' ? filter.meta.params : undefined;
 }
 
 export function getQueryDslFromFilter(filter: Filter) {
@@ -216,7 +220,7 @@ export function buildCustomFilter(
 
 export function buildFilterFromKibanaQueryBarData(
   disabled: boolean,
-  params: KibanaQueryBarDataParams,
+  params: KibanaQueryBarData,
   alias: string | null,
   store: FilterStateStore
 ): Filter {

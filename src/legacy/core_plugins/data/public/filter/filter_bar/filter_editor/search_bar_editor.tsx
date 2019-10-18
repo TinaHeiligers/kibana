@@ -16,12 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+// UI for using the full search bar to create a filter, either by slecting a saved query as a template or by creating a kibana query bar data filter from scratch.
 
 import React, { FunctionComponent, useState, useEffect } from 'react';
 import { SavedQuery } from '@kbn/es-query/src/filters/lib/saved_query_filter';
 import { UiSettingsClientContract } from 'kibana/public';
 import { TimeHistoryContract } from 'ui/timefilter';
-import { Filter } from '@kbn/es-query';
+import { Filter, KibanaQueryBarData } from '@kbn/es-query';
 import { TimeRange } from 'src/plugins/data/common/types';
 import { IndexPattern, Query } from '../../..';
 import { SearchBar } from '../../../search/search_bar/components/search_bar';
@@ -29,21 +30,22 @@ import { FilterManager } from '../../filter_manager';
 
 interface Props {
   uiSettings: UiSettingsClientContract;
-  currentSavedQuery?: SavedQuery;
+  // currentSavedQuery?: SavedQuery;
+  currentKibanaQueryBarData?: KibanaQueryBarData;
   indexPatterns: IndexPattern[];
   showSaveQuery: boolean;
   timeHistory?: TimeHistoryContract; // I need some other way of accessing timeHistory rather than passing it down all the way from the search bar
-  onSelectionChange: (selectedSavedQuery: SavedQuery[]) => void;
-  onChange: (item: any) => void;
+  // onSelectionChange: (selectedSavedQuery: SavedQuery[]) => void;
+  onSelectionChange: (kibanaQueryBarData: KibanaQueryBarData) => void;
 }
 export const SearchBarEditor: FunctionComponent<Props> = ({
   uiSettings,
-  currentSavedQuery,
+  // currentSavedQuery,
+  currentKibanaQueryBarData,
   indexPatterns,
   showSaveQuery,
   timeHistory,
   onSelectionChange,
-  onChange,
 }) => {
   const [currentFilters, setCurrentFilters] = useState([] as Filter[]);
   const [currentQuery, setCurrentQuery] = useState({
@@ -51,7 +53,8 @@ export const SearchBarEditor: FunctionComponent<Props> = ({
     language: uiSettings.get('search:queryLanguage'),
   } as Query);
   const [currentDateRange, setCurrentDateRange] = useState({ to: '', from: '' });
-  const [savedQuery, setSavedQuery] = useState(currentSavedQuery);
+  const [savedQuery, setSavedQuery] = useState(undefined);
+  const [kibanaQueryBarData, setKibanaQueryBarData] = useState(currentKibanaQueryBarData);
 
   const filterManager = new FilterManager(uiSettings);
   filterManager.addFilters(currentFilters);
@@ -60,6 +63,18 @@ export const SearchBarEditor: FunctionComponent<Props> = ({
     // extract the query, filters and timerange from the saved query we get as a prop
     filterManager.addFilters(currentFilters);
   }, [currentFilters]);
+
+  useEffect(() => {
+    setKibanaQueryBarData({
+      query: currentQuery,
+      filters: currentFilters,
+      timefilter: currentDateRange,
+    });
+  }, [currentQuery, currentFilters, currentDateRange]);
+
+  useEffect(() => {
+    if (kibanaQueryBarData) onSelectionChange(kibanaQueryBarData);
+  }, [kibanaQueryBarData]);
 
   const onClearSavedQuery = () => {
     setCurrentFilters([]);
@@ -72,9 +87,12 @@ export const SearchBarEditor: FunctionComponent<Props> = ({
     const newDateRange = queryAndDateRange.dateRange
       ? queryAndDateRange.dateRange
       : currentDateRange;
-    if (newQuery) setCurrentQuery(newQuery);
-    if (newDateRange) setCurrentDateRange(newDateRange);
-
+    if (newQuery) {
+      setCurrentQuery(newQuery);
+    }
+    if (newDateRange) {
+      setCurrentDateRange(newDateRange);
+    }
     return queryAndDateRange;
   };
   const onFiltersUpdated = (filters: Filter[]) => {
@@ -83,12 +101,12 @@ export const SearchBarEditor: FunctionComponent<Props> = ({
   };
 
   const updateSavedQuery = (updatedSavedQuery: SavedQuery) => {
-    const savedQuerySearchData = {
+    const updatedKibanaQueryBarData: KibanaQueryBarData = {
       filters: updatedSavedQuery.attributes.filters
         ? updatedSavedQuery.attributes.filters
         : undefined,
       query: updatedSavedQuery.attributes.query,
-      dateRange: updatedSavedQuery.attributes.timefilter
+      timefilter: updatedSavedQuery.attributes.timefilter
         ? {
             to: updatedSavedQuery.attributes.timefilter.to,
             from: updatedSavedQuery.attributes.timefilter.from,
@@ -96,13 +114,15 @@ export const SearchBarEditor: FunctionComponent<Props> = ({
         : undefined,
     };
     // update the filters
-    if (savedQuerySearchData.filters) {
-      onFiltersUpdated(savedQuerySearchData.filters);
+    if (updatedKibanaQueryBarData.filters) {
+      onFiltersUpdated(updatedKibanaQueryBarData.filters);
     }
     // update the query and timefilter
-    onQueryChange({ dateRange: savedQuerySearchData.dateRange, query: savedQuerySearchData.query });
-    setSavedQuery(updatedSavedQuery);
-    onSelectionChange([updatedSavedQuery]); // a shortcut to activate the button to save the filter
+    onQueryChange({
+      dateRange: updatedKibanaQueryBarData.timefilter,
+      query: updatedKibanaQueryBarData.query,
+    });
+    // onSelectionChange([updatedSavedQuery]); // a shortcut to activate the button to save the filter
   };
   return (
     <div className="savedQueryFilterEditor">

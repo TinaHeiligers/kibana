@@ -28,14 +28,14 @@ interface TimeRange {
   to: string;
 }
 
-export interface KibanaQueryBarDataParams {
-  query?: Query;
-  filters: Filter[];
-  timefilter: TimeRange;
+export interface KibanaQueryBarData {
+  query: Query;
+  filters?: Filter[];
+  timefilter?: TimeRange;
 }
 
 export type KibanaQueryBarDataFilterMeta = FilterMeta & {
-  params?: KibanaQueryBarDataParams;
+  params?: KibanaQueryBarData;
 };
 
 export type KibanaQueryBarDataFilter = Filter & {
