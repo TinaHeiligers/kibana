@@ -85,7 +85,9 @@ export const createListRoute = () => ({
         sampleDataset.status = INSTALLED;
       });
 
-      await Promise.all(isInstalledPromises);
+      const resolvedPromises = await Promise.all(isInstalledPromises);
+      console.log('--> LP resolvedPromises', resolvedPromises);
+      console.log('-->LP sampleDatasets returned from list api:', sampleDatasets);
       return sampleDatasets;
     },
   },
