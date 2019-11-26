@@ -85,7 +85,7 @@ export const createListRoute = (router: IRouter, sampleDatasets: SampleDatasetSc
       sampleDataset.status = INSTALLED;
     });
 
-    const resolvedPromises = await Promise.all(isInstalledPromises);
+    await Promise.all(isInstalledPromises);
     return res.ok({ body: registeredSampleDatasets });
   });
 };
