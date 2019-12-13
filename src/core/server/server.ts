@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 import { filter, take } from 'rxjs/operators';
 import { Type } from '@kbn/config-schema';
 
