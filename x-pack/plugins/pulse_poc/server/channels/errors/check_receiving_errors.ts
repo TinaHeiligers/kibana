@@ -10,7 +10,7 @@ export async function check(es: IScopedClusterClient, deploymentId: string) {
   // TODO: modify the search query for full text search
   const response = await es.callAsInternalUser('search', {
     index: 'pulse-poc-raw-errors',
-    size: 0,
+    size: 100,
     allow_no_indices: true,
     ignore_unavailable: true,
     body: {
@@ -38,10 +38,23 @@ export async function check(es: IScopedClusterClient, deploymentId: string) {
       etc
       TODO: see the logger for more info
      */
-    return {
-      owner: 'plugin',
-      id: 'pulse_errors',
-      value: 'Houston, we have a problem!',
-    };
+    return [
+      {
+        owner: 'core',
+        id: 'pulse_error',
+        value: {
+          error_id: '1',
+          fix_version: '7.7.0',
+        },
+      },
+      {
+        owner: 'core',
+        id: 'pulse_error',
+        value: {
+          error_id: '2',
+          fix_version: null,
+        },
+      },
+    ];
   }
 }
