@@ -21,6 +21,17 @@
 // records for the errors channel. Each record will ultimately
 // be stored as an individual document in the errors channel index
 // by the service
+
+export interface Payload {
+  errorId: string;
+}
+
+const payloads: Payload[] = [];
+
+export async function putRecord(payload: Payload) {
+  payloads.push(payload);
+}
+
 export async function getRecords() {
-  return [{}];
+  return payloads;
 }
