@@ -38,6 +38,7 @@ export interface PulseSetupDeps {
 }
 
 export type PulseServiceSetup = InternalPulseService;
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface PulseServiceStart {}
 
 interface ChannelResponse {
