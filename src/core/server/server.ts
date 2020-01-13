@@ -125,8 +125,18 @@ export class Server {
       http: httpSetup,
     });
 
+    const uiSettingsSetup = await this.uiSettings.setup({
+      http: httpSetup,
+    });
+
+    const savedObjectsSetup = await this.savedObjects.setup({
+      elasticsearch: elasticsearchServiceSetup,
+      legacyPlugins,
+    });
+
     const pulseSetup = await this.pulse.setup({
       elasticsearch: elasticsearchServiceSetup,
+      savedObjects: savedObjectsSetup,
     });
 
     // example of retrieving instructions for a specific channel
@@ -152,15 +162,6 @@ export class Server {
 
     retryTelemetryInstructions$.subscribe(() => {
       this.log.info(`Received instructions to retry telemetry collection`);
-    });
-
-    const uiSettingsSetup = await this.uiSettings.setup({
-      http: httpSetup,
-    });
-
-    const savedObjectsSetup = await this.savedObjects.setup({
-      elasticsearch: elasticsearchServiceSetup,
-      legacyPlugins,
     });
 
     const coreSetup: InternalCoreSetup = {

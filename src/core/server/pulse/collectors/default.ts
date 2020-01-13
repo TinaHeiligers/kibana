@@ -17,6 +17,17 @@
  * under the License.
  */
 
-export async function getRecords() {
-  return [];
+import { PulseCollector } from '../types';
+
+export class Collector extends PulseCollector<unknown, { ping_received: boolean }> {
+  public async putRecord() {}
+  public async getRecords() {
+    if (this.elasticsearch) {
+      const pingResult = await this.elasticsearch.callAsInternalUser('ping');
+
+      return [{ ping_received: pingResult }];
+    }
+    return [];
+    // throw Error(`Default collector not initialised with an "elasticsearch" client!`);
+  }
 }

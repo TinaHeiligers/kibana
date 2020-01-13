@@ -35,6 +35,13 @@ export interface PulseServiceStart {}
 
 const channelNames = ['default', 'notifications', 'errors'];
 
+const logger = {
+  ...console,
+  // eslint-disable-next-line no-console
+  fatal: (...args: any[]) => console.error(...args),
+  get: () => logger,
+};
+
 export class PulseService {
   private retriableErrors = 0;
   private readonly channels: Map<string, PulseChannel>;
@@ -45,7 +52,7 @@ export class PulseService {
       channelNames.map((id): [string, PulseChannel] => {
         const instructions$ = new Subject<PulseInstruction>();
         this.instructions.set(id, instructions$);
-        const channel = new PulseChannel({ id, instructions$ });
+        const channel = new PulseChannel({ id, instructions$, logger });
         return [channel.id, channel];
       })
     );
