@@ -127,7 +127,7 @@ export class PulseService {
 
     const responseBody: InstructionsResponse = await response.json();
 
-    responseBody.channels.forEach((channel: PulseChannel) => {
+    responseBody.channels.forEach(channel => {
       const instructions$ = this.instructions.get(channel.id);
       if (!instructions$) {
         throw new Error(
@@ -135,7 +135,7 @@ export class PulseService {
         );
       }
 
-      channel.instructions.forEach(instruction => instructions$.next(instruction));
+      this.instructions.forEach(instruction => instructions$.next(instruction));
     });
   }
 
