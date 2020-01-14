@@ -45,13 +45,13 @@ const logger = {
 export class PulseService {
   private retriableErrors = 0;
   private readonly channels: Map<string, PulseChannel>;
-  private readonly instructions: Map<string, Subject<any>> = new Map();
+  private readonly instructions$: Map<string, Subject<any>> = new Map();
 
   constructor() {
     this.channels = new Map(
       channelNames.map((id): [string, PulseChannel] => {
         const instructions$ = new Subject<PulseInstruction>();
-        this.instructions.set(id, instructions$);
+        this.instructions$.set(id, instructions$);
         const channel = new PulseChannel({ id, instructions$, logger });
         return [channel.id, channel];
       })
@@ -128,14 +128,14 @@ export class PulseService {
     const responseBody: InstructionsResponse = await response.json();
 
     responseBody.channels.forEach(channel => {
-      const instructions$ = this.instructions.get(channel.id);
+      const instructions$ = this.instructions$.get(channel.id);
       if (!instructions$) {
         throw new Error(
           `Channel (${channel.id}) from service has no corresponding channel handler in client`
         );
       }
 
-      this.instructions.forEach(instruction => instructions$.next(instruction));
+      channel.instructions.forEach(instruction => instructions$.next(instruction));
     });
   }
 
