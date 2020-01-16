@@ -17,10 +17,7 @@
  * under the License.
  */
 
-// eslint-disable-next-line @kbn/eslint/no-restricted-paths
-import { IPulseClient } from 'src/core/server/pulse/clientWrappers/types';
-
-export class PulseClient implements IPulseClient {
+export class PulseClient {
   constructor() {}
 
   public async putRecord(channel: string, doc: any) {

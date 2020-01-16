@@ -236,5 +236,5 @@ export class PulseService {
     return await sendPulse(this.channels, fetcher);
   }
 
-  public async sendTelemetryLocal(channelId: string, payload: any) {}
+  // public async sendTelemetryLocal(channelId: string, payload: any) {}
 }
