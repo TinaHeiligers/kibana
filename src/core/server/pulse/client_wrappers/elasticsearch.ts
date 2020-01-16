@@ -20,6 +20,7 @@
 /*
   Minimized version of elasticsearch for Pulse that exposes methods to be used by Pulse services.
 */
+
 import uuid from 'uuid';
 import { IPulseElasticsearchClient } from './types';
 import { IClusterClient } from '../../elasticsearch';

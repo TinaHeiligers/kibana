@@ -17,12 +17,14 @@
  * under the License.
  */
 
-export class PulseClient {
+// eslint-disable-next-line @kbn/eslint/no-restricted-paths
+import { IPulseElasticsearchClient } from 'src/core/server/pulse/clientWrappers/types';
 
+export class PulseElasticsearchClient implements IPulseElasticsearchClient {
   constructor() {}
 
-  public async putRecord(channel: string, doc: any) {
-    await fetch(`/api/pulse_local/${channel}`, {
+  public async index(channel: string, doc: any) {
+    await fetch(`/api/pulse_local/elasticsearch/${channel}`, {
       method: 'post',
       headers: {
         'content-type': 'application/json',
@@ -33,16 +35,20 @@ export class PulseClient {
       }),
     });
   }
-  public async getRecords(channel: string) {
-    const response = await fetch(`/api/pulse_local/${channel}`, {
-      method: 'GET',
-      headers: {
-        'content-type': 'application/json',
-        'kbn-xsrf': 'true',
-      },
-    });
+  public async search(channel: string, query: any) {
+    const response = await fetch(
+      `/api/pulse_local/elasticsearch/${channel}?q=${encodeURIComponent(JSON.stringify(query))}`,
+      {
+        method: 'GET',
+        headers: {
+          'content-type': 'application/json',
+          'kbn-xsrf': 'true',
+        },
+      }
+    );
     if (response.body) {
-      return response.json();
+      const data = JSON.parse(response.body.toString());
+      return data;
     } else {
       return [];
     }

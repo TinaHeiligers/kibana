@@ -21,6 +21,7 @@ import { Subject } from 'rxjs';
 import { PulseCollectorConstructor } from './types';
 // import { SavedObjectsServiceSetup } from '../saved_objects';
 import { Logger } from '../logging';
+
 import { IPulseElasticsearchClient } from './client_wrappers/types';
 
 export interface PulseInstruction {
