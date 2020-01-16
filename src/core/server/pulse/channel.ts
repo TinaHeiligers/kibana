@@ -35,7 +35,6 @@ export interface ChannelConfig {
   logger: Logger;
 }
 export interface ChannelSetupContext {
-  // pulse?: IPulseClient;
   elasticsearch: IPulseElasticsearchClient;
   // savedObjects: SavedObjectsServiceSetup;
 }

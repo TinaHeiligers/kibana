@@ -22,9 +22,3 @@ export interface IPulseElasticsearchClient {
   index: (channel: string, doc: Record<string, any>) => Promise<void>;
   search: <T>(channel: string, query: Record<string, any>) => Promise<T[]>;
 }
-
-// No longer needed because we're using the PulseClient only on the client and not in the server.
-// export interface IPulseClient {
-//   putRecord: (channel: string, record: any) => Promise<void>;
-//   getRecords: <T>(channel: string) => Promise<T[]>;
-// }
