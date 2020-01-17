@@ -20,14 +20,20 @@ import { schema } from '@kbn/config-schema';
 import { IRouter } from '../../http';
 import { PulseChannel } from '../channel';
 import { RegisterRoute } from './types';
-
+// we need the current Kibana Version to send in all of the payloads
 const validate = {
   params: schema.object({
     channel: schema.string(),
   }),
   body: schema.object({
     payload: schema.object(
-      { message: schema.string(), errorId: schema.string() },
+      {
+        message: schema.string(),
+        errorId: schema.string(),
+        fixedVersion: schema.maybe(schema.string()),
+        errorHasBeenSeen: schema.maybe(schema.string()),
+        currentKibanaVersion: schema.maybe(schema.string()),
+      },
       { allowUnknowns: true }
     ),
   }),

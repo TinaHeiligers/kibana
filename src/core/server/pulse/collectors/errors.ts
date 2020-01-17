@@ -50,6 +50,15 @@ export class Collector extends PulseCollector<Payload> {
               },
             },
           },
+          fixedVersion: {
+            type: 'keyword',
+          },
+          errorHasBeenSeen: {
+            type: 'keyword',
+          },
+          currentKibanaVersion: {
+            type: 'keyword',
+          },
         },
       };
       await this.elasticsearch!.createIndexIfNotExist(this.channelName, mappings);
