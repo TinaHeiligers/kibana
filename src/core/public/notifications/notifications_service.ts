@@ -24,9 +24,12 @@ import { I18nStart } from '../i18n';
 import { ToastsService, ToastsSetup, ToastsStart } from './toasts';
 import { IUiSettingsClient } from '../ui_settings';
 import { OverlayStart } from '../overlays';
+import { PulseServiceSetup, PulseService } from '../pulse';
+import { PulseInstruction } from '../pulse/channel';
 
 interface SetupDeps {
   uiSettings: IUiSettingsClient;
+  pulse: PulseServiceSetup;
 }
 
 interface StartDeps {
@@ -41,12 +44,19 @@ export class NotificationsService {
   private uiSettingsErrorSubscription?: Subscription;
   private targetDomElement?: HTMLElement;
 
+  private pulse: PulseService;
+  private instructionsSubscription?: Subscription;
+
   constructor() {
     this.toasts = new ToastsService();
+    this.pulse = new PulseService();
   }
 
-  public setup({ uiSettings }: SetupDeps): NotificationsSetup {
-    const notificationSetup = { toasts: this.toasts.setup({ uiSettings }) };
+  public setup({ uiSettings, pulse }: SetupDeps): NotificationsSetup {
+    const notificationSetup = {
+      toasts: this.toasts.setup({ uiSettings }),
+      pulse: this.pulse.setup(),
+    };
 
     this.uiSettingsErrorSubscription = uiSettings.getUpdateErrors$().subscribe((error: Error) => {
       notificationSetup.toasts.addDanger({
@@ -55,7 +65,16 @@ export class NotificationsService {
         }),
         text: error.message,
       });
+      // eslint-disable-next-line no-console
+      pulse.getChannel('errors').sendPulse(error); // send the error we receive to the Pulse Errors channel
     });
+    this.instructionsSubscription = pulse
+      .getChannel('errors')
+      .instructions$()
+      .subscribe((instruction: PulseInstruction) => {
+        // eslint-disable-next-line no-console
+        console.log('errors channel instruction in notifications service setup::', instruction);
+      });
 
     return notificationSetup;
   }
@@ -72,6 +91,7 @@ export class NotificationsService {
 
   public stop() {
     this.toasts.stop();
+    this.pulse.stop();
 
     if (this.targetDomElement) {
       this.targetDomElement.textContent = '';
@@ -79,6 +99,10 @@ export class NotificationsService {
 
     if (this.uiSettingsErrorSubscription) {
       this.uiSettingsErrorSubscription.unsubscribe();
+    }
+
+    if (this.instructionsSubscription) {
+      this.instructionsSubscription.unsubscribe();
     }
   }
 }
