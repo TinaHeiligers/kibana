@@ -108,7 +108,12 @@ export const NewsfeedNavButton = ({ apiFetchResult, errorsChannel }: Props) => {
             </EuiNotificationBadge>
           ) : null}
         </EuiHeaderSectionItemButton>
-        {flyoutVisible ? <NewsfeedFlyout /> : null}
+        {flyoutVisible ? (
+          <NewsfeedFlyout
+            errorsChannel={errorsChannel}
+            pulseInstructions={pulseErrorsInstructions}
+          />
+        ) : null}
       </Fragment>
     </NewsfeedContext.Provider>
   );

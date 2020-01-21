@@ -25,7 +25,6 @@ import { Logger } from '../logging';
 import { IPulseElasticsearchClient } from './client_wrappers/types';
 
 export interface PulseInstruction {
-  length: ReactNode;
   owner: string;
   id: string;
   value: unknown;
