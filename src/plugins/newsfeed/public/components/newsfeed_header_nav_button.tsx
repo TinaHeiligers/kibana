@@ -20,6 +20,8 @@
 import React, { useState, Fragment, useEffect } from 'react';
 import * as Rx from 'rxjs';
 import { EuiHeaderSectionItemButton, EuiIcon, EuiNotificationBadge } from '@elastic/eui';
+// eslint-disable-next-line @kbn/eslint/no-restricted-paths
+import { PulseChannel, PulseInstruction } from 'src/core/public/pulse/channel';
 import { NewsfeedFlyout } from './flyout_list';
 import { FetchResult } from '../../types';
 
@@ -31,14 +33,40 @@ export const NewsfeedContext = React.createContext({} as INewsfeedContext);
 
 export type NewsfeedApiFetchResult = Rx.Observable<void | FetchResult | null>;
 
+export type PulseInstructions = PulseInstruction[];
+
 export interface Props {
   apiFetchResult: NewsfeedApiFetchResult;
+  errorsChannel: PulseChannel;
 }
 
-export const NewsfeedNavButton = ({ apiFetchResult }: Props) => {
+export const NewsfeedNavButton = ({ apiFetchResult, errorsChannel }: Props) => {
   const [showBadge, setShowBadge] = useState<boolean>(false);
   const [flyoutVisible, setFlyoutVisible] = useState<boolean>(false);
   const [newsFetchResult, setNewsFetchResult] = useState<FetchResult | null | void>(null);
+
+  const [showErrorsBadge, setShowErrorsBadge] = useState<boolean>(false);
+  const [pulseErrorsInstructions, setErrorsInstructionsResult] = useState<PulseInstruction | null>(
+    null
+  );
+
+  // Pulse errors
+  const errorsInstructions$ = errorsChannel.instructions$();
+
+  useEffect(() => {
+    function handleErrorStatusChange(pulseInstructionsArray: PulseInstruction) {
+      // eslint-disable-next-line no-console
+      console.log('new Pulse instruction from the errors channel::', pulseInstructionsArray);
+      if (pulseInstructionsArray) {
+        setShowErrorsBadge(true); // only show the badge if we have stuff to show
+      }
+      setErrorsInstructionsResult(pulseInstructionsArray);
+    }
+    const subscription = errorsInstructions$.subscribe(instructionsArray =>
+      handleErrorStatusChange(instructionsArray)
+    );
+    return () => subscription.unsubscribe();
+  }, [errorsInstructions$]);
 
   useEffect(() => {
     function handleStatusChange(fetchResult: FetchResult | void | null) {
@@ -72,6 +100,11 @@ export const NewsfeedNavButton = ({ apiFetchResult }: Props) => {
           {showBadge ? (
             <EuiNotificationBadge className="euiHeaderNotification" data-test-subj="showBadgeNews">
               &#9642;
+            </EuiNotificationBadge>
+          ) : null}
+          {showErrorsBadge && pulseErrorsInstructions ? (
+            <EuiNotificationBadge className="euiHeaderNotification">
+              P {pulseErrorsInstructions.length}
             </EuiNotificationBadge>
           ) : null}
         </EuiHeaderSectionItemButton>
