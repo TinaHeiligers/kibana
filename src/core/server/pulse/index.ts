@@ -67,10 +67,8 @@ export class PulseService {
   private readonly channels: Map<string, PulseChannel>;
   private readonly instructions$: Map<string, Subject<any>> = new Map();
   private elasticsearch?: IClusterClient;
-  private readonly currentKibanaVersion: string;
 
   constructor(coreContext: CoreContext) {
-    this.currentKibanaVersion = coreContext.env.packageInfo.version;
     this.log = coreContext.logger.get('pulse-service');
     this.channels = new Map(
       channelNames.map((id): [string, PulseChannel] => {
