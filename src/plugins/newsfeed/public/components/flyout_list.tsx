@@ -41,18 +41,10 @@ import { NewsfeedItem } from '../../types';
 import { NewsEmptyPrompt } from './empty_news';
 import { NewsLoadingPrompt } from './loading_news';
 
-interface Props {
-  errorsChannel: PulseChannel;
-  pulseInstructions?: PulseInstruction[] | undefined;
-}
-
-export const NewsfeedFlyout = ({ errorsChannel, pulseInstructions }: Props) => {
+export const NewsfeedFlyout = () => {
   const currentDate = moment().format('DD MMMM YYYY');
   const { newsFetchResult, setFlyoutVisible } = useContext(NewsfeedContext);
   const closeFlyout = useCallback(() => setFlyoutVisible(false), [setFlyoutVisible]);
-  if (errorsChannel && pulseInstructions) {
-    // I want to mark the instructions as seen when the user manually closes an error instruction card.
-  }
 
   return (
     <EuiFlyout
@@ -93,27 +85,6 @@ export const NewsfeedFlyout = ({ errorsChannel, pulseInstructions }: Props) => {
           })
         ) : (
           <NewsEmptyPrompt />
-        )}
-        {!pulseInstructions ? (
-          <div>No instructions from Pulse</div>
-        ) : (
-          pulseInstructions.map((instruction: PulseInstruction, index) => {
-            return (
-              <EuiHeaderAlert
-                action={
-                  <EuiLink target="_blank" href={'#'}>
-                    fixed version goes here
-                    <EuiIcon type="popout" size="s" />
-                  </EuiLink>
-                }
-                key={index}
-                title={instruction.id}
-                text={JSON.stringify(instruction.value)}
-                date={currentDate}
-                badge={<EuiBadge color="accent">{instruction.id}</EuiBadge>}
-              />
-            );
-          })
         )}
       </EuiFlyoutBody>
       <EuiFlyoutFooter>
