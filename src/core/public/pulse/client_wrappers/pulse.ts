@@ -18,7 +18,6 @@
  */
 
 export class PulseClient {
-
   constructor() {}
 
   public async putRecord(channel: string, doc: any) {
@@ -34,6 +33,8 @@ export class PulseClient {
     });
   }
   public async getRecords(channel: string) {
+    // eslint-disable-next-line no-console
+    console.log('-->In pulse client getRecord method for channel', channel);
     const response = await fetch(`/api/pulse_local/${channel}`, {
       method: 'GET',
       headers: {

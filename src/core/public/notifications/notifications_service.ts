@@ -65,13 +65,24 @@ export class NotificationsService {
         }),
         text: error.message,
       });
-      // eslint-disable-next-line no-console
-      pulse.getChannel('errors').sendPulse(error); // send the error we receive to the Pulse Errors channel
+      pulse.getChannel('errors').sendPulse({
+        message: error.message,
+        errorId: 'core.notifications.unableUpdateUISettingNotificationMessageTitle', // the i18n identifiers are unique, we may want to use a uuid (v1 or v3) here though
+        // add currentKibanaVersion
+        error,
+      }); // send the error we receive to the Pulse Errors channel
     });
     this.instructionsSubscription = pulse
       .getChannel('errors')
       .instructions$()
       .subscribe((instruction: PulseInstruction) => {
+        if (instruction)
+          notificationSetup.toasts.add({
+            title: i18n.translate('core.notifications.receivedInstructionsFromPulseErrorChannel', {
+              defaultMessage: 'Got instructions from Pulse Error channel',
+            }),
+            text: instruction.id,
+          });
         // eslint-disable-next-line no-console
         console.log('errors channel instruction in notifications service setup::', instruction);
       });
@@ -111,6 +122,7 @@ export class NotificationsService {
 export interface NotificationsSetup {
   /** {@link ToastsSetup} */
   toasts: ToastsSetup;
+  pulse: Promise<PulseServiceSetup>;
 }
 
 /** @public */

@@ -32,6 +32,7 @@ export class PulseChannel<Payload = any> {
   }
 
   public async getRecords() {
+    console.log('getRecords from public pulse');
     return this.pulseClient.getRecords(this.id);
   }
   public get id() {

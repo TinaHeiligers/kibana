@@ -83,6 +83,7 @@ export class Collector extends PulseCollector<Payload> {
           },
         },
       });
+      console.log('results from getRecords in the Error Channel:', results);
       return results;
     }
     return [];

@@ -56,7 +56,7 @@ export const NewsfeedNavButton = ({ apiFetchResult, errorsChannel }: Props) => {
   useEffect(() => {
     function handleErrorStatusChange(pulseInstructionsArray: PulseInstruction) {
       // eslint-disable-next-line no-console
-      console.log('new Pulse instruction from the errors channel::', pulseInstructionsArray);
+      // console.log('new Pulse instruction from the errors channel::', pulseInstructionsArray);
       if (pulseInstructionsArray) {
         setShowErrorsBadge(true); // only show the badge if we have stuff to show
       }
