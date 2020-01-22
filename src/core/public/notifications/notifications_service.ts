@@ -68,10 +68,11 @@ export class NotificationsService {
       pulse.getChannel('errors').sendPulse({
         message: error.message,
         errorId: 'core.notifications.unableUpdateUISettingNotificationMessageTitle', // the i18n identifiers are unique, we may want to use a uuid (v1 or v3) here though
-        // add currentKibanaVersion
-        error,
+        status: 'new',
+        currentKibanaVersion: 'v7.x',
       }); // send the error we receive to the Pulse Errors channel
     });
+    // somewhere in the toasts I need to add functionality to mark the instructions that have been seen as status: seen
     this.instructionsSubscription = pulse
       .getChannel('errors')
       .instructions$()
@@ -81,7 +82,7 @@ export class NotificationsService {
             title: i18n.translate('core.notifications.receivedInstructionsFromPulseErrorChannel', {
               defaultMessage: 'Got instructions from Pulse Error channel',
             }),
-            text: instruction.id,
+            text: JSON.stringify(instruction.value),
           });
         // eslint-disable-next-line no-console
         console.log('errors channel instruction in notifications service setup::', instruction);

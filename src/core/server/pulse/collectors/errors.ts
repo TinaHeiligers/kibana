@@ -26,6 +26,10 @@ import { PulseCollector, CollectorSetupContext } from '../types';
 
 export interface Payload {
   errorId: string;
+  message: string;
+  fixedVersion?: string;
+  errorHasBeenSeen?: string;
+  currentKibanaVersion?: string;
 }
 
 export class Collector extends PulseCollector<Payload> {
@@ -73,6 +77,7 @@ export class Collector extends PulseCollector<Payload> {
     if (this.elasticsearch) {
       const results = await this.elasticsearch.search(this.channelName, {
         bool: {
+          should: [{ term: { errorHasBeenSeen: 'false' } }],
           filter: {
             range: {
               timestamp: {
@@ -83,7 +88,6 @@ export class Collector extends PulseCollector<Payload> {
           },
         },
       });
-      console.log('results from getRecords in the Error Channel:', results);
       return results;
     }
     return [];

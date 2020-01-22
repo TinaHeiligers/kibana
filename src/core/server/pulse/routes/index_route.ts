@@ -31,7 +31,7 @@ const validate = {
         message: schema.string(),
         errorId: schema.string(),
         fixedVersion: schema.maybe(schema.string()),
-        errorHasBeenSeen: schema.maybe(schema.string()),
+        status: schema.maybe(schema.string()),
         currentKibanaVersion: schema.maybe(schema.string()),
       },
       { allowUnknowns: true }
