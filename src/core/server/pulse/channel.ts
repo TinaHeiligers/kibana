@@ -23,16 +23,24 @@ import { PulseCollectorConstructor } from './types';
 import { Logger } from '../logging';
 
 import { IPulseElasticsearchClient } from './client_wrappers/types';
-
+export interface PulseErrorInstruction {
+  timestamp: string;
+  message: string;
+  errorId: string;
+  status: 'new' | 'seen';
+  currentKibanaVersion: string;
+  channel_id: string;
+  deployment_id: string;
+}
 export interface PulseInstruction {
   owner: string;
   id: string;
-  value: unknown;
+  value: unknown | PulseErrorInstruction;
 }
 
-export interface ChannelConfig {
+export interface ChannelConfig<I = PulseInstruction> {
   id: string;
-  instructions$: Subject<PulseInstruction>;
+  instructions$: Subject<I[]>;
   logger: Logger;
 }
 export interface ChannelSetupContext {
@@ -40,10 +48,10 @@ export interface ChannelSetupContext {
   // savedObjects: SavedObjectsServiceSetup;
 }
 
-export class PulseChannel<Payload = any, Rec = Payload> {
+export class PulseChannel<I = PulseInstruction> {
   private readonly collector: any;
 
-  constructor(private readonly config: ChannelConfig) {
+  constructor(private readonly config: ChannelConfig<I>) {
     const Collector: PulseCollectorConstructor = require(`${__dirname}/collectors/${this.id}`)
       .Collector;
     this.collector = new Collector(this.config.logger);

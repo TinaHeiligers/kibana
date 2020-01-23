@@ -25,7 +25,7 @@ import { ToastsService, ToastsSetup, ToastsStart } from './toasts';
 import { IUiSettingsClient } from '../ui_settings';
 import { OverlayStart } from '../overlays';
 import { PulseServiceSetup, PulseService } from '../pulse';
-import { PulseInstruction } from '../pulse/channel';
+import { PulseErrorInstruction } from '../pulse/channel';
 
 interface SetupDeps {
   uiSettings: IUiSettingsClient;
@@ -86,18 +86,25 @@ export class NotificationsService {
     this.instructionsSubscription = pulse
       .getChannel('errors')
       .instructions$()
-      .subscribe((instruction: PulseInstruction | any[]) => {
-        if (instruction)
+      .subscribe(instruction => {
+        if (instruction && instruction.length) {
           notificationSetup.toasts.add({
             title: i18n.translate('core.notifications.receivedInstructionsFromPulseErrorChannel', {
               defaultMessage: 'Got instructions from Pulse Error channel',
             }),
-            text: 'testing',
+            text: JSON.stringify(instruction[0]),
           });
+        }
         // eslint-disable-next-line no-console
         console.log('errors channel instruction in notifications service setup::', instruction);
       });
 
+    pulse.getChannel('errors').sendPulse({
+      message: 'A mock error from Notifications Setup for Testing',
+      errorId: 'core.notifications.sendingTestDocumentToPulseErrorsChannel', // the i18n identifiers are unique, we may want to use a uuid (v1 or v3) here though
+      status: 'seen',
+      currentKibanaVersion: 'v7.x',
+    });
     return notificationSetup;
   }
 

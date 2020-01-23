@@ -20,55 +20,38 @@ export async function check(es: IScopedClusterClient, { deploymentId, indexName 
       sort: [{ timestamp: { order: 'desc' } }],
       query: {
         bool: {
-          must: {
-            term: { deployment_id: deploymentId },
+          must: [
+            {
+              term: { deployment_id: deploymentId },
+            },
+            {
+              range: {
+                timestamp: {
+                  gte: 'now-30s',
+                  lte: 'now',
+                },
+              },
+            },
+          ],
+          filter: {
+            term: {
+              'status.keyword': 'new',
+            },
           },
-          // filter: {
-          //   exists: { field: 'fixed_version' },
-          // },
-          // must_not: {
-          //   term: { status: 'new' },
-          // },
         },
       },
     },
   });
 
   if (response.hits.hits.length) {
-    // const sources = response.hits.hits.map((hit: any) => {
-    //   const {
-    //     deployment_id, ...rest
-    //   } = hit._source;
-    // });
-    return response.hits.hits;
+    const sources = response.hits.hits.map((hit: any) => {
+      const source = {
+        ...hit._source,
+      };
+      return source;
+    });
+    return sources;
+  } else {
+    return undefined;
   }
-  // Mock return of pre-saved documents on the first fetch.
-  // these will be resent from the client with "status": "seen" after dismissing them
-  // Mocking should only be needed for the first fetch
-  return [
-    {
-      owner: 'core',
-      id: 'pulse_error',
-      value: {
-        timestamp: '1579735716021',
-        error_id: uuidv5('Hello world!', ERRORS_NAMESPACE),
-        fixed_version: '7.6.0',
-        message: 'Error in notifications',
-        currentKibanaVersion: '7.5.2',
-        status: 'new',
-      },
-    },
-    {
-      owner: 'core',
-      id: 'pulse_error',
-      value: {
-        timestamp: '1578735911009',
-        error_id: uuidv5('Another Error!', ERRORS_NAMESPACE),
-        fixed_version: '7.5.2',
-        message: 'Error in home plugin',
-        currentKibanaVersion: '7.5.1',
-        status: 'new',
-      },
-    },
-  ];
 }
