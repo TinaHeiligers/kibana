@@ -24,14 +24,14 @@ export async function check(es: IScopedClusterClient, { deploymentId, indexName 
             {
               term: { deployment_id: deploymentId },
             },
-            {
-              range: {
-                timestamp: {
-                  gte: 'now-30s',
-                  lte: 'now',
-                },
-              },
-            },
+            // {
+            //   range: {
+            //     timestamp: {
+            //       gte: 'now-30s',
+            //       lte: 'now',
+            //     },
+            //   },
+            // },
           ],
           filter: {
             term: {
