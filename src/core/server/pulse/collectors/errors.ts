@@ -28,7 +28,7 @@ export interface Payload {
   errorId: string;
   message: string;
   fixedVersion?: string;
-  errorHasBeenSeen?: string;
+  status: string;
   currentKibanaVersion?: string;
 }
 
@@ -69,7 +69,11 @@ export class Collector extends PulseCollector<Payload> {
     }
   }
   public async putRecord(originalPayload: Payload) {
-    const payload = { timestamp: moment.utc().toISOString(), ...originalPayload };
+    const payload = {
+      timestamp: moment.utc().toISOString(),
+      id: originalPayload.errorId,
+      ...originalPayload,
+    };
     if (this.elasticsearch) await this.elasticsearch.index(this.channelName, payload);
   }
 
