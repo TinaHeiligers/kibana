@@ -47,6 +47,9 @@ export async function sendPulse<Response>(
     // eslint-disable-next-line no-console
     // console.log(`Getting records from channel ${channel.id}`);
     const records = await channel.getRecords();
+    if (!records || !records.length) {
+      return;
+    }
     // eslint-disable-next-line no-console
     // console.log(`Got some records! ${JSON.stringify(records)}`);
     channelsToSend.push({
