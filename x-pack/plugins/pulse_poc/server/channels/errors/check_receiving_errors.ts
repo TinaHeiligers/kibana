@@ -23,22 +23,24 @@ export async function check(es: IScopedClusterClient, { deploymentId, indexName 
           must: {
             term: { deployment_id: deploymentId },
           },
-          filter: {
-            exists: { field: 'fixed_version' },
-          },
-          must_not: {
-            term: { status: 'new' },
-          },
+          // filter: {
+          //   exists: { field: 'fixed_version' },
+          // },
+          // must_not: {
+          //   term: { status: 'new' },
+          // },
         },
       },
     },
   });
 
-  if (response.hits.hits) {
-    const sources = response.hits.hits.map((hit: any) => {
-      const { deployment_id, ...rest } = hit._source;
-    });
-    return sources;
+  if (response.hits.hits.length) {
+    // const sources = response.hits.hits.map((hit: any) => {
+    //   const {
+    //     deployment_id, ...rest
+    //   } = hit._source;
+    // });
+    return response.hits.hits;
   }
   // Mock return of pre-saved documents on the first fetch.
   // these will be resent from the client with "status": "seen" after dismissing them

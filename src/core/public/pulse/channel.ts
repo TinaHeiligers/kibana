@@ -32,7 +32,7 @@ export class PulseChannel<Payload = any> {
   }
 
   public async getRecords() {
-    return this.pulseClient.getRecords(this.id);
+    return await this.pulseClient.getRecords(this.id);
   }
 
   public get id() {
