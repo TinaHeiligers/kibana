@@ -57,32 +57,42 @@ export class NotificationsService {
       toasts: this.toasts.setup({ uiSettings }),
       pulse: this.pulse.setup(),
     };
-
-    this.uiSettingsErrorSubscription = uiSettings.getUpdateErrors$().subscribe((error: Error) => {
-      notificationSetup.toasts.addDanger({
-        title: i18n.translate('core.notifications.unableUpdateUISettingNotificationMessageTitle', {
-          defaultMessage: 'Unable to update UI setting',
-        }),
-        text: error.message,
+    this.uiSettingsErrorSubscription = uiSettings
+      .getUpdateErrors$()
+      .subscribe(async (error: Error) => {
+        notificationSetup.toasts.addDanger({
+          title: i18n.translate(
+            'core.notifications.unableUpdateUISettingNotificationMessageTitle',
+            {
+              defaultMessage: 'Unable to update UI setting',
+            }
+          ),
+          text: error.message,
+        });
+        (await notificationSetup.pulse).getChannel('errors').sendPulse({
+          message: error.message,
+          errorId: 'core.notifications.unableUpdateUISettingNotificationMessageTitle', // the i18n identifiers are unique, we may want to use a uuid (v1 or v3) here though
+          status: 'new',
+          currentKibanaVersion: 'v7.x',
+        }); // send the error we receive to the Pulse Errors channel
       });
-      pulse.getChannel('errors').sendPulse({
-        message: error.message,
-        errorId: 'core.notifications.unableUpdateUISettingNotificationMessageTitle', // the i18n identifiers are unique, we may want to use a uuid (v1 or v3) here though
-        status: 'new',
-        currentKibanaVersion: 'v7.x',
-      }); // send the error we receive to the Pulse Errors channel
-    });
     // somewhere in the toasts I need to add functionality to mark the instructions that have been seen as status: seen
+    pulse.getChannel('errors').sendPulse({
+      message: 'A mock error from Notifications Setup for Testing',
+      errorId: 'core.notifications.sendingTestDocumentToPulseErrorsChannel', // the i18n identifiers are unique, we may want to use a uuid (v1 or v3) here though
+      status: 'new',
+      currentKibanaVersion: 'v7.x',
+    });
     this.instructionsSubscription = pulse
       .getChannel('errors')
       .instructions$()
-      .subscribe((instruction: PulseInstruction) => {
+      .subscribe((instruction: PulseInstruction | any[]) => {
         if (instruction)
           notificationSetup.toasts.add({
             title: i18n.translate('core.notifications.receivedInstructionsFromPulseErrorChannel', {
               defaultMessage: 'Got instructions from Pulse Error channel',
             }),
-            text: JSON.stringify(instruction.value),
+            text: 'testing',
           });
         // eslint-disable-next-line no-console
         console.log('errors channel instruction in notifications service setup::', instruction);
