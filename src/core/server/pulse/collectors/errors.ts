@@ -81,7 +81,7 @@ export class Collector extends PulseCollector<Payload> {
     if (this.elasticsearch) {
       const results = await this.elasticsearch.search(this.channelName, {
         bool: {
-          should: [{ term: { errorHasBeenSeen: 'false' } }],
+          // should: [{ term: { 'status.keyword': 'new' } }],
           filter: {
             range: {
               timestamp: {

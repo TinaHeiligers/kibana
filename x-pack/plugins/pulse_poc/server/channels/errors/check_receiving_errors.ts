@@ -3,12 +3,10 @@
  * or more contributor license agreements. Licensed under the Elastic License;
  * you may not use this file except in compliance with the Elastic License.
  */
-import uuidv5 from 'uuid/v5';
 
 import { IScopedClusterClient } from 'src/core/server';
 import { CheckContext } from '../../types';
 
-const ERRORS_NAMESPACE = '29787b00-3d6e-11ea-a7f9-d9f7b8cd6435';
 export async function check(es: IScopedClusterClient, { deploymentId, indexName }: CheckContext) {
   // TODO: modify the search query for full text search
   const response = await es.callAsInternalUser('search', {
@@ -24,14 +22,14 @@ export async function check(es: IScopedClusterClient, { deploymentId, indexName 
             {
               term: { deployment_id: deploymentId },
             },
-            // {
-            //   range: {
-            //     timestamp: {
-            //       gte: 'now-30s',
-            //       lte: 'now',
-            //     },
-            //   },
-            // },
+            {
+              range: {
+                timestamp: {
+                  gte: 'now-10s',
+                  lte: 'now',
+                },
+              },
+            },
           ],
           filter: {
             term: {
