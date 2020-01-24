@@ -50,6 +50,7 @@ import { RequestHandlerContext } from '.';
 import { InternalCoreSetup } from './internal_types';
 import { CapabilitiesService } from './capabilities';
 import { UuidService } from './uuid';
+import { PulseErrorInstruction } from './pulse/channel';
 
 const coreId = Symbol('core');
 const rootConfigPath = '';
@@ -181,7 +182,13 @@ export class Server {
     // TODO: fix typing of errorInstructions. The instruction item here is declaring the value as unknown.
     // example of retrieving only instructions for a specific fixed-error value
     const fixedVersionInstruction$ = errorsFixedVersionsInstructions$.pipe(
-      map(instructions => instructions.map(instruction => instruction.value))
+      map(instructions =>
+        instructions.filter(
+          instruction =>
+            (instruction.value as PulseErrorInstruction).fixedVersion &&
+            (instruction.value as PulseErrorInstruction).fixedVersion !== null
+        )
+      )
     );
 
     fixedVersionInstruction$.subscribe(() => {

@@ -25,7 +25,7 @@ import { Logger } from '../logging';
 import { IPulseElasticsearchClient } from './client_wrappers/types';
 // I'll probably need to extend the PulseInstruction to declare the value types for an Error Instruction
 export interface PulseErrorInstruction {
-  timestamp: string;
+  timestamp: Date;
   message: string;
   hash: string; // just use the i18n strings as they are unique
   status: 'new' | 'seen';

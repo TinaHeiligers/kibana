@@ -32,8 +32,8 @@ export async function check(es: IScopedClusterClient, { deploymentId, indexName 
             },
           ],
           filter: {
-            term: {
-              'status.keyword': 'new',
+            match: {
+              status: 'new',
             },
           },
         },

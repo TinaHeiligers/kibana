@@ -29,7 +29,6 @@ export interface ErrorInstruction {
   channel_id: string;
   currentKibanaVersion?: string;
   deployment_id: string;
-  errorHasBeenSeen: string; // what am I using this for? isn't it the same as 'status'?
   hash: string;
   fixedVersion?: string;
   message: string;
