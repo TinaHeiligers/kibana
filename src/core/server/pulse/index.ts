@@ -28,7 +28,7 @@ import { Logger } from '../logging';
 import { ElasticsearchServiceSetup, IClusterClient } from '../elasticsearch';
 import { PulseChannel, PulseInstruction } from './channel';
 import { sendUsageFrom, sendPulse, Fetcher } from './send_pulse';
-import { SavedObjectsServiceSetup } from '../saved_objects';
+// import { SavedObjectsServiceSetup } from '../saved_objects';
 import { InternalHttpServiceSetup } from '../http';
 import { PulseElasticsearchClient } from './client_wrappers/elasticsearch';
 import { registerPulseRoutes } from './routes';

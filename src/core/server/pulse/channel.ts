@@ -23,6 +23,7 @@ import { PulseCollectorConstructor } from './types';
 import { Logger } from '../logging';
 
 import { IPulseElasticsearchClient } from './client_wrappers/types';
+// I'll probably need to extend the PulseInstruction to declare the value types for an Error Instruction
 export interface PulseErrorInstruction {
   timestamp: string;
   message: string;
@@ -31,11 +32,12 @@ export interface PulseErrorInstruction {
   currentKibanaVersion: string;
   channel_id: string;
   deployment_id: string;
+  fixedVersion?: string;
 }
 export interface PulseInstruction {
   owner: string;
   id: string;
-  value: unknown | PulseErrorInstruction;
+  value: PulseErrorInstruction | unknown;
 }
 
 export interface ChannelConfig<I = PulseInstruction> {

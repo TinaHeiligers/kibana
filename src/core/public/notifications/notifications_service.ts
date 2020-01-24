@@ -25,7 +25,6 @@ import { ToastsService, ToastsSetup, ToastsStart } from './toasts';
 import { IUiSettingsClient } from '../ui_settings';
 import { OverlayStart } from '../overlays';
 import { PulseServiceSetup, PulseService } from '../pulse';
-import { PulseErrorInstruction } from '../pulse/channel';
 
 interface SetupDeps {
   uiSettings: IUiSettingsClient;

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { filter, take } from 'rxjs/operators';
+import { take, map } from 'rxjs/operators';
 import { Type } from '@kbn/config-schema';
 
 import {
@@ -136,7 +136,7 @@ export class Server {
 
     const pulseSetup = await this.pulse.setup({
       elasticsearch: elasticsearchServiceSetup,
-      savedObjects: savedObjectsSetup,
+      // savedObjects: savedObjectsSetup,
       http: httpSetup,
     });
 
@@ -150,43 +150,38 @@ export class Server {
     // example of retrieving only instructions that you "own"
     // use this to only pay attention to pulse instructions you care about
     const coreInstructions$ = defaultChannelInstructions$.pipe(
-      filter(instruction => instruction.owner === 'core')
+      map(instructions => instructions.filter(instruction => instruction.owner === 'core'))
     );
+
     const coreFixedVersionInstructions$ = errorChannelInstructions$.pipe(
-      filter(instruction => instruction.owner === 'core')
+      map(instructions => instructions.filter(instruction => instruction.owner === 'core'))
     );
 
     // example of retrieving only instructions of a specific type
     // use this to only pay attention to specific instructions
     const pulseTelemetryInstructions$ = coreInstructions$.pipe(
-      filter(instruction => instruction.id === 'pulse_telemetry')
+      map(instructions => instructions.filter(instruction => instruction.id === 'pulse_telemetry'))
     );
 
     // example of retrieving only instructions for fixed-error versions
     const errorsFixedVersionsInstructions$ = coreFixedVersionInstructions$.pipe(
-      filter(instruction => instruction.id === 'pulse_errors')
+      map(instructions => instructions.filter(instruction => instruction.id === 'pulse_errors'))
     );
 
     // example of retrieving only instructions with a specific value
     // use this when you want to handle a specific scenario/use case for some type of instruction
     const retryTelemetryInstructions$ = pulseTelemetryInstructions$.pipe(
-      filter(instruction => instruction.value === 'try_again')
+      map(instructions => instructions.filter(instruction => instruction.value === 'try_again'))
     );
 
     retryTelemetryInstructions$.subscribe(() => {
       this.log.info(`Received instructions to retry telemetry collection`);
     });
 
+    // TODO: fix typing of errorInstructions. The instruction item here is declaring the value as unknown.
     // example of retrieving only instructions for a specific fixed-error value
     const fixedVersionInstruction$ = errorsFixedVersionsInstructions$.pipe(
-      filter(
-        instruction =>
-          instruction.value ===
-          {
-            error: 'example_error',
-            fixedVersions: ['7.5.1'],
-          }
-      )
+      map(instructions => instructions.map(instruction => instruction.value))
     );
 
     fixedVersionInstruction$.subscribe(() => {
