@@ -50,7 +50,7 @@ import { RequestHandlerContext } from '.';
 import { InternalCoreSetup } from './internal_types';
 import { CapabilitiesService } from './capabilities';
 import { UuidService } from './uuid';
-import { PulseErrorInstruction } from './pulse/channel';
+import { PulseErrorInstructionValue } from './pulse/channel';
 
 const coreId = Symbol('core');
 const rootConfigPath = '';
@@ -143,10 +143,6 @@ export class Server {
 
     // example of retrieving instructions for a specific channel
     const defaultChannelInstructions$ = pulseSetup.getChannel('default').instructions$();
-    const errorChannelInstructions$ = pulseSetup.getChannel('errors').instructions$();
-
-    // doesn't seem to work
-    // const allChannels$ = merge(defaultChannelInstructions$, errorChannelInstructions$);
 
     // example of retrieving only instructions that you "own"
     // use this to only pay attention to pulse instructions you care about
@@ -154,19 +150,10 @@ export class Server {
       map(instructions => instructions.filter(instruction => instruction.owner === 'core'))
     );
 
-    const coreFixedVersionInstructions$ = errorChannelInstructions$.pipe(
-      map(instructions => instructions.filter(instruction => instruction.owner === 'core'))
-    );
-
     // example of retrieving only instructions of a specific type
     // use this to only pay attention to specific instructions
     const pulseTelemetryInstructions$ = coreInstructions$.pipe(
       map(instructions => instructions.filter(instruction => instruction.id === 'pulse_telemetry'))
-    );
-
-    // example of retrieving only instructions for fixed-error versions
-    const errorsFixedVersionsInstructions$ = coreFixedVersionInstructions$.pipe(
-      map(instructions => instructions.filter(instruction => instruction.id === 'pulse_errors'))
     );
 
     // example of retrieving only instructions with a specific value
@@ -177,22 +164,6 @@ export class Server {
 
     retryTelemetryInstructions$.subscribe(() => {
       this.log.info(`Received instructions to retry telemetry collection`);
-    });
-
-    // TODO: fix typing of errorInstructions. The instruction item here is declaring the value as unknown.
-    // example of retrieving only instructions for a specific fixed-error value
-    const fixedVersionInstruction$ = errorsFixedVersionsInstructions$.pipe(
-      map(instructions =>
-        instructions.filter(
-          instruction =>
-            (instruction.value as PulseErrorInstruction).fixedVersion &&
-            (instruction.value as PulseErrorInstruction).fixedVersion !== null
-        )
-      )
-    );
-
-    fixedVersionInstruction$.subscribe(() => {
-      this.log.info(`Received instructions for fixed versions for error`);
     });
 
     const coreSetup: InternalCoreSetup = {

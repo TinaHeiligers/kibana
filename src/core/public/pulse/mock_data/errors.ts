@@ -19,9 +19,9 @@
 
 import moment from 'moment';
 // eslint-disable-next-line @kbn/eslint/no-restricted-paths
-import { PulseErrorInstruction } from '../channel';
+import { PulseErrorInstructionValue } from '../channel';
 
-export const errorChannelPayloads: PulseErrorInstruction[] = [
+export const errorChannelPayloads: PulseErrorInstructionValue[] = [
   {
     channel_id: 'errors',
     deployment_id: '123',

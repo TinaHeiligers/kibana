@@ -115,23 +115,17 @@ export class Collector extends PulseCollector<Payload> {
         });
       }
     });
-    // // const payload = {
-    // //   timestamp: moment.utc().toISOString(),
-    // //   id: originalPayload.hash,
-    // //   ...originalPayload,
-    // // };
-    // if (this.elasticsearch) await this.elasticsearch.index(this.channelName, payload);
   }
 
   public async getRecords() {
     if (this.elasticsearch) {
       const results = await this.elasticsearch.search(this.channelName, {
         bool: {
-          // should: [{ term: { 'status.keyword': 'new' } }],
+          should: [{ match: { status: 'new' } }],
           filter: {
             range: {
               timestamp: {
-                gte: 'now-10s',
+                gte: 'now-20s',
                 lte: 'now',
               },
             },

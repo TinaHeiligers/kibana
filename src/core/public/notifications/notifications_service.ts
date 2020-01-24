@@ -19,14 +19,14 @@
 
 import { i18n } from '@kbn/i18n';
 
-import { Subscription } from 'rxjs';
+import { Subscription, Observable } from 'rxjs';
 import { I18nStart } from '../i18n';
 import { ToastsService, ToastsSetup, ToastsStart } from './toasts';
 import { IUiSettingsClient } from '../ui_settings';
 import { OverlayStart } from '../overlays';
 import { PulseServiceSetup, PulseService } from '../pulse';
 import { errorChannelPayloads } from '../pulse/mock_data/errors';
-import { PulseErrorInstruction } from '../pulse/channel';
+import { PulseErrorInstructionValue, PulseInstruction } from '../pulse/channel';
 
 interface SetupDeps {
   uiSettings: IUiSettingsClient;
@@ -67,20 +67,20 @@ export class NotificationsService {
       });
     });
 
-    errorChannelPayloads.forEach((element: PulseErrorInstruction) => {
+    errorChannelPayloads.forEach((element: PulseErrorInstructionValue) => {
       pulse.getChannel('errors').sendPulse(element);
     });
-
     this.instructionsSubscription = pulse
       .getChannel('errors')
       .instructions$()
-      .subscribe(instruction => {
-        if (instruction && instruction.length) {
-          const hash = 'index [pulse-poc-raw-default/1QJURO2GRfqpFfuOp12rIg] already exists';
-          // I need to prevent the same notification from showing up all the time
-          notificationSetup.toasts.addError(new Error(JSON.stringify(instruction[0])), {
-            title: hash.split(' ')[0],
-            toastMessage: 'The error has been reported to Pulse',
+      .subscribe(instructions => {
+        if (instructions && instructions.length) {
+          instructions.forEach(instruction => {
+            notificationSetup.toasts.addError(new Error(JSON.stringify(instruction)), {
+              // @ts-ignore-next-line
+              title: `Error:${instruction.hash}`,
+              toastMessage: 'The error has been reported to Pulse',
+            });
           });
         }
       });

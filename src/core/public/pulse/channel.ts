@@ -22,7 +22,7 @@ import { ChannelConfig } from 'src/core/server/pulse/channel';
 import { PulseClient } from './client_wrappers/pulse';
 
 // eslint-disable-next-line @kbn/eslint/no-restricted-paths
-export { PulseInstruction, PulseErrorInstruction } from '../../server/pulse/channel';
+export { PulseInstruction, PulseErrorInstructionValue } from '../../server/pulse/channel';
 
 export class PulseChannel<Payload = any> {
   private readonly pulseClient: PulseClient;
