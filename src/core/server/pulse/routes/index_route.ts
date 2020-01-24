@@ -28,8 +28,11 @@ const validate = {
   body: schema.object({
     payload: schema.object(
       {
+        channelId: schema.maybe(schema.string()),
+        deploymentId: schema.maybe(schema.string()),
+        timestamp: schema.maybe(schema.oneOf([schema.string(), schema.number()])),
         message: schema.string(),
-        errorId: schema.string(),
+        hash: schema.string(),
         fixedVersion: schema.maybe(schema.string()),
         status: schema.maybe(schema.string()),
         currentKibanaVersion: schema.maybe(schema.string()),

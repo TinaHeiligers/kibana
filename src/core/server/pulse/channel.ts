@@ -27,7 +27,7 @@ import { IPulseElasticsearchClient } from './client_wrappers/types';
 export interface PulseErrorInstruction {
   timestamp: string;
   message: string;
-  errorId: string;
+  hash: string; // just use the i18n strings as they are unique
   status: 'new' | 'seen';
   currentKibanaVersion: string;
   channel_id: string;

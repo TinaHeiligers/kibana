@@ -20,6 +20,7 @@
 import { i18n } from '@kbn/i18n';
 
 import { Subscription } from 'rxjs';
+import moment from 'moment';
 import { I18nStart } from '../i18n';
 import { ToastsService, ToastsSetup, ToastsStart } from './toasts';
 import { IUiSettingsClient } from '../ui_settings';
@@ -66,30 +67,31 @@ export class NotificationsService {
     });
     pulse.getChannel('errors').sendPulse({
       message: 'A mock error from Notifications Setup for Testing',
-      errorId: 'core.notifications.sendingTestDocumentToPulseErrorsChannel', // the i18n identifiers are unique, we may want to use a uuid (v1 or v3) here though
+      hash: 'core.notifications.sendingTestDocumentToPulseErrorsChannel', // the i18n identifiers are unique, we may want to use a uuid (v1 or v3) here though
       status: 'new',
       currentKibanaVersion: 'v7.x',
+      timestamp: moment().format('x'),
     });
     this.instructionsSubscription = pulse
       .getChannel('errors')
       .instructions$()
       .subscribe(instruction => {
         if (instruction && instruction.length) {
-          const errorId = 'core.notifications.sendingTestDocumentToPulseErrorsChannel';
+          const hash = 'core.notifications.sendingTestDocumentToPulseErrorsChannel';
           // I need to prevent the same notification from showing up all the time
           notificationSetup.toasts.addError(new Error(JSON.stringify(instruction[0])), {
-            title: errorId,
+            title: hash,
             toastMessage: 'The error has been reported to Pulse',
           });
         }
       });
 
-    pulse.getChannel('errors').sendPulse({
-      message: 'A mock error from Notifications Setup for Testing',
-      errorId: 'core.notifications.sendingTestDocumentToPulseErrorsChannel', // the i18n identifiers are unique, we may want to use a uuid (v1 or v3) here though
-      status: 'seen',
-      currentKibanaVersion: 'v7.x',
-    });
+    // pulse.getChannel('errors').sendPulse({
+    //   message: 'A mock error from Notifications Setup for Testing',
+    //   hash: 'core.notifications.sendingTestDocumentToPulseErrorsChannel', // the i18n identifiers are unique, we may want to use a uuid (v1 or v3) here though
+    //   status: 'seen',
+    //   currentKibanaVersion: 'v7.x',
+    // });
     return notificationSetup;
   }
 
