@@ -8,7 +8,7 @@ import { IScopedClusterClient } from 'src/core/server';
 import { CheckContext } from '../../types';
 
 export async function check(es: IScopedClusterClient, { deploymentId, indexName }: CheckContext) {
-  // TODO: modify the search query for full text search
+  // TODO: modify the search query for full text search and for the correct search!
   const response = await es.callAsInternalUser('search', {
     index: indexName,
     size: 10,
@@ -23,17 +23,15 @@ export async function check(es: IScopedClusterClient, { deploymentId, indexName 
               term: { deployment_id: deploymentId },
             },
             {
-              range: {
-                timestamp: {
-                  gte: 'now-10s',
-                  lte: 'now',
-                },
-              },
+              match: { status: 'new' },
             },
           ],
           filter: {
-            match: {
-              status: 'new',
+            range: {
+              timestamp: {
+                gte: 'now-5s',
+                lte: 'now',
+              },
             },
           },
         },

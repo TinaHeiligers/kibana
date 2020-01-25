@@ -23,6 +23,8 @@ import ReactDOM from 'react-dom';
 import React from 'react';
 import { I18nProvider } from '@kbn/i18n/react';
 import { PluginInitializerContext, CoreSetup, CoreStart, Plugin } from 'src/core/public';
+// eslint-disable-next-line @kbn/eslint/no-restricted-paths
+import { PulseChannel } from 'src/core/public/pulse/channel';
 import { NewsfeedPluginInjectedConfig } from '../types';
 import { NewsfeedNavButton, NewsfeedApiFetchResult } from './components/newsfeed_header_nav_button';
 import { getApi } from './lib/api';
@@ -33,12 +35,15 @@ export type Start = void;
 export class NewsfeedPublicPlugin implements Plugin<Setup, Start> {
   private readonly kibanaVersion: string;
   private readonly stop$ = new Rx.ReplaySubject(1);
+  private errorsChannel?: PulseChannel;
 
   constructor(initializerContext: PluginInitializerContext) {
     this.kibanaVersion = initializerContext.env.packageInfo.version;
   }
 
-  public setup(core: CoreSetup): Setup {}
+  public setup(core: CoreSetup): Setup {
+    this.errorsChannel = core.pulse.getChannel('errors');
+  }
 
   public start(core: CoreStart): Start {
     const api$ = this.fetchNewsfeed(core);
@@ -67,7 +72,7 @@ export class NewsfeedPublicPlugin implements Plugin<Setup, Start> {
   private mount(api$: NewsfeedApiFetchResult, targetDomElement: HTMLElement) {
     ReactDOM.render(
       <I18nProvider>
-        <NewsfeedNavButton apiFetchResult={api$} />
+        <NewsfeedNavButton apiFetchResult={api$} errorsChannel={this.errorsChannel!} />
       </I18nProvider>,
       targetDomElement
     );

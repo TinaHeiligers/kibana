@@ -32,8 +32,12 @@ import {
   EuiBadge,
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n/react';
-// eslint-disable-next-line @kbn/eslint/no-restricted-paths
-import { PulseChannel, PulseInstruction } from 'src/core/public/pulse/channel';
+import {
+  PulseChannel,
+  PulseInstruction,
+  PulseErrorInstructionValue,
+  // eslint-disable-next-line @kbn/eslint/no-restricted-paths
+} from 'src/core/public/pulse/channel';
 import moment from 'moment';
 import { EuiHeaderAlert } from '../../../../legacy/core_plugins/newsfeed/public/np_ready/components/header_alert/header_alert';
 import { NewsfeedContext } from './newsfeed_header_nav_button';
@@ -41,10 +45,23 @@ import { NewsfeedItem } from '../../types';
 import { NewsEmptyPrompt } from './empty_news';
 import { NewsLoadingPrompt } from './loading_news';
 
-export const NewsfeedFlyout = () => {
-  const currentDate = moment().format('DD MMMM YYYY');
+interface Props {
+  errorsChannel: PulseChannel;
+  pulseInstructions?: PulseErrorInstructionValue[] | undefined;
+}
+export const NewsfeedFlyout = ({ errorsChannel, pulseInstructions }: Props) => {
+  const currentDate = (item: any) => moment(item).format('DD MMMM YYYY');
   const { newsFetchResult, setFlyoutVisible } = useContext(NewsfeedContext);
   const closeFlyout = useCallback(() => setFlyoutVisible(false), [setFlyoutVisible]);
+  if (errorsChannel && pulseInstructions) {
+    // I want to mark the instructions as seen when the user manually closes an error instruction card.
+    pulseInstructions.forEach((element: PulseErrorInstructionValue) => {
+      errorsChannel.sendPulse({
+        ...element,
+        status: 'seen',
+      });
+    });
+  }
 
   return (
     <EuiFlyout
@@ -85,6 +102,30 @@ export const NewsfeedFlyout = () => {
           })
         ) : (
           <NewsEmptyPrompt />
+        )}
+        <hr />
+        {!pulseInstructions ? (
+          <div>No instructions from Pulse</div>
+        ) : (
+          pulseInstructions.map((instruction: PulseErrorInstructionValue, index) => {
+            return (
+              <EuiHeaderAlert
+                action={
+                  <EuiLink target="_blank" href={'#'}>
+                    fixed version goes here
+                    <EuiIcon type="popout" size="s" />
+                  </EuiLink>
+                }
+                key={index}
+                title={instruction.hash}
+                text={JSON.stringify(instruction)}
+                date={currentDate(instruction.timestamp)}
+                badge={
+                  <EuiBadge color="accent">{instruction.fixedVersion || 'no fix yet'}</EuiBadge>
+                }
+              />
+            );
+          })
         )}
       </EuiFlyoutBody>
       <EuiFlyoutFooter>
