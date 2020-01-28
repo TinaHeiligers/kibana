@@ -18,12 +18,15 @@
  */
 
 // eslint-disable-next-line @kbn/eslint/no-restricted-paths
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+// eslint-disable-next-line @kbn/eslint/no-restricted-paths
 import { ChannelConfig, PulseInstruction } from '../../server/pulse/channel';
-
 // eslint-disable-next-line @kbn/eslint/no-restricted-paths
 export { PulseInstruction, ChannelConfig } from '../../server/pulse/channel';
 
 export class PulseChannel<I = PulseInstruction> {
+  private readonly stop$ = new Subject();
   constructor(private readonly config: ChannelConfig<I>) {}
 
   public async sendPulse<T = any | any[]>(doc: T) {
@@ -67,6 +70,11 @@ export class PulseChannel<I = PulseInstruction> {
   }
 
   public instructions$() {
-    return this.config.instructions$.asObservable();
+    return this.config.instructions$.pipe(takeUntil(this.stop$));
+  }
+
+  public stop() {
+    this.stop$.next();
+    this.config.instructions$.complete();
   }
 }

@@ -30,16 +30,23 @@ const validate = {
       {
         channelId: schema.maybe(schema.string()),
         deploymentId: schema.maybe(schema.string()),
-        timestamp: schema.maybe(schema.oneOf([schema.string(), schema.number()])),
-        hash: schema.string(),
-        fixedVersion: schema.maybe(schema.string()),
-        status: schema.maybe(schema.string()),
-        currentKibanaVersion: schema.maybe(schema.string()),
-        // error specific schema, we should remove this into `records`
-        message: schema.maybe(schema.string()),
-        errorId: schema.maybe(schema.string()),
-        // generic records (array of objects, each channel processes the records differently)
-        records: schema.arrayOf(schema.object({}, { allowUnknowns: true })),
+        records: schema.arrayOf(
+          schema.object(
+            {
+              hash: schema.string(),
+              message: schema.maybe(schema.string()),
+              status: schema.maybe(schema.string()),
+              currentKibanaVersion: schema.maybe(schema.string()),
+              timestamp: schema.maybe(schema.oneOf([schema.string(), schema.number()])),
+              // error specific schema, we should remove this into `records`
+
+              errorId: schema.maybe(schema.string()),
+              fixedVersion: schema.maybe(schema.string()),
+            },
+            // generic records (array of objects, each channel processes the records differently) },
+            { allowUnknowns: true }
+          )
+        ),
       },
       { allowUnknowns: true }
     ),

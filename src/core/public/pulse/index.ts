@@ -57,6 +57,20 @@ export class PulseService {
 
   public async setup(): Promise<PulseServiceSetup> {
     // poll for instructions every second for this deployment
+
+    return {
+      getChannel: (id: string) => {
+        const channel = this.channels.get(id);
+        if (!channel) {
+          throw new Error(`Unknown channel: ${id}`);
+        }
+        return channel;
+      },
+    };
+  }
+
+  public async start(): Promise<PulseServiceStart> {
+    // poll for instructions every second for this deployment
     setInterval(() => {
       // eslint-disable-next-line no-console
       this.loadInstructions().catch(err => console.error(err.stack));
