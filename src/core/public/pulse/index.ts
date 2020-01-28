@@ -56,18 +56,6 @@ export class PulseService {
   }
 
   public async setup(): Promise<PulseServiceSetup> {
-    return {
-      getChannel: (id: string) => {
-        const channel = this.channels.get(id);
-        if (!channel) {
-          throw new Error(`Unknown channel: ${id}`);
-        }
-        return channel;
-      },
-    };
-  }
-
-  public async start(): Promise<PulseServiceStart> {
     // poll for instructions every second for this deployment
     setInterval(() => {
       // eslint-disable-next-line no-console
@@ -150,7 +138,6 @@ export class PulseService {
           `Channel (${channel.id}) from service has no corresponding channel handler in client`
         );
       }
-
       channel.instructions.forEach(instruction => instructions$.next(instruction));
     });
   }
