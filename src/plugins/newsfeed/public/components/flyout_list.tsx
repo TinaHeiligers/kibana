@@ -47,6 +47,7 @@ import {
 import { NewsfeedItem } from '../../types';
 import { NewsEmptyPrompt } from './empty_news';
 import { NewsLoadingPrompt } from './loading_news';
+import { PulseErrorsInstruction } from '../plugin';
 
 interface Props {
   notificationsChannel: PulseChannel<NotificationInstruction>;
@@ -127,6 +128,28 @@ export const NewsfeedFlyout = ({ notificationsChannel, errorsInstructionsToShow 
           })
         ) : (
           <NewsEmptyPrompt />
+        )}
+        {!errorsInstructionsReceivedResult.length ? (
+          <div>No instructions from Pulse</div>
+        ) : (
+          errorsInstructionsReceivedResult.map((item: PulseErrorsInstruction, index: number) => {
+            return (
+              <EuiHeaderAlert
+                key={index}
+                title={item.hash}
+                text={item.pulseMessage}
+                data-test-subj="newsHeadAlert"
+                action={
+                  <EuiLink target="_blank" href={'#'}>
+                    {item.fixedVersion}
+                    <EuiIcon type="popout" size="s" />
+                  </EuiLink>
+                }
+                date={moment(item.timestamp).format('DD MMMM YYYY')}
+                badge={<EuiBadge color="hollow">{item.fixedVersion}</EuiBadge>}
+              />
+            );
+          })
         )}
       </EuiFlyoutBody>
       <EuiFlyoutFooter>

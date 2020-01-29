@@ -37,6 +37,7 @@ export interface PulseErrorsInstruction {
   sendTo: string;
   timestamp?: Date;
   hash: string;
+  fixedVersion: string;
 }
 export class NewsfeedPublicPlugin implements Plugin<Setup, Start> {
   private readonly kibanaVersion: string;

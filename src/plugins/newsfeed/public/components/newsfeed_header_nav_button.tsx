@@ -87,6 +87,10 @@ export const NewsfeedNavButton = ({
   const [showBadge, setShowBadge] = useState<boolean>(false);
   const [flyoutVisible, setFlyoutVisible] = useState<boolean>(false);
   const [newsFetchResult, setNewsFetchResult] = useState<FetchResult | null | void>(null);
+  const [showErrorsBadge, setShowErrorsBadge] = useState<boolean>(false);
+  const [errorsInstructionsReceivedResult, setErrorsInstructionsReceivedResult] = useState(
+    [] as any
+  );
   // hack to test updating news;
   (window as any).moment = moment;
   (window as any).notificationsChannel = notificationsChannel;
@@ -122,7 +126,15 @@ export const NewsfeedNavButton = ({
     });
     return () => subscription.unsubscribe();
   }, [notificationsInstructions$]);
-
+  useEffect(() => {
+    function handleErrorsInstructionsReceivedChange(items: any[]) {
+      setErrorsInstructionsReceivedResult(items);
+      setShowErrorsBadge(true);
+    }
+    if (errorsInstructions && errorsInstructions.length) {
+      return handleErrorsInstructionsReceivedChange(errorsInstructions);
+    }
+  }, [errorsInstructions]);
   // FOR THE POC: JUST USE PULSE AS THE SOURCE OF TRUTH FOR NEWS!
   // useEffect(() => {
   //   function handleStatusChange(fetchResult: FetchResult | void | null) {
@@ -157,6 +169,11 @@ export const NewsfeedNavButton = ({
           {showBadge ? (
             <EuiNotificationBadge className="euiHeaderNotification" data-test-subj="showBadgeNews">
               &#9642;
+            </EuiNotificationBadge>
+          ) : null}
+          {showErrorsBadge ? (
+            <EuiNotificationBadge className="euiHeaderNotification" data-test-subj="showBadgeNews">
+              P {errorsInstructionsReceivedResult.length};
             </EuiNotificationBadge>
           ) : null}
         </EuiHeaderSectionItemButton>
