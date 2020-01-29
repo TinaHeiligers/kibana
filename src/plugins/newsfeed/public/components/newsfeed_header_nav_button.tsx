@@ -59,6 +59,7 @@ export function shouldUpdateHash(lastNotificationHash: string): boolean {
 export function getLastItemHash(instructions: Array<{ hash: string }>) {
   return instructions[instructions.length - 1].hash;
 }
+
 /**
 window.notificationsChannel.sendPulse([{
   "hash": "test_hash",
@@ -72,7 +73,9 @@ window.notificationsChannel.sendPulse([{
   "status": "new",
 }])
 */
-
+export interface ErrorFixedVersionsInstructions {
+  [key: string]: any;
+}
 // on every fresh page reload, fetch news all over again.
 updateLastHash('');
 
@@ -157,7 +160,12 @@ export const NewsfeedNavButton = ({
             </EuiNotificationBadge>
           ) : null}
         </EuiHeaderSectionItemButton>
-        {flyoutVisible ? <NewsfeedFlyout notificationsChannel={notificationsChannel} /> : null}
+        {flyoutVisible ? (
+          <NewsfeedFlyout
+            notificationsChannel={notificationsChannel}
+            errorsInstructionsToShow={errorsInstructions as any[]}
+          />
+        ) : null}
       </Fragment>
     </NewsfeedContext.Provider>
   );

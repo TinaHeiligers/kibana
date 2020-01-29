@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useCallback, useContext } from 'react';
+import React, { useCallback, useContext, useState, useEffect } from 'react';
 import {
   EuiIcon,
   EuiFlyout,
@@ -38,17 +38,26 @@ import { PulseChannel } from 'src/core/public/pulse/channel';
 import { NotificationInstruction } from 'src/core/server/pulse/collectors/notifications';
 import moment from 'moment';
 import { EuiHeaderAlert } from '../../../../legacy/core_plugins/newsfeed/public/np_ready/components/header_alert/header_alert';
-import { NewsfeedContext, shouldUpdateHash, getLastItemHash } from './newsfeed_header_nav_button';
+import {
+  NewsfeedContext,
+  shouldUpdateHash,
+  getLastItemHash,
+  ErrorFixedVersionsInstructions,
+} from './newsfeed_header_nav_button';
 import { NewsfeedItem } from '../../types';
 import { NewsEmptyPrompt } from './empty_news';
 import { NewsLoadingPrompt } from './loading_news';
 
 interface Props {
   notificationsChannel: PulseChannel<NotificationInstruction>;
+  errorsInstructionsToShow: ErrorFixedVersionsInstructions[];
 }
 
-export const NewsfeedFlyout = ({ notificationsChannel }: Props) => {
+export const NewsfeedFlyout = ({ notificationsChannel, errorsInstructionsToShow }: Props) => {
   const { newsFetchResult, setFlyoutVisible } = useContext(NewsfeedContext);
+  const [errorsInstructionsReceivedResult, setErrorsInstructionsReceivedResult] = useState(
+    [] as any
+  );
   const closeFlyout = useCallback(() => setFlyoutVisible(false), [setFlyoutVisible]);
 
   if (newsFetchResult && newsFetchResult.feedItems.length) {
@@ -69,6 +78,15 @@ export const NewsfeedFlyout = ({ notificationsChannel }: Props) => {
       );
     }
   }
+
+  useEffect(() => {
+    function handleErrorsInstructionsReceivedChange(items: any[]) {
+      setErrorsInstructionsReceivedResult(items);
+    }
+    if (errorsInstructionsToShow && errorsInstructionsToShow.length) {
+      return handleErrorsInstructionsReceivedChange(errorsInstructionsToShow);
+    }
+  }, [errorsInstructionsToShow]);
 
   return (
     <EuiFlyout
