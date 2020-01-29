@@ -21,19 +21,22 @@ import { Plugin, CoreSetup, CoreStart } from 'kibana/public';
 import { Subject, Subscription } from 'rxjs';
 // eslint-disable-next-line @kbn/eslint/no-restricted-paths
 import { takeUntil } from 'rxjs/operators';
+// eslint-disable-next-line @kbn/eslint/no-restricted-paths
+import { Start } from 'src/plugins/newsfeed/public/plugin';
 import { errorChannelPayloads } from './mock_data/errors';
 
 export class PulseErrorsPlugin implements Plugin<PulseErrorsPluginSetup, PulseErrorsPluginStart> {
   private readonly stop$ = new Subject();
   private instructionsSubscription?: Subscription;
-  private instructionsSeen = new Set(); // TODO: possibly change this to a map later to store more detailed info.
+  private noFixedVersionsSeen = new Set(); // TODO: possibly change this to a map later to store more detailed info.
+  private fixedVersionsSeen = new Set(); // TODO: possibly change this to a map later to store more detailed info.
   constructor() {}
 
   public async setup(core: CoreSetup) {
     errorChannelPayloads.forEach(element => core.pulse.getChannel('errors').sendPulse(element));
   }
 
-  public start(core: CoreStart) {
+  public start(core: CoreStart, { newsfeed }: { newsfeed: Start }) {
     this.instructionsSubscription = core.pulse
       .getChannel('errors')
       .instructions$()
@@ -41,18 +44,28 @@ export class PulseErrorsPlugin implements Plugin<PulseErrorsPluginSetup, PulseEr
       .subscribe(instructions => {
         if (instructions && instructions.length) {
           instructions.forEach((instruction: any) => {
-            // @ts-ignore-next-line this should be refering to the instruction, not the raw es document
-            if (
-              instruction &&
-              instruction.status === 'new' &&
-              !this.instructionsSeen.has(instruction.hash)
-            )
-              core.notifications.toasts.addError(new Error(JSON.stringify(instruction)), {
-                // @ts-ignore-next-line
-                title: `Error:${instruction.hash}`,
-                toastMessage: `An error occurred: ${instruction.message}. Pulse message:${instruction.pulseMessage}`,
-              });
-            this.instructionsSeen.add(instruction.hash);
+            // general conditional for existance of instructions
+            if (instruction) {
+              // condition to send instructions to toasts
+              if (
+                instruction.sendTo === 'toasts' &&
+                !this.noFixedVersionsSeen.has(instruction.hash)
+              ) {
+                core.notifications.toasts.addError(new Error(JSON.stringify(instruction)), {
+                  // @ts-ignore-next-line
+                  title: `Error:${instruction.hash}`,
+                  toastMessage: `An error occurred: ${instruction.message}. Pulse message:${instruction.pulseMessage}`,
+                });
+                this.noFixedVersionsSeen.add(instruction.hash);
+              }
+              // condition to send instructions to newsfeed
+              if (
+                instruction.sendTo === 'newsfeed' &&
+                !this.fixedVersionsSeen.has(instruction.hash)
+              ) {
+                newsfeed.addPulseErrorsInstructions(instruction);
+              }
+            }
           });
         }
       });

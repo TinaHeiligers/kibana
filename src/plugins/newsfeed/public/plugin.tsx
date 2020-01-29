@@ -23,19 +23,26 @@ import ReactDOM from 'react-dom';
 import React from 'react';
 import { I18nProvider } from '@kbn/i18n/react';
 import { PluginInitializerContext, CoreSetup, CoreStart, Plugin } from 'src/core/public';
-// eslint-disable-next-line
-import { PulseChannel } from 'src/core/server/pulse/channel';
+// eslint-disable-next-line @kbn/eslint/no-restricted-paths
+import { PulseChannel } from 'src/core/public/pulse/channel';
 import { NewsfeedPluginInjectedConfig } from '../types';
 import { NewsfeedNavButton, NewsfeedApiFetchResult } from './components/newsfeed_header_nav_button';
 import { getApi } from './lib/api';
 
 export type Setup = void;
-export type Start = void;
+export type Start = ReturnType<NewsfeedPublicPlugin['start']>;
 
+export interface PulseErrorsInstruction {
+  pulseMessage: string;
+  sendTo: string;
+  timestamp?: Date;
+  hash: string;
+}
 export class NewsfeedPublicPlugin implements Plugin<Setup, Start> {
   private readonly kibanaVersion: string;
   private readonly stop$ = new Rx.ReplaySubject(1);
   private notificationsChannel?: PulseChannel;
+  private readonly pulseErrorsInstructions?: PulseErrorsInstruction[] = [];
 
   constructor(initializerContext: PluginInitializerContext) {
     this.kibanaVersion = initializerContext.env.packageInfo.version;
@@ -45,12 +52,18 @@ export class NewsfeedPublicPlugin implements Plugin<Setup, Start> {
     this.notificationsChannel = core.pulse.getChannel('notifications');
   }
 
-  public start(core: CoreStart): Start {
+  public start(core: CoreStart) {
     const api$ = this.fetchNewsfeed(core);
     core.chrome.navControls.registerRight({
       order: 1000,
       mount: target => this.mount(api$, target),
     });
+
+    return {
+      addPulseErrorsInstructions: (entry: PulseErrorsInstruction) => {
+        this.pulseErrorsInstructions!.push(entry);
+      },
+    };
   }
 
   public stop() {
@@ -76,7 +89,11 @@ export class NewsfeedPublicPlugin implements Plugin<Setup, Start> {
 
     ReactDOM.render(
       <I18nProvider>
-        <NewsfeedNavButton apiFetchResult={api$} notificationsChannel={this.notificationsChannel} />
+        <NewsfeedNavButton
+          apiFetchResult={api$}
+          notificationsChannel={this.notificationsChannel as any}
+          errorsInstructions={this.pulseErrorsInstructions}
+        />
       </I18nProvider>,
       targetDomElement
     );

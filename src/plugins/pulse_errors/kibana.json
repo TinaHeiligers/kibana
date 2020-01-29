@@ -7,5 +7,6 @@
     "pulse_errors"
   ],
   "server": true,
+  "requiredPlugins": ["newsfeed"],
   "ui": true
 }

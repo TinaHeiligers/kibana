@@ -21,7 +21,7 @@ import React, { useState, Fragment, useEffect } from 'react';
 import * as Rx from 'rxjs';
 import { EuiHeaderSectionItemButton, EuiIcon, EuiNotificationBadge } from '@elastic/eui';
 // eslint-disable-next-line
-import { PulseChannel } from 'src/core/public/pulse/channel';
+import { PulseChannel, PulseInstruction } from 'src/core/public/pulse/channel';
 // eslint-disable-next-line
 import { NotificationInstruction } from 'src/core/server/pulse/collectors/notifications';
 import moment from 'moment';
@@ -39,6 +39,7 @@ export type NewsfeedApiFetchResult = Rx.Observable<void | FetchResult | null>;
 export interface Props {
   apiFetchResult: NewsfeedApiFetchResult;
   notificationsChannel: PulseChannel<NotificationInstruction>;
+  errorsInstructions?: PulseInstruction[];
 }
 
 const NEWSFEED_LAST_HASH = 'pulse_news_last_hash';
@@ -75,7 +76,11 @@ window.notificationsChannel.sendPulse([{
 // on every fresh page reload, fetch news all over again.
 updateLastHash('');
 
-export const NewsfeedNavButton = ({ apiFetchResult, notificationsChannel }: Props) => {
+export const NewsfeedNavButton = ({
+  apiFetchResult,
+  notificationsChannel,
+  errorsInstructions,
+}: Props) => {
   const [showBadge, setShowBadge] = useState<boolean>(false);
   const [flyoutVisible, setFlyoutVisible] = useState<boolean>(false);
   const [newsFetchResult, setNewsFetchResult] = useState<FetchResult | null | void>(null);

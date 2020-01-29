@@ -19,7 +19,7 @@
 
 import moment from 'moment';
 // eslint-disable-next-line @kbn/eslint/no-restricted-paths
-import { PulseErrorPayloadRecord } from 'src/core/server/pulse/channel';
+import { PulseErrorPayloadRecord } from 'src/core/server/pulse/collectors/errors';
 
 export const errorChannelPayloads: PulseErrorPayloadRecord[] = [
   {
@@ -51,7 +51,7 @@ export const errorChannelPayloads: PulseErrorPayloadRecord[] = [
     fixedVersion: 'v7.5.2',
     currentKibanaVersion: 'v7.x',
     timestamp: moment()
-      .add(60, 'seconds')
+      .add(10, 'seconds')
       .toDate(),
   },
   {
@@ -60,10 +60,10 @@ export const errorChannelPayloads: PulseErrorPayloadRecord[] = [
     message: '[Error]: Test',
     hash: '[plugins][pulse_errors]: [Error]: fakeError:arbitraryError 2',
     status: 'new',
-    // fixedVersion: 'v7.5.2',
+    fixedVersion: 'v7.5.2',
     currentKibanaVersion: 'v7.x',
     timestamp: moment()
-      .add(90, 'seconds')
+      .add(20, 'seconds')
       .toDate(),
   },
 ];
