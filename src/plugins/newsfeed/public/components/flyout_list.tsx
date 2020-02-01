@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useCallback, useContext, useState } from 'react';
+import React, { useCallback, useContext } from 'react';
 import {
   EuiIcon,
   EuiFlyout,
@@ -30,6 +30,7 @@ import {
   EuiButtonEmpty,
   EuiText,
   EuiBadge,
+  EuiTabbedContent,
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n/react';
 // eslint-disable-next-line
@@ -44,7 +45,13 @@ import { NewsfeedContext, shouldUpdateHash, getLastItemHash } from './newsfeed_h
 import { NewsfeedItem } from '../../types';
 import { NewsEmptyPrompt } from './empty_news';
 import { NewsLoadingPrompt } from './loading_news';
+import { PulseNewsLoadingPrompt } from './loading_pulse_news';
+import { PulseNewsEmptyPrompt } from './empty_pulse_news';
 
+function logSelectedTab(tab: any) {
+  // eslint-disable-next-line no-console
+  console.log(tab);
+}
 interface Props {
   notificationsChannel: PulseChannel<NotificationInstruction>;
   errorsChannel: PulseChannel<ErrorInstruction>;
@@ -92,49 +99,40 @@ export const NewsfeedFlyout = ({
       );
     }
   }
-
-  return (
-    <EuiFlyout
-      onClose={closeFlyout}
-      size="s"
-      aria-labelledby="flyoutSmallTitle"
-      className="kbnNews__flyout"
-      data-test-subj="NewsfeedFlyout"
-    >
-      <EuiFlyoutHeader hasBorder>
-        <EuiTitle size="s">
-          <h2 id="flyoutSmallTitle">
-            <FormattedMessage id="newsfeed.flyoutList.whatsNewTitle" defaultMessage="What's new" />
-          </h2>
-        </EuiTitle>
-      </EuiFlyoutHeader>
-      <EuiFlyoutBody className={'kbnNews__flyoutAlerts'}>
-        {!newsFetchResult ? (
-          <NewsLoadingPrompt />
-        ) : newsFetchResult.feedItems.length > 0 ? (
-          newsFetchResult.feedItems.map((item: NewsfeedItem) => {
-            return (
-              <EuiHeaderAlert
-                key={item.hash}
-                title={item.title}
-                text={item.description}
-                data-test-subj="newsHeadAlert"
-                action={
-                  <EuiLink target="_blank" href={item.linkUrl}>
-                    {item.linkText}
-                    <EuiIcon type="popout" size="s" />
-                  </EuiLink>
-                }
-                date={moment(item.publishOn).format('DD MMMM YYYY')}
-                badge={<EuiBadge color="hollow">{item.badge}</EuiBadge>}
-              />
-            );
-          })
-        ) : (
-          <NewsEmptyPrompt />
-        )}
-        {errorsInstructionsToShow &&
-          errorsInstructionsToShow.length > 0 &&
+  const tabs = [
+    {
+      id: 'newsfeed',
+      name: 'Elastic',
+      content: !newsFetchResult ? (
+        <NewsLoadingPrompt />
+      ) : newsFetchResult.feedItems.length > 0 ? (
+        newsFetchResult.feedItems.map((item: NewsfeedItem) => {
+          return (
+            <EuiHeaderAlert
+              key={item.hash}
+              title={item.title}
+              text={item.description}
+              data-test-subj="newsHeadAlert"
+              action={
+                <EuiLink target="_blank" href={item.linkUrl}>
+                  {item.linkText}
+                  <EuiIcon type="popout" size="s" />
+                </EuiLink>
+              }
+              date={moment(item.publishOn).format('DD MMMM YYYY')}
+              badge={<EuiBadge color="hollow">{item.badge}</EuiBadge>}
+            />
+          );
+        })
+      ) : (
+        <NewsEmptyPrompt />
+      ),
+    },
+    {
+      id: 'pulse',
+      name: 'Pulse',
+      content: errorsInstructionsToShow ? (
+        errorsInstructionsToShow.length > 0 ? (
           errorsInstructionsToShow.map((item: ErrorInstruction, index: number) => {
             return (
               <EuiHeaderAlert
@@ -150,7 +148,44 @@ export const NewsfeedFlyout = ({
                 badge={<EuiBadge color="hollow">{item.fixedVersion}</EuiBadge>}
               />
             );
-          })}
+          })
+        ) : (
+          <PulseNewsEmptyPrompt />
+        )
+      ) : (
+        <PulseNewsLoadingPrompt />
+      ),
+    },
+  ];
+
+  return (
+    <EuiFlyout
+      onClose={closeFlyout}
+      size="s"
+      aria-labelledby="flyoutSmallTitle"
+      className="kbnNews__flyout"
+      data-test-subj="NewsfeedFlyout"
+    >
+      <EuiFlyoutHeader hasBorder>
+        <EuiTitle size="s">
+          <h2 id="flyoutSmallTitle">
+            <FormattedMessage
+              id="newsfeed.flyoutList.whatsNewFromTitle"
+              defaultMessage="What's new from"
+            />
+          </h2>
+        </EuiTitle>
+      </EuiFlyoutHeader>
+      <EuiFlyoutBody className={'kbnNews__flyoutAlerts'}>
+        <EuiTabbedContent
+          expand={true}
+          tabs={tabs}
+          initialSelectedTab={tabs[0]}
+          onTabClick={tab => {
+            // eslint-ignore-next-line no-console
+            logSelectedTab(tab);
+          }}
+        />
       </EuiFlyoutBody>
       <EuiFlyoutFooter>
         <EuiFlexGroup justifyContent="spaceBetween" alignItems="center">
