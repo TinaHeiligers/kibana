@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useCallback, useContext } from 'react';
+import React, { useCallback, useContext, useState } from 'react';
 import {
   EuiIcon,
   EuiFlyout,
@@ -64,6 +64,7 @@ export const NewsfeedFlyout = ({
   errorsInstructionsToShow,
 }: Props) => {
   const { newsFetchResult, setFlyoutVisible } = useContext(NewsfeedContext);
+  const [currentTab, setCurrentTab] = useState<any>({});
   const closeFlyout = useCallback(() => setFlyoutVisible(false), [setFlyoutVisible]);
   if (newsFetchResult && newsFetchResult.feedItems.length) {
     const lastNotificationHash = getLastItemHash(newsFetchResult.feedItems);
@@ -131,30 +132,7 @@ export const NewsfeedFlyout = ({
     {
       id: 'pulse',
       name: 'Pulse',
-      content: errorsInstructionsToShow ? (
-        errorsInstructionsToShow.length > 0 ? (
-          errorsInstructionsToShow.map((item: ErrorInstruction, index: number) => {
-            return (
-              <EuiHeaderAlert
-                key={index}
-                title={item.hash}
-                text={`The error ${item.hash} has been fixed in version ${item.fixedVersion}.`}
-                action={
-                  <EuiLink target="_blank" href="#">
-                    {item.fixedVersion}
-                  </EuiLink>
-                }
-                date={moment(item.timestamp).format('DD MMMM YYYY HH:MM:SS')}
-                badge={<EuiBadge color="hollow">{item.fixedVersion}</EuiBadge>}
-              />
-            );
-          })
-        ) : (
-          <PulseNewsEmptyPrompt />
-        )
-      ) : (
-        <PulseNewsLoadingPrompt />
-      ),
+      content: pulseContent({ errorsChannel, errorsInstructionsToShow }),
     },
   ];
 
@@ -180,10 +158,11 @@ export const NewsfeedFlyout = ({
         <EuiTabbedContent
           expand={true}
           tabs={tabs}
+          selectedTab={currentTab.id ? currentTab : tabs[0]}
           initialSelectedTab={tabs[0]}
           onTabClick={tab => {
-            // eslint-ignore-next-line no-console
-            logSelectedTab(tab);
+            logSelectedTab(tab); // just logs out the current tab
+            setCurrentTab(tab); // here I want to trigger some actions for Pulse when the focus changes to newsfeed
           }}
         />
       </EuiFlyoutBody>
@@ -210,5 +189,41 @@ export const NewsfeedFlyout = ({
         </EuiFlexGroup>
       </EuiFlyoutFooter>
     </EuiFlyout>
+  );
+};
+
+// The idea here is to grab a static list/Set of instructions to show the user
+// and only have them removed from the list/Set when we change tabs or clear individual ones.
+// e.g. the user might have an instruction to follow that has a few steps and they don't want
+// the instruction to dissappear before they've a chance to act on it
+// This will give the user control over when instructions go away.
+interface PulseTabContentProps {
+  errorsChannel: PulseChannel<ErrorInstruction>;
+  errorsInstructionsToShow: ErrorInstruction[];
+}
+const pulseContent = ({ errorsChannel, errorsInstructionsToShow }: PulseTabContentProps) => {
+  return errorsInstructionsToShow ? (
+    errorsInstructionsToShow.length > 0 ? (
+      errorsInstructionsToShow.map((item: ErrorInstruction, index: number) => {
+        return (
+          <EuiHeaderAlert
+            key={index}
+            title={item.hash}
+            text={`The error ${item.hash} has been fixed in version ${item.fixedVersion}.`}
+            action={
+              <EuiLink target="_blank" href="#">
+                {item.fixedVersion}
+              </EuiLink>
+            }
+            date={moment(item.timestamp).format('DD MMMM YYYY HH:MM:SS')}
+            badge={<EuiBadge color="hollow">{item.fixedVersion}</EuiBadge>}
+          />
+        );
+      })
+    ) : (
+      <PulseNewsEmptyPrompt />
+    )
+  ) : (
+    <PulseNewsLoadingPrompt />
   );
 };
