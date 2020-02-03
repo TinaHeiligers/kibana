@@ -55,14 +55,11 @@ interface Props {
   // errorsInstructionsToShow: ErrorInstruction[];
 }
 
-export const NewsfeedFlyout = ({
-  notificationsChannel,
-  errorsChannel,
-}: // errorsInstructionsToShow,
-Props) => {
+export const NewsfeedFlyout = ({ notificationsChannel, errorsChannel }: Props) => {
   const { newsFetchResult, setFlyoutVisible } = useContext(NewsfeedContext);
   const [errorsInstructionsToShow, setErrorsInstructionsToShow] = useState<ErrorInstruction[]>([]);
   const [currentTab, setCurrentTab] = useState<any>({});
+
   const closeFlyout = useCallback(() => setFlyoutVisible(false), [setFlyoutVisible]);
   if (newsFetchResult && newsFetchResult.feedItems.length) {
     const lastNotificationHash = getLastItemHash(newsFetchResult.feedItems);
@@ -104,24 +101,28 @@ Props) => {
     return () => subscription.unsubscribe();
   }, [errorsInstructions$]);
 
-  if (errorsInstructionsToShow && errorsInstructionsToShow.length > 0) {
-    const hasNewErrorInstructionsToShow = errorsInstructionsToShow.filter(
-      instruction => instruction.status === 'new' && !instruction.seenOn!
-    );
-    if (hasNewErrorInstructionsToShow.length > 0) {
-      // eslint-disable-next-line no-console
-      console.log('commented out changing status to seen for:', hasNewErrorInstructionsToShow);
-      // errorsChannel.sendPulse(
-      //   hasNewErrorInstructionsToShow.map(item => {
-      //     return {
-      //       ...item,
-      //       status: 'seen',
-      //       seenOn: moment().format('x'),
-      //     };
-      //   })
-      // );
-    }
-  }
+  const testSetAsSeen = (item: any) => {
+    console.log('do we have an item?', item);
+  };
+  // logic to change to Seen status that I want to trigger in a button click
+  // if (errorsInstructionsToShow && errorsInstructionsToShow.length > 0) {
+  //   const hasNewErrorInstructionsToShow = errorsInstructionsToShow.filter(
+  //     instruction => instruction.status === 'new' && !instruction.seenOn!
+  //   );
+  //   if (hasNewErrorInstructionsToShow.length > 0) {
+  //     // eslint-disable-next-line no-console
+  //     console.log('commented out changing status to seen for:', hasNewErrorInstructionsToShow);
+  //     errorsChannel.sendPulse(
+  //       hasNewErrorInstructionsToShow.map(item => {
+  //         return {
+  //           ...item,
+  //           status: 'seen',
+  //           seenOn: moment().format('x'),
+  //         };
+  //       })
+  //     );
+  //   }
+  // }
   const tabs = [
     {
       id: 'newsfeed',
