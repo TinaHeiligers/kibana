@@ -102,8 +102,13 @@ export const NewsfeedFlyout = ({ notificationsChannel, errorsChannel }: Props) =
   }, [errorsInstructions$]);
 
   const testSetAsSeen = (item: any) => {
-    // eslint-disable-next-line no-console
-    console.log('do we have an item?', item);
+    if (item.status === 'new' && !item.seenOn) {
+      const updatedInstructions = errorsInstructionsToShow.filter(
+        instruction => instruction.hash !== item.hash
+      );
+      setErrorsInstructionsToShow(updatedInstructions);
+      errorsChannel.sendPulse([{ ...item, status: 'seen', seenOn: moment().format('x') }]);
+    }
   };
   // logic to change to Seen status that I want to trigger in a button click
   // if (errorsInstructionsToShow && errorsInstructionsToShow.length > 0) {
@@ -158,8 +163,8 @@ export const NewsfeedFlyout = ({ notificationsChannel, errorsChannel }: Props) =
     {
       id: 'pulse',
       name: 'Pulse',
-      content: errorsInstructionsToShow ? (
-        errorsInstructionsToShow.length > 0 ? (
+      content:
+        errorsInstructionsToShow && errorsInstructionsToShow.length > 0 ? (
           errorsInstructionsToShow.map((item: ErrorInstruction, index: number) => {
             return (
               <Fragment key={index}>
@@ -175,15 +180,13 @@ export const NewsfeedFlyout = ({ notificationsChannel, errorsChannel }: Props) =
                   date={moment(item.timestamp).format('DD MMMM YYYY HH:MM:SS')}
                   badge={<EuiBadge color="hollow">{item.fixedVersion}</EuiBadge>}
                 />
+                <EuiButtonEmpty onClick={() => testSetAsSeen(item)}>Seen</EuiButtonEmpty>
               </Fragment>
             );
           })
         ) : (
-          <PulseNewsEmptyPrompt />
-        )
-      ) : (
-        <PulseNewsLoadingPrompt />
-      ),
+          <PulseNewsLoadingPrompt />
+        ),
     },
   ];
 
