@@ -106,10 +106,9 @@ export const NewsfeedFlyout = ({
       ) : newsFetchResult.feedItems.length > 0 ? (
         newsFetchResult.feedItems.map((item: NewsfeedItem) => {
           return (
-            <Fragment>
+            <Fragment key={item.hash}>
               <EuiSpacer />
               <EuiHeaderAlert
-                key={item.hash}
                 title={item.title}
                 text={item.description}
                 data-test-subj="newsHeadAlert"
@@ -132,7 +131,32 @@ export const NewsfeedFlyout = ({
     {
       id: 'pulse',
       name: 'Pulse',
-      content: pulseContent({ errorsChannel, errorsInstructionsToShow }),
+      content: errorsInstructionsToShow ? (
+        errorsInstructionsToShow.length > 0 ? (
+          errorsInstructionsToShow.map((item: ErrorInstruction, index: number) => {
+            return (
+              <Fragment key={index}>
+                <EuiSpacer />
+                <EuiHeaderAlert
+                  title={item.hash}
+                  text={`The error ${item.hash} has been fixed in version ${item.fixedVersion}.`}
+                  action={
+                    <EuiLink target="_blank" href="#">
+                      {item.fixedVersion}
+                    </EuiLink>
+                  }
+                  date={moment(item.timestamp).format('DD MMMM YYYY HH:MM:SS')}
+                  badge={<EuiBadge color="hollow">{item.fixedVersion}</EuiBadge>}
+                />
+              </Fragment>
+            );
+          })
+        ) : (
+          <PulseNewsEmptyPrompt />
+        )
+      ) : (
+        <PulseNewsLoadingPrompt />
+      ),
     },
   ];
 
@@ -188,44 +212,5 @@ export const NewsfeedFlyout = ({
         </EuiFlexGroup>
       </EuiFlyoutFooter>
     </EuiFlyout>
-  );
-};
-
-// The idea here is to grab a static list/Set of instructions to show the user
-// and only have them removed from the list/Set when we change tabs or clear individual ones.
-// e.g. the user might have an instruction to follow that has a few steps and they don't want
-// the instruction to dissappear before they've a chance to act on it
-// This will give the user control over when instructions go away.
-interface PulseTabContentProps {
-  errorsChannel: PulseChannel<ErrorInstruction>;
-  errorsInstructionsToShow: ErrorInstruction[];
-}
-const pulseContent = ({ errorsChannel, errorsInstructionsToShow }: PulseTabContentProps) => {
-  return errorsInstructionsToShow ? (
-    errorsInstructionsToShow.length > 0 ? (
-      errorsInstructionsToShow.map((item: ErrorInstruction, index: number) => {
-        return (
-          <Fragment>
-            <EuiSpacer />
-            <EuiHeaderAlert
-              key={index}
-              title={item.hash}
-              text={`The error ${item.hash} has been fixed in version ${item.fixedVersion}.`}
-              action={
-                <EuiLink target="_blank" href="#">
-                  {item.fixedVersion}
-                </EuiLink>
-              }
-              date={moment(item.timestamp).format('DD MMMM YYYY HH:MM:SS')}
-              badge={<EuiBadge color="hollow">{item.fixedVersion}</EuiBadge>}
-            />
-          </Fragment>
-        );
-      })
-    ) : (
-      <PulseNewsEmptyPrompt />
-    )
-  ) : (
-    <PulseNewsLoadingPrompt />
   );
 };
