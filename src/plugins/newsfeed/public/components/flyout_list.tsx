@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useCallback, useContext, useState, Fragment } from 'react';
+import React, { useCallback, useContext, useEffect, useState, Fragment } from 'react';
 import {
   EuiIcon,
   EuiFlyout,
@@ -52,15 +52,16 @@ import { PulseNewsEmptyPrompt } from './empty_pulse_news';
 interface Props {
   notificationsChannel: PulseChannel<NotificationInstruction>;
   errorsChannel: PulseChannel<ErrorInstruction>;
-  errorsInstructionsToShow: ErrorInstruction[];
+  // errorsInstructionsToShow: ErrorInstruction[];
 }
 
 export const NewsfeedFlyout = ({
   notificationsChannel,
   errorsChannel,
-  errorsInstructionsToShow,
-}: Props) => {
+}: // errorsInstructionsToShow,
+Props) => {
   const { newsFetchResult, setFlyoutVisible } = useContext(NewsfeedContext);
+  const [errorsInstructionsToShow, setErrorsInstructionsToShow] = useState<ErrorInstruction[]>([]);
   const [currentTab, setCurrentTab] = useState<any>({});
   const closeFlyout = useCallback(() => setFlyoutVisible(false), [setFlyoutVisible]);
   if (newsFetchResult && newsFetchResult.feedItems.length) {
@@ -81,20 +82,44 @@ export const NewsfeedFlyout = ({
       );
     }
   }
+  // Errors Channel
+  const errorsInstructions$ = errorsChannel.instructions$();
+  // handle already filtered out instructions and
+  useEffect(() => {
+    function handleErrorsInstructionsChange(instructions: ErrorInstruction[]) {
+      if (instructions.length) {
+        setErrorsInstructionsToShow(instructions);
+      }
+    }
+    const subscription = errorsInstructions$.subscribe(instructions => {
+      if (instructions && instructions.length) {
+        const newInstructions = instructions.filter(
+          instruction =>
+            // instruction.sendTo === 'newsfeed' && !fixedVersionsSeen.has(instruction.hash) --> removes these items from the list. We can still use the hash list to change the status of the messages shown in teh channel.
+            instruction.fixedVersion && instruction.status === 'new' && !instruction.seenOn
+        );
+        handleErrorsInstructionsChange(newInstructions);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [errorsInstructions$]);
+
   if (errorsInstructionsToShow && errorsInstructionsToShow.length > 0) {
     const hasNewErrorInstructionsToShow = errorsInstructionsToShow.filter(
       instruction => instruction.status === 'new' && !instruction.seenOn!
     );
     if (hasNewErrorInstructionsToShow.length > 0) {
-      errorsChannel.sendPulse(
-        hasNewErrorInstructionsToShow.map(item => {
-          return {
-            ...item,
-            status: 'seen',
-            seenOn: moment().format('x'),
-          };
-        })
-      );
+      // eslint-disable-next-line no-console
+      console.log('commented out changing status to seen for:', hasNewErrorInstructionsToShow);
+      // errorsChannel.sendPulse(
+      //   hasNewErrorInstructionsToShow.map(item => {
+      //     return {
+      //       ...item,
+      //       status: 'seen',
+      //       seenOn: moment().format('x'),
+      //     };
+      //   })
+      // );
     }
   }
   const tabs = [

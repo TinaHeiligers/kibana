@@ -88,7 +88,7 @@ export const NewsfeedNavButton = ({
   const [flyoutVisible, setFlyoutVisible] = useState<boolean>(false);
   const [newsFetchResult, setNewsFetchResult] = useState<FetchResult | null | void>(null);
   const [showPulseBadge, setShowPulseBadge] = useState<boolean>(false);
-  const [errorsInstructionsToShow, setErrorsInstructionsToShow] = useState<ErrorInstruction[]>([]);
+  // const [errorsInstructionsToShow, setErrorsInstructionsToShow] = useState<ErrorInstruction[]>([]);
   // hack to test updating news;
   (window as any).moment = moment;
   (window as any).notificationsChannel = notificationsChannel;
@@ -127,15 +127,16 @@ export const NewsfeedNavButton = ({
     return () => subscription.unsubscribe();
   }, [notificationsInstructions$]);
 
-  // handle already filtered out instructions and
+  // // Errors Channel
+  // // handle already filtered out instructions and
   useEffect(() => {
     function handleErrorsInstructionsChange(instructions: ErrorInstruction[]) {
       if (instructions.length) {
         setShowPulseBadge(instructions.length > 0);
-        setErrorsInstructionsToShow(instructions);
+        // setErrorsInstructionsToShow(instructions);
       } else {
         setShowPulseBadge(false);
-        setErrorsInstructionsToShow([]);
+        // setErrorsInstructionsToShow([]);
       }
     }
     const subscription = errorsInstructions$.subscribe(instructions => {
@@ -150,6 +151,7 @@ export const NewsfeedNavButton = ({
     });
     return () => subscription.unsubscribe();
   }, [errorsInstructions$]);
+
   // FOR THE POC: JUST USE PULSE AS THE SOURCE OF TRUTH FOR NEWS!
   // useEffect(() => {
   //   function handleStatusChange(fetchResult: FetchResult | void | null) {
@@ -191,7 +193,6 @@ export const NewsfeedNavButton = ({
           <NewsfeedFlyout
             notificationsChannel={notificationsChannel}
             errorsChannel={errorsChannel}
-            errorsInstructionsToShow={errorsInstructionsToShow}
           />
         ) : null}
       </Fragment>
