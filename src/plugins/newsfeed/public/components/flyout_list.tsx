@@ -102,6 +102,7 @@ export const NewsfeedFlyout = ({ notificationsChannel, errorsChannel }: Props) =
   }, [errorsInstructions$]);
 
   const testSetAsSeen = (item: any) => {
+    // eslint-disable-next-line no-console
     console.log('do we have an item?', item);
   };
   // logic to change to Seen status that I want to trigger in a button click
