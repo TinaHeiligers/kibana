@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useCallback, useContext, useState } from 'react';
+import React, { useCallback, useContext, useState, Fragment } from 'react';
 import {
   EuiIcon,
   EuiFlyout,
@@ -40,6 +40,7 @@ import { NotificationInstruction } from 'src/core/server/pulse/collectors/notifi
 import moment from 'moment';
 // eslint-disable-next-line
 import { ErrorInstruction } from 'src/core/server/pulse/collectors/errors';
+import { EuiSpacer } from '@elastic/eui';
 import { EuiHeaderAlert } from '../../../../legacy/core_plugins/newsfeed/public/np_ready/components/header_alert/header_alert';
 import { NewsfeedContext, shouldUpdateHash, getLastItemHash } from './newsfeed_header_nav_button';
 import { NewsfeedItem } from '../../types';
@@ -48,10 +49,6 @@ import { NewsLoadingPrompt } from './loading_news';
 import { PulseNewsLoadingPrompt } from './loading_pulse_news';
 import { PulseNewsEmptyPrompt } from './empty_pulse_news';
 
-function logSelectedTab(tab: any) {
-  // eslint-disable-next-line no-console
-  console.log(tab);
-}
 interface Props {
   notificationsChannel: PulseChannel<NotificationInstruction>;
   errorsChannel: PulseChannel<ErrorInstruction>;
@@ -109,20 +106,23 @@ export const NewsfeedFlyout = ({
       ) : newsFetchResult.feedItems.length > 0 ? (
         newsFetchResult.feedItems.map((item: NewsfeedItem) => {
           return (
-            <EuiHeaderAlert
-              key={item.hash}
-              title={item.title}
-              text={item.description}
-              data-test-subj="newsHeadAlert"
-              action={
-                <EuiLink target="_blank" href={item.linkUrl}>
-                  {item.linkText}
-                  <EuiIcon type="popout" size="s" />
-                </EuiLink>
-              }
-              date={moment(item.publishOn).format('DD MMMM YYYY')}
-              badge={<EuiBadge color="hollow">{item.badge}</EuiBadge>}
-            />
+            <Fragment>
+              <EuiSpacer />
+              <EuiHeaderAlert
+                key={item.hash}
+                title={item.title}
+                text={item.description}
+                data-test-subj="newsHeadAlert"
+                action={
+                  <EuiLink target="_blank" href={item.linkUrl}>
+                    {item.linkText}
+                    <EuiIcon type="popout" size="s" />
+                  </EuiLink>
+                }
+                date={moment(item.publishOn).format('DD MMMM YYYY')}
+                badge={<EuiBadge color="hollow">{item.badge}</EuiBadge>}
+              />
+            </Fragment>
           );
         })
       ) : (
@@ -161,7 +161,6 @@ export const NewsfeedFlyout = ({
           selectedTab={currentTab.id ? currentTab : tabs[0]}
           initialSelectedTab={tabs[0]}
           onTabClick={tab => {
-            logSelectedTab(tab); // just logs out the current tab
             setCurrentTab(tab); // here I want to trigger some actions for Pulse when the focus changes to newsfeed
           }}
         />
@@ -206,18 +205,21 @@ const pulseContent = ({ errorsChannel, errorsInstructionsToShow }: PulseTabConte
     errorsInstructionsToShow.length > 0 ? (
       errorsInstructionsToShow.map((item: ErrorInstruction, index: number) => {
         return (
-          <EuiHeaderAlert
-            key={index}
-            title={item.hash}
-            text={`The error ${item.hash} has been fixed in version ${item.fixedVersion}.`}
-            action={
-              <EuiLink target="_blank" href="#">
-                {item.fixedVersion}
-              </EuiLink>
-            }
-            date={moment(item.timestamp).format('DD MMMM YYYY HH:MM:SS')}
-            badge={<EuiBadge color="hollow">{item.fixedVersion}</EuiBadge>}
-          />
+          <Fragment>
+            <EuiSpacer />
+            <EuiHeaderAlert
+              key={index}
+              title={item.hash}
+              text={`The error ${item.hash} has been fixed in version ${item.fixedVersion}.`}
+              action={
+                <EuiLink target="_blank" href="#">
+                  {item.fixedVersion}
+                </EuiLink>
+              }
+              date={moment(item.timestamp).format('DD MMMM YYYY HH:MM:SS')}
+              badge={<EuiBadge color="hollow">{item.fixedVersion}</EuiBadge>}
+            />
+          </Fragment>
         );
       })
     ) : (

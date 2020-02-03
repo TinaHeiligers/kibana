@@ -137,7 +137,6 @@ export const NewsfeedNavButton = ({
         setShowPulseBadge(false);
         setErrorsInstructionsToShow([]);
       }
-      // updateRecordsToSeen(instructions); TODO: implement me
     }
     const subscription = errorsInstructions$.subscribe(instructions => {
       if (instructions && instructions.length) {
