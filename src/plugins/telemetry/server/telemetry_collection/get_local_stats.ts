@@ -64,7 +64,7 @@ export const getLocalStats: StatsGetter<{}, TelemetryLocalStats> = async (
   context
 ) => {
   const { callCluster, usageCollection } = config;
-
+  // We need to add in a call to GET /._nodes/usage in this array of promises
   return await Promise.all(
     clustersDetails.map(async (clustersDetail) => {
       const [clusterInfo, clusterStats, kibana] = await Promise.all([

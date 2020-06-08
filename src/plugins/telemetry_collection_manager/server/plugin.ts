@@ -133,7 +133,7 @@ export class TelemetryCollectionManagerPlugin
     const callCluster = config.unencrypted
       ? collection.esCluster.asScoped(request).callAsCurrentUser
       : collection.esCluster.callAsInternalUser;
-
+    // console.log('2. callCluster response for usageCollection:', callCluster.usageCollection);
     return { callCluster, start, end, usageCollection };
   }
 
@@ -154,6 +154,7 @@ export class TelemetryCollectionManagerPlugin
           statsCollectionConfig
         );
         if (optInStats && optInStats.length) {
+          // console.log('1. in getOptInStats, for collection:', collection.title);
           this.logger.debug(`Got Opt In stats using ${collection.title} collection.`);
           if (config.unencrypted) {
             return optInStats;
@@ -188,6 +189,7 @@ export class TelemetryCollectionManagerPlugin
   };
 
   private async getStats(config: StatsGetterConfig) {
+    // console.log('1. in TelemetryCollectionManager getStats');
     if (!this.usageCollection) {
       return [];
     }
@@ -197,8 +199,11 @@ export class TelemetryCollectionManagerPlugin
         collection,
         this.usageCollection
       );
+      // console.log(`1b: statsCollectionConfig:`, statsCollectionConfig);
       try {
+        // console.log(`1c: collection:`, collection);
         const usageData = await this.getUsageForCollection(collection, statsCollectionConfig);
+        // console.log(`1d: usageData:`, usageData);
         if (usageData.length) {
           this.logger.debug(`Got Usage using ${collection.title} collection.`);
           if (config.unencrypted) {
