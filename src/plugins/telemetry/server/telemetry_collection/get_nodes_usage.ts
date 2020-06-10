@@ -16,25 +16,66 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-import { ClusterDetailsGetter } from 'src/plugins/telemetry_collection_manager/server';
 import { APICaller } from 'kibana/server';
 import { TIMEOUT } from './constants';
+
+export interface NodeAggregation {
+  [key: string]: number;
+}
+
+// we set aggregations as an optional type because it was only added in v7.8.0
+export interface NodeObj {
+  timestamp: number;
+  since: number;
+  rest_actions: {
+    [key: string]: number;
+  };
+  aggregations?: {
+    [key: string]: NodeAggregation;
+  };
+}
+export interface NodesStats {
+  total: number;
+  successful: number;
+  failed: number;
+}
+export interface NodesFeatureUsageResponse {
+  cluster_name: string;
+  nodes: {
+    [key: string]: NodeObj;
+  };
+}
+
+export type NodesUsageGetter<CustomContext extends Record<string, any> = {}> = (
+  callCluster: APICaller
+) => Promise<NodesFeatureUsageResponse[]>;
+
 /**
  * Get the nodes usage data from the connected cluster.
  *
  * This is the equivalent to GET /_nodes/usage?timeout=30s.
+ *
+ * The Nodes usage API was introduced in v6.0.0
  */
-export async function getNodesUsage(callCluster: APICaller) {
-  return await callCluster('nodes.usage', {
-    timeout: TIMEOUT,
+export async function fetchNodesUsage(callCluster: APICaller) {
+  // console.log('2a, in fetchNodesUsage, about to make the call');
+  const response = await callCluster('transport.request', {
+    method: 'GET',
+    path: '/_nodes/usage',
+    query: {
+      timeout: TIMEOUT,
+    },
   });
+  // console.log('2b, do we have a response from calling GET /_nodes/usage?', response);
+  return response;
 }
 
 /**
  * Get the cluster uuids from the connected cluster.
  */
-export const getClusterUuids: ClusterDetailsGetter = async ({ callCluster }) => {
-  const result = await getClusterStats(callCluster);
-  return [{ clusterUuid: result.cluster_uuid }];
+export const getNodesUsage: NodesUsageGetter = async (callCluster) => {
+  // console.log('1a. in getNodesUsage calling the fetcher');
+  const result = await fetchNodesUsage(callCluster);
+  // console.log('1b, did we get the final result back?', result);
+  return [{ cluster_name: result.cluster_name, nodes: result.nodes }];
 };

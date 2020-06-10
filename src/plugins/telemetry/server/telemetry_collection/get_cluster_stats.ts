@@ -20,6 +20,7 @@
 import { ClusterDetailsGetter } from 'src/plugins/telemetry_collection_manager/server';
 import { APICaller } from 'kibana/server';
 import { TIMEOUT } from './constants';
+import { getNodesUsage } from './get_nodes_usage';
 /**
  * Get the cluster stats from the connected cluster.
  *
@@ -36,5 +37,19 @@ export async function getClusterStats(callCluster: APICaller) {
  */
 export const getClusterUuids: ClusterDetailsGetter = async ({ callCluster }) => {
   const result = await getClusterStats(callCluster);
+  const nodesUsageResults = await getNodesUsage(callCluster);
+  // add the nodesUsageResults to the result.nodes object
+  // console.log('nodesUsageResults?', nodesUsageResults);
+  const nodesUsageResultOfInterest = nodesUsageResults.find(
+    (item) => item.cluster_name === result.cluster_name
+  );
+  if (nodesUsageResultOfInterest !== undefined) {
+    // I would need to reduce the nodesUsageResultOfInterest
+    const combinedResults = {
+      clusterUuid: result.cluster_uuid,
+      nodesUsage: { ...nodesUsageResultOfInterest.nodes },
+    };
+    return [combinedResults];
+  }
   return [{ clusterUuid: result.cluster_uuid }];
 };
