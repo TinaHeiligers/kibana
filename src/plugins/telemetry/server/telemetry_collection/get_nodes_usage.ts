@@ -59,7 +59,7 @@ export type NodesUsageGetter<CustomContext extends Record<string, any> = {}> = (
  */
 export async function fetchNodesUsage(callCluster: APICaller) {
   // console.log('2a, in fetchNodesUsage, about to make the call');
-  const response = await callCluster('transport.request', {
+  const response = await callCluster<NodesFeatureUsageResponse>('transport.request', {
     method: 'GET',
     path: '/_nodes/usage',
     query: {
