@@ -21,9 +21,11 @@ import {
   StatsGetter,
   StatsCollectionContext,
 } from 'src/plugins/telemetry_collection_manager/server';
+import { merge } from 'lodash';
 import { getClusterInfo, ESClusterInfo } from './get_cluster_info';
 import { getClusterStats } from './get_cluster_stats';
 import { getKibana, handleKibanaStats, KibanaUsageStats } from './get_kibana';
+import { getNodesUsage } from './get_nodes_usage';
 
 /**
  * Handle the separate local calls by combining them into a single object response that looks like the
@@ -57,6 +59,7 @@ export type TelemetryLocalStats = ReturnType<typeof handleLocalStats>;
 
 /**
  * Get statistics for all products joined by Elasticsearch cluster.
+ * cluster stats data is enhanced with usage data for the cluster nodes.
  */
 export const getLocalStats: StatsGetter<{}, TelemetryLocalStats> = async (
   clustersDetails,
@@ -64,15 +67,23 @@ export const getLocalStats: StatsGetter<{}, TelemetryLocalStats> = async (
   context
 ) => {
   const { callCluster, usageCollection } = config;
-  // We need to add in a call to GET /._nodes/usage in this array of promises
   return await Promise.all(
     clustersDetails.map(async (clustersDetail) => {
-      const [clusterInfo, clusterStats, kibana] = await Promise.all([
+      const [clusterInfo, clusterStats, nodesUsage, kibana] = await Promise.all([
         getClusterInfo(callCluster), // cluster info
         getClusterStats(callCluster), // cluster stats (not to be confused with cluster _state_)
+        getNodesUsage(callCluster),
         getKibana(usageCollection, callCluster),
       ]);
-      return handleLocalStats(clusterInfo, clusterStats, kibana, context);
+      return handleLocalStats(
+        clusterInfo,
+        {
+          ...clusterStats,
+          nodes: merge(clusterStats.nodes, { usage: nodesUsage }),
+        },
+        kibana,
+        context
+      );
     })
   );
 };

@@ -17,6 +17,7 @@
  * under the License.
  */
 import { APICaller } from 'kibana/server';
+import { keyCodes } from '@elastic/eui';
 import { TIMEOUT } from './constants';
 
 export interface NodeAggregation {
@@ -25,6 +26,7 @@ export interface NodeAggregation {
 
 // we set aggregations as an optional type because it was only added in v7.8.0
 export interface NodeObj {
+  node_id?: string;
   timestamp: number;
   since: number;
   rest_actions: {
@@ -46,10 +48,9 @@ export interface NodesFeatureUsageResponse {
   };
 }
 
-export type NodesUsageGetter<CustomContext extends Record<string, any> = {}> = (
-  callCluster: APICaller
-) => Promise<NodesFeatureUsageResponse[]>;
+export type NodesUsageFetcher = (callCluster: APICaller) => Promise<NodesFeatureUsageResponse>;
 
+export type NodesUsageGetter = (callCluster: APICaller) => Promise<{ nodes: any }>;
 /**
  * Get the nodes usage data from the connected cluster.
  *
@@ -57,25 +58,27 @@ export type NodesUsageGetter<CustomContext extends Record<string, any> = {}> = (
  *
  * The Nodes usage API was introduced in v6.0.0
  */
-export async function fetchNodesUsage(callCluster: APICaller) {
-  // console.log('2a, in fetchNodesUsage, about to make the call');
-  const response = await callCluster<NodesFeatureUsageResponse>('transport.request', {
+export async function fetchNodesUsage<NodesUsageFetcher>(callCluster: APICaller) {
+  const response = await callCluster('transport.request', {
     method: 'GET',
     path: '/_nodes/usage',
     query: {
       timeout: TIMEOUT,
     },
   });
-  // console.log('2b, do we have a response from calling GET /_nodes/usage?', response);
   return response;
 }
 
 /**
- * Get the cluster uuids from the connected cluster.
+ * Get the nodes usage from the connected cluster
+ * @param
+ * @returns Object containing array of modified usage information with the node_id nested within the data for that node.
  */
 export const getNodesUsage: NodesUsageGetter = async (callCluster) => {
-  // console.log('1a. in getNodesUsage calling the fetcher');
   const result = await fetchNodesUsage(callCluster);
-  // console.log('1b, did we get the final result back?', result);
-  return [{ cluster_name: result.cluster_name, nodes: result.nodes }];
+  const transformedNodes = Object.entries(result.nodes).map(([key, value]) => ({
+    ...(value as NodeObj),
+    node_id: key,
+  }));
+  return { nodes: transformedNodes };
 };
