@@ -5,3 +5,4 @@
  */
 
 export { getNodes } from './get_nodes';
+export { getNodesUsage } from './get_nodes_usage';

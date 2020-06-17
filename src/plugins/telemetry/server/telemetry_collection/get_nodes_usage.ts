@@ -17,7 +17,6 @@
  * under the License.
  */
 import { APICaller } from 'kibana/server';
-import { keyCodes } from '@elastic/eui';
 import { TIMEOUT } from './constants';
 
 export interface NodeAggregation {

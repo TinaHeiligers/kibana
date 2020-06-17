@@ -80,7 +80,6 @@ export function registerStatsApi(usageCollection, server, config, kbnServer) {
         const isLegacy = req.query.legacy !== undefined && req.query.legacy !== 'false';
         const shouldGetUsage =
           req.query.exclude_usage === undefined || req.query.exclude_usage === 'false';
-
         let extended;
         if (isExtended) {
           const { callWithRequest } = req.server.plugins.elasticsearch.getCluster('admin');
