@@ -92,35 +92,4 @@ export function esNodesRoute(server) {
     },
   });
 }
-
-/* the result for clusterStatus is:
-clusterStatus { status: 'yellow',
-  indicesCount: 15,
-  documentCount: 17106,
-  dataSize: 14989379,
-  nodesCount: 1,
-  upTime: 739171,
-  version: [ '8.0.0' ],
-  memUsed: 389908872,
-  memMax: 1073741824,
-  unassignedShards: 1,
-  totalShards: 16 }
-
-*/
-
-/* result for each node from getNodes is:
-{ name: 'christianes-mbp.lan',
-    transport_address: '127.0.0.1:9300',
-    type: 'master',
-    isOnline: true,
-    nodeTypeLabel: 'Master Node',
-    nodeTypeClass: 'starFilled',
-    shardCount: 15,
-    node_cgroup_quota: undefined,
-    node_cgroup_throttled: undefined,
-    node_cpu_utilization: { metric: [Object], summary: [Object] },
-    node_load_average: { metric: [Object], summary: [Object] },
-    node_jvm_mem_percent: { metric: [Object], summary: [Object] },
-    node_free_space: { metric: [Object], summary: [Object] },
-    resolver: '3qq_J5LnT8yUlerzkKJ6Tw' } --> this is the node_id
-*/
+// TODO: check that the nodes usage is being stored in the monitoring index!
