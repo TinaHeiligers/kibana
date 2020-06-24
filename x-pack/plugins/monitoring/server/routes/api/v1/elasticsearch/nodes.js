@@ -88,4 +88,3 @@ export function esNodesRoute(server) {
     },
   });
 }
-// TODO: check that the nodes usage is being stored in the monitoring index!
