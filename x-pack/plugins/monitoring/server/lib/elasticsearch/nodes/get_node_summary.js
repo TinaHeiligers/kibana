@@ -50,7 +50,7 @@ export function handleResponse(clusterState, shardStats, nodeUuid) {
         totalSpace: get(sourceStats, 'fs.total.total_in_bytes'),
         usedHeap: get(sourceStats, 'jvm.mem.heap_used_percent'),
         status: i18n.translate('xpack.monitoring.es.nodes.onlineStatusLabel', {
-          defaultMessage: 'BOB',
+          defaultMessage: 'Online',
         }),
         isOnline: true,
       };

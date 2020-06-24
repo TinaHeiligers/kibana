@@ -5,10 +5,9 @@
  */
 
 import { schema } from '@kbn/config-schema';
-import { merge } from 'lodash';
 import { getClusterStats } from '../../../../lib/cluster/get_cluster_stats';
 import { getClusterStatus } from '../../../../lib/cluster/get_cluster_status';
-import { getNodes, getNodesUsage } from '../../../../lib/elasticsearch/nodes';
+import { getNodes } from '../../../../lib/elasticsearch/nodes';
 import { getNodesShardCount } from '../../../../lib/elasticsearch/shards/get_nodes_shard_count';
 import { handleError } from '../../../../lib/errors/handle_error';
 import { prefixIndexPattern } from '../../../../lib/ccs_utils';
@@ -75,17 +74,14 @@ export function esNodesRoute(server) {
           }
         );
 
-        const nodesStats = await getNodes(
+        const nodes = await getNodes(
           req,
           esIndexPattern,
           pageOfNodes,
           clusterStats,
           nodesShardCount
         );
-        const nodesUsage = await getNodesUsage(req, esIndexPattern, pageOfNodes);
-        const nodes = merge(nodesStats, { usage: nodesUsage });
-        console.log('merged nodes:', nodes);
-        return { clusterStatus, nodes, totalNodeCount, nodesUsage };
+        return { clusterStatus, nodes, totalNodeCount };
       } catch (err) {
         throw handleError(err, req);
       }
