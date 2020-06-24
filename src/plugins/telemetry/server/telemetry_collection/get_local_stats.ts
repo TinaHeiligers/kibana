@@ -72,7 +72,7 @@ export const getLocalStats: StatsGetter<{}, TelemetryLocalStats> = async (
       const [clusterInfo, clusterStats, nodesUsage, kibana] = await Promise.all([
         getClusterInfo(callCluster), // cluster info
         getClusterStats(callCluster), // cluster stats (not to be confused with cluster _state_)
-        getNodesUsage(callCluster), // adding this call increases the network call time a lot! (from ~400ms -> > 1s)
+        getNodesUsage(callCluster), // nodes_usage added to the cluster_stats.nodes property
         getKibana(usageCollection, callCluster),
       ]);
       return handleLocalStats(
