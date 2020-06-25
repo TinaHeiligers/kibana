@@ -72,7 +72,7 @@ export const getLocalStats: StatsGetter<{}, TelemetryLocalStats> = async (
       const [clusterInfo, clusterStats, nodesUsage, kibana] = await Promise.all([
         getClusterInfo(callCluster), // cluster info
         getClusterStats(callCluster), // cluster stats (not to be confused with cluster _state_)
-        getNodesUsage(callCluster), // nodes_usage added to the cluster_stats.nodes property
+        getNodesUsage(callCluster), // nodes_usage added to the cluster_stats.nodes property. Question: does this belong in cluster_stats or should it move to cluster detail at the top level?
         getKibana(usageCollection, callCluster),
       ]);
       return handleLocalStats(
