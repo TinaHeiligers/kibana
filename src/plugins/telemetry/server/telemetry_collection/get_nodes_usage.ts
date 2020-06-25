@@ -70,7 +70,7 @@ export async function fetchNodesUsage<NodesUsageFetcher>(callCluster: APICaller)
 
 /**
  * Get the nodes usage from the connected cluster
- * @param
+ * @param callCluster APICaller
  * @returns Object containing array of modified usage information with the node_id nested within the data for that node.
  */
 export const getNodesUsage: NodesUsageGetter = async (callCluster) => {

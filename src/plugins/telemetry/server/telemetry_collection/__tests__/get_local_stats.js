@@ -72,7 +72,7 @@ describe('get_local_stats', () => {
     _nodes: { failed: 123 },
     cluster_name: 'real-cool',
     indices: { totally: 456 },
-    nodes: { yup: 'abc' },
+    nodes: { yup: 'abc', usage: { nodes: [] } },
     random: 123,
   };
   const kibana = {
