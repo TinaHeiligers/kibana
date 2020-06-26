@@ -90,7 +90,7 @@ describe('get_nodes_usage', () => {
       cluster_name: 'test',
       nodes: mockedNodesResponse,
     }));
-    const result = await getNodesUsage(callCluster);
+    await getNodesUsage(callCluster);
     expect(callCluster).toHaveBeenCalledWith('transport.request', {
       path: '/_nodes/usage',
       method: 'GET',
