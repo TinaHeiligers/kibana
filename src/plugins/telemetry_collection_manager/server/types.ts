@@ -144,6 +144,6 @@ export interface Collection<
   statsGetter: StatsGetter<CustomContext, T>;
   licenseGetter: LicenseGetter<CustomContext>;
   clusterDetailsGetter: ClusterDetailsGetter<CustomContext>;
-  esCluster: ILegacyClusterClient;
+  esCluster: ILegacyClusterClient; // this needs to change to the new es client that's not available on the setup method.
   title: string;
 }

@@ -78,7 +78,6 @@ export class FetcherTask {
   ) {
     this.internalRepository = new SavedObjectsClient(savedObjects.createInternalRepository());
     this.telemetryCollectionManager = telemetryCollectionManager;
-    // this.elasticsearchClient = elasticsearch.legacy.createClient('telemetry-fetcher');
     this.elasticsearchClient = elasticsearch.createClient('telemetry-fetcher');
 
     setTimeout(() => {
@@ -93,7 +92,6 @@ export class FetcherTask {
     }
     if (this.elasticsearchClient) {
       this.elasticsearchClient.close();
-      // this.elasticsearchClient.close();
     }
   }
 

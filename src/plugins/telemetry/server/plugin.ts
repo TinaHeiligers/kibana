@@ -81,8 +81,7 @@ export class TelemetryPlugin implements Plugin {
     const currentKibanaVersion = this.currentKibanaVersion;
     const config$ = this.config$;
     const isDev = this.isDev;
-
-    registerCollection(telemetryCollectionManager, elasticsearch.legacy.client);
+    registerCollection(telemetryCollectionManager, elasticsearch.legacy.client); // the new es client is no longer available during setup.
     const router = http.createRouter();
 
     registerRoutes({
