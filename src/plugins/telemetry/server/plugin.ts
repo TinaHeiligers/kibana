@@ -32,6 +32,7 @@ import {
   SavedObjectsClient,
   Plugin,
   Logger,
+  IClusterClient,
 } from '../../../core/server';
 import { registerRoutes } from './routes';
 import { registerCollection } from './telemetry_collection';
@@ -62,6 +63,7 @@ export class TelemetryPlugin implements Plugin {
   private readonly fetcherTask: FetcherTask;
   private savedObjectsClient?: ISavedObjectsRepository;
   private uiSettingsClient?: IUiSettingsClient;
+  private elasticsearchClient?: IClusterClient;
 
   constructor(initializerContext: PluginInitializerContext<TelemetryConfigType>) {
     this.logger = initializerContext.logger.get();
@@ -75,14 +77,19 @@ export class TelemetryPlugin implements Plugin {
   }
 
   public async setup(
-    { elasticsearch, http, savedObjects }: CoreSetup,
+    // elasticsearch from CoreSetup is the legacy elasticsearch client
+    core: CoreSetup,
     { usageCollection, telemetryCollectionManager }: TelemetryPluginsSetup
   ) {
     const currentKibanaVersion = this.currentKibanaVersion;
     const config$ = this.config$;
     const isDev = this.isDev;
-    registerCollection(telemetryCollectionManager, elasticsearch.legacy.client); // the new es client is no longer available during setup.
-    const router = http.createRouter();
+    const callClusterGetter = this.getCallCluster;
+    registerCollection(
+      telemetryCollectionManager,
+      core.elasticsearch?.legacy?.client || callClusterGetter
+    ); // the new es client is no longer available during setup, if it is there, it's the legacy client.
+    const router = core.http.createRouter();
 
     registerRoutes({
       config$,
@@ -93,15 +100,16 @@ export class TelemetryPlugin implements Plugin {
       telemetryCollectionManager,
     });
 
-    this.registerMappings((opts) => savedObjects.registerType(opts));
+    this.registerMappings((opts) => core.savedObjects.registerType(opts));
     this.registerUsageCollectors(usageCollection);
   }
 
   public async start(core: CoreStart, { telemetryCollectionManager }: TelemetryPluginsStart) {
-    const { savedObjects, uiSettings } = core;
+    const { savedObjects, uiSettings, elasticsearch } = core;
     this.savedObjectsClient = savedObjects.createInternalRepository();
     const savedObjectsClient = new SavedObjectsClient(this.savedObjectsClient);
     this.uiSettingsClient = uiSettings.asScopedToClient(savedObjectsClient);
+    this.elasticsearchClient = elasticsearch.client;
 
     try {
       await handleOldSettings(savedObjectsClient, this.uiSettingsClient);
@@ -110,6 +118,9 @@ export class TelemetryPlugin implements Plugin {
     }
 
     this.fetcherTask.start(core, { telemetryCollectionManager });
+  }
+  private getCallCluster() {
+    return this.elasticsearchClient;
   }
 
   private registerMappings(registerType: SavedObjectsRegisterType) {
