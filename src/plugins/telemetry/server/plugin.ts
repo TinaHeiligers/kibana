@@ -33,6 +33,7 @@ import {
   Plugin,
   Logger,
   IClusterClient,
+  ILegacyClusterClient,
 } from '../../../core/server';
 import { registerRoutes } from './routes';
 import { registerCollection } from './telemetry_collection';
@@ -54,6 +55,10 @@ export interface TelemetryPluginsStart {
 }
 
 type SavedObjectsRegisterType = CoreSetup['savedObjects']['registerType'];
+
+type ClusterClientGetter = () =>
+  | Pick<ILegacyClusterClient, 'callAsInternalUser' | 'asScoped'>
+  | IClusterClient;
 
 export class TelemetryPlugin implements Plugin {
   private readonly logger: Logger;
@@ -84,11 +89,10 @@ export class TelemetryPlugin implements Plugin {
     const currentKibanaVersion = this.currentKibanaVersion;
     const config$ = this.config$;
     const isDev = this.isDev;
-    const callClusterGetter = this.getCallCluster;
-    registerCollection(
-      telemetryCollectionManager,
-      core.elasticsearch?.legacy?.client || callClusterGetter
-    ); // the new es client is no longer available during setup, if it is there, it's the legacy client.
+    const callClusterGetter = core.elasticsearch
+      ? () => core.elasticsearch.legacy.client as ILegacyClusterClient
+      : this.getCallCluster;
+    registerCollection(telemetryCollectionManager, callClusterGetter as ClusterClientGetter);
     const router = core.http.createRouter();
 
     registerRoutes({
@@ -120,7 +124,7 @@ export class TelemetryPlugin implements Plugin {
     this.fetcherTask.start(core, { telemetryCollectionManager });
   }
   private getCallCluster() {
-    return this.elasticsearchClient;
+    return this.elasticsearchClient!;
   }
 
   private registerMappings(registerType: SavedObjectsRegisterType) {

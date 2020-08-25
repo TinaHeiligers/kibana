@@ -135,7 +135,7 @@ export interface CollectionConfig<
 > {
   title: string;
   priority: number;
-  getEsCluster: Promise<ILegacyClusterClient> | Promise<IClusterClient>;
+  callClusterGetter: ClusterClientGetter;
   statsGetter: StatsGetter<CustomContext, T>;
   clusterDetailsGetter: ClusterDetailsGetter<CustomContext>;
   licenseGetter: LicenseGetter<CustomContext>;
@@ -153,3 +153,7 @@ export interface Collection<
   esCluster: ILegacyClusterClient | IClusterClient; // this needs to change to the new es client that's not available on the setup method.
   title: string;
 }
+
+type ClusterClientGetter = () =>
+  | Pick<ILegacyClusterClient, 'callAsInternalUser' | 'asScoped'>
+  | IClusterClient;

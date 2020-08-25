@@ -42,12 +42,16 @@ import { getLocalStats } from './get_local_stats';
 import { getClusterUuids } from './get_cluster_stats';
 import { getLocalLicense } from './get_local_license';
 
+type ClusterClientGetter = () =>
+  | Pick<ILegacyClusterClient, 'callAsInternalUser' | 'asScoped'>
+  | IClusterClient;
+
 export function registerCollection(
   telemetryCollectionManager: TelemetryCollectionManagerPluginSetup,
-  getEsCluster: Promise<ILegacyClusterClient> | Promise<IClusterClient>
+  callClusterGetter: ClusterClientGetter
 ) {
   telemetryCollectionManager.setCollection({
-    getEsCluster,
+    callClusterGetter,
     title: 'local',
     priority: 0,
     statsGetter: getLocalStats,
