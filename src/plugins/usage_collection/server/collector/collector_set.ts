@@ -76,6 +76,7 @@ export class CollectorSet {
   };
 
   public areAllCollectorsReady = async (collectorSet: CollectorSet = this) => {
+    // potentially return false if any collector's fetch method returns undefined for getCallCluster
     // Kept this for runtime validation in JS code.
     if (!(collectorSet instanceof CollectorSet)) {
       throw new Error(
