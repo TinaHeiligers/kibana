@@ -90,7 +90,7 @@ export class TelemetryPlugin implements Plugin {
     const config$ = this.config$;
     const isDev = this.isDev;
     const callClusterGetter = core.elasticsearch
-      ? () => core.elasticsearch.legacy.client as ILegacyClusterClient
+      ? () => core.elasticsearch.legacy.client
       : this.getCallCluster;
     registerCollection(telemetryCollectionManager, callClusterGetter as ClusterClientGetter);
     const router = core.http.createRouter();

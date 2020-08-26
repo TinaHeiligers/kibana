@@ -119,16 +119,20 @@ export class CollectorSet {
   };
 
   public bulkFetch = async (
-    callCluster: LegacyAPICaller,
+    callCluster: LegacyAPICaller, // we will receive the getter.
     collectors: Map<string, Collector<any, any>> = this.collectors
   ) => {
+    // first check that we get something from the callCluster getter.
+    // if we don't get anything return an empty array.
+    // get the cluster and pass into the fetch method.
     const responses = await Promise.all(
       [...collectors.values()].map(async (collector) => {
         this.logger.debug(`Fetching data from ${collector.type} collector`);
         try {
           return {
             type: collector.type,
-            result: await collector.fetch(callCluster),
+            result: await collector.fetch(callCluster), // -> provide all the other context in here too. { all the additional API's we want to expose: scoped Saved Object, request from Kibana and the rest.}
+            // result: await collector.fetch({.....everything})
           };
         } catch (err) {
           this.logger.warn(err);
