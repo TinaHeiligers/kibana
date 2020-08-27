@@ -33,7 +33,6 @@ import {
   Plugin,
   Logger,
   IClusterClient,
-  ILegacyClusterClient,
 } from '../../../core/server';
 import { registerRoutes } from './routes';
 import { registerCollection } from './telemetry_collection';
@@ -55,10 +54,6 @@ export interface TelemetryPluginsStart {
 }
 
 type SavedObjectsRegisterType = CoreSetup['savedObjects']['registerType'];
-
-type ClusterClientGetter = () =>
-  | Pick<ILegacyClusterClient, 'callAsInternalUser' | 'asScoped'>
-  | IClusterClient;
 
 export class TelemetryPlugin implements Plugin {
   private readonly logger: Logger;
@@ -89,10 +84,8 @@ export class TelemetryPlugin implements Plugin {
     const currentKibanaVersion = this.currentKibanaVersion;
     const config$ = this.config$;
     const isDev = this.isDev;
-    const callClusterGetter = core.elasticsearch
-      ? () => core.elasticsearch.legacy.client
-      : this.getCallCluster;
-    registerCollection(telemetryCollectionManager, callClusterGetter as ClusterClientGetter);
+    const callClusterGetter = this.getCallCluster;
+    registerCollection(telemetryCollectionManager, callClusterGetter);
     const router = core.http.createRouter();
 
     registerRoutes({

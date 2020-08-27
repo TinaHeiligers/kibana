@@ -76,7 +76,9 @@ export class CollectorSet {
   };
 
   public areAllCollectorsReady = async (collectorSet: CollectorSet = this) => {
-    // potentially return false if any collector's fetch method returns undefined for getCallCluster
+    // Tina TODO: potentially return false if any collector returns undefined for getCallCluster
+    // I need to ADD getCallCluster to the Collector class.
+
     // Kept this for runtime validation in JS code.
     if (!(collectorSet instanceof CollectorSet)) {
       throw new Error(
@@ -94,6 +96,15 @@ export class CollectorSet {
       )
     ).filter((collectorType): collectorType is string => !!collectorType);
     const allReady = collectorTypesNotReady.length === 0;
+
+    const collectorClusterClientsNotReady = await Promise.all(
+      [...collectorSet.collectors.values()].map((collector) => {
+        // how to I call getClusterGetter within the fetch method?
+        if (!collector.getCluster) {
+          return collector.type;
+        }
+      })
+    );
 
     if (!allReady && this.maximumWaitTimeForAllCollectorsInS >= 0) {
       const nowTimestamp = +new Date();
@@ -122,9 +133,9 @@ export class CollectorSet {
     callCluster: LegacyAPICaller, // we will receive the getter.
     collectors: Map<string, Collector<any, any>> = this.collectors
   ) => {
-    // first check that we get something from the callCluster getter.
-    // if we don't get anything return an empty array.
-    // get the cluster and pass into the fetch method.
+    // Tina TODO: Then also first check that we get something from the callCluster getter.
+    // 2. if we don't get anything return an empty array.
+    // 3. then get the cluster and pass that into the fetch method.
     const responses = await Promise.all(
       [...collectors.values()].map(async (collector) => {
         this.logger.debug(`Fetching data from ${collector.type} collector`);

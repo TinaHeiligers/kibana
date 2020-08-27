@@ -27,7 +27,6 @@ import {
   LegacyClusterClient,
   IClusterClient,
   LegacyAPICaller,
-  ILegacyClusterClient,
 } from '../../../core/server';
 
 import {
@@ -106,7 +105,7 @@ export class TelemetryCollectionManagerPlugin
         throw Error('Stats getter method not set.');
       }
       if (!callClusterGetter) {
-        throw Error('callClusterGetter needs to be a method');
+        throw Error('callCluster getter method not set.');
       }
       if (!clusterDetailsGetter) {
         throw Error('Cluster UUIds method is not set.');
@@ -114,7 +113,6 @@ export class TelemetryCollectionManagerPlugin
       if (!licenseGetter) {
         throw Error('License getter method not set.');
       }
-
       this.collections.unshift({
         licenseGetter,
         statsGetter,
@@ -125,61 +123,18 @@ export class TelemetryCollectionManagerPlugin
       this.usageGetterMethodPriority = priority;
     }
   }
-
-  private isLegacyClusterClient(
-    esCluster: Pick<LegacyClusterClient, 'callAsInternalUser' | 'asScoped'> | IClusterClient
-  ): esCluster is LegacyClusterClient {
-    return (esCluster as LegacyClusterClient).asScoped !== undefined;
-  }
-
+  // do I need to provide the callCluster method here or can it happen later?
   private getStatsCollectionConfig(
     config: StatsGetterConfig,
     collection: Collection,
     usageCollection: UsageCollectionSetup
   ): StatsCollectionConfig {
     const { start, end } = config;
+    const callCluster = config.unencrypted
+      ? collection.callClusterGetter().asScoped(config.request).asCurrentUser
+      : collection.callClusterGetter().asInternalUser;
 
-    const clusterCaller = this.getClusterCaller(config, collection.esCluster);
-
-    // const clusterCaller =
-    // config.unencrypted
-    //   ? // handle unencrypted case where we scope the request with the current user
-    //     isLegacyCallCluster
-    //     ? (collection.esCluster as Pick<
-    //         LegacyClusterClient,
-    //         'callAsInternalUser' | 'asScoped'
-    //       >).asScoped(request!).callAsCurrentUser
-    //     : (collection.esCluster as IClusterClient).asScoped(request!).asCurrentUser // this depends on the type of EsClient we have. If it's the new client we need to use collection.esCluster.asCurrentUser
-    //   : isLegacyCallCluster // handle encrypted case where we scope the request to use the internal user
-    //   ? (collection.esCluster as Pick<LegacyClusterClient, 'callAsInternalUser' | 'asScoped'>)
-    //       .callAsInternalUser
-    //   : (collection.esCluster as IClusterClient).asInternalUser;
-
-    const callCluster = clusterCaller as LegacyAPICaller | IClusterClient;
     return { callCluster, start, end, usageCollection };
-  }
-
-  private getClusterCaller(
-    config: StatsGetterConfig,
-    esCluster: ILegacyClusterClient | IClusterClient
-  ) {
-    const isLegacyCallCluster = esCluster !== undefined && this.isLegacyClusterClient(esCluster);
-    if (config.unencrypted) {
-      if (isLegacyCallCluster) {
-        return (esCluster as Pick<LegacyClusterClient, 'callAsInternalUser' | 'asScoped'>).asScoped(
-          config.request
-        ).callAsCurrentUser;
-      } else {
-        return (esCluster as IClusterClient).asScoped(config.request).asCurrentUser;
-      }
-    } else {
-      if (isLegacyCallCluster) {
-        return (esCluster as Pick<LegacyClusterClient, 'callAsInternalUser' | 'asScoped'>)
-          .callAsInternalUser;
-      } else {
-        return (esCluster as IClusterClient).asInternalUser;
-      }
-    }
   }
 
   private async getOptInStats(optInStatus: boolean, config: StatsGetterConfig) {
@@ -236,6 +191,7 @@ export class TelemetryCollectionManagerPlugin
     if (!this.usageCollection) {
       return [];
     }
+
     // we need to check if we get something from the callCluster getter before looping though the collectors.
     // if callCluster is undefined, return an empty array.
     for (const collection of this.collections) {

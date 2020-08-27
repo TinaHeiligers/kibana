@@ -36,19 +36,15 @@
  * under the License.
  */
 
-import { ILegacyClusterClient, IClusterClient } from 'kibana/server';
+import { IClusterClient } from 'kibana/server';
 import { TelemetryCollectionManagerPluginSetup } from 'src/plugins/telemetry_collection_manager/server';
 import { getLocalStats } from './get_local_stats';
 import { getClusterUuids } from './get_cluster_stats';
 import { getLocalLicense } from './get_local_license';
 
-type ClusterClientGetter = () =>
-  | Pick<ILegacyClusterClient, 'callAsInternalUser' | 'asScoped'>
-  | IClusterClient;
-
 export function registerCollection(
   telemetryCollectionManager: TelemetryCollectionManagerPluginSetup,
-  callClusterGetter: ClusterClientGetter
+  callClusterGetter: () => IClusterClient
 ) {
   telemetryCollectionManager.setCollection({
     callClusterGetter,

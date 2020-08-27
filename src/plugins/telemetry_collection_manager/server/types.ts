@@ -17,13 +17,7 @@
  * under the License.
  */
 
-import {
-  LegacyAPICaller,
-  Logger,
-  KibanaRequest,
-  ILegacyClusterClient,
-  IClusterClient,
-} from 'kibana/server';
+import { Logger, KibanaRequest, IClusterClient, ElasticsearchClient } from 'kibana/server';
 import { UsageCollectionSetup } from 'src/plugins/usage_collection/server';
 import { TelemetryCollectionManagerPlugin } from './plugin';
 
@@ -70,7 +64,7 @@ export interface ClusterDetails {
 
 export interface StatsCollectionConfig {
   usageCollection: UsageCollectionSetup;
-  callCluster: LegacyAPICaller | IClusterClient;
+  callCluster: ElasticsearchClient;
   start: string | number;
   end: string | number;
 }
@@ -135,7 +129,7 @@ export interface CollectionConfig<
 > {
   title: string;
   priority: number;
-  callClusterGetter: ClusterClientGetter;
+  callClusterGetter: () => IClusterClient;
   statsGetter: StatsGetter<CustomContext, T>;
   clusterDetailsGetter: ClusterDetailsGetter<CustomContext>;
   licenseGetter: LicenseGetter<CustomContext>;
@@ -150,10 +144,6 @@ export interface Collection<
   statsGetter: StatsGetter<CustomContext, T>;
   licenseGetter: LicenseGetter<CustomContext>;
   clusterDetailsGetter: ClusterDetailsGetter<CustomContext>;
-  callClusterGetter: ClusterClientGetter; // this needs to change to the new es client that's not available on the setup method.
+  callClusterGetter: () => IClusterClient; // this needs to change to the new es client that's not available on the setup method.
   title: string;
 }
-
-type ClusterClientGetter = () =>
-  | Pick<ILegacyClusterClient, 'callAsInternalUser' | 'asScoped'>
-  | IClusterClient;
