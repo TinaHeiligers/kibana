@@ -5,6 +5,8 @@
  */
 
 import { CallCluster } from 'src/legacy/core_plugins/elasticsearch';
+import { ElasticsearchClient } from 'src/core/server';
+import { ApiResponse, RequestParams } from '@elastic/elasticsearch';
 import { TIMEOUT } from './constants';
 
 /**
@@ -14,12 +16,17 @@ import { TIMEOUT } from './constants';
  *
  * Like any X-Pack related API, X-Pack must installed for this to work.
  */
-export function getXPackUsage(callCluster: CallCluster) {
-  return callCluster('transport.request', {
+export async function getXPackUsage(callCluster: CallCluster, esClient: ElasticsearchClient) {
+  const useLegacy = true;
+
+  const legacyResponse = callCluster('transport.request', {
     method: 'GET',
     path: '/_xpack/usage',
     query: {
       master_timeout: TIMEOUT,
     },
   });
+  const xpackUsageParams: RequestParams.XpackUsage = { master_timeout: TIMEOUT };
+  const response: ApiResponse = await esClient.xpack.usage(xpackUsageParams);
+  return useLegacy ? legacyResponse : response.body;
 }

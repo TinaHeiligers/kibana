@@ -72,7 +72,7 @@ export class Plugin {
   private monitoringCore = {} as MonitoringCore;
   private legacyShimDependencies = {} as LegacyShimDependencies;
   private bulkUploader: IBulkUploader = {} as IBulkUploader;
-  private elasticsearchClient: IClusterClient;
+  private elasticsearchClient?: IClusterClient;
 
   constructor(initializerContext: PluginInitializerContext) {
     this.initializerContext = initializerContext;
@@ -102,6 +102,7 @@ export class Plugin {
 
     // Monitoring creates and maintains a connection to a potentially
     // separate ES cluster - create this first
+    // we need to include the new es client in here
     const cluster = (this.cluster = instantiateClient(
       config.ui.elasticsearch,
       this.log,
