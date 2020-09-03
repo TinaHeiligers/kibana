@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
+import { ApiResponse, RequestParams } from '@elastic/elasticsearch';
 import { ClusterDetailsGetter } from 'src/plugins/telemetry_collection_manager/server';
 import { LegacyAPICaller, ElasticsearchClient } from 'kibana/server';
 import { TIMEOUT } from './constants';
@@ -26,12 +26,15 @@ import { TIMEOUT } from './constants';
  * This is the equivalent to GET /_cluster/stats?timeout=30s.
  */
 export async function getClusterStats(callCluster: LegacyAPICaller, esClient: ElasticsearchClient) {
-  const useLegacy = true;
+  const useLegacy = false;
   const legacyClusterStats = await callCluster('cluster.stats', {
     timeout: TIMEOUT,
   });
-  const { body } = await esClient.cluster.stats({ timeout: TIMEOUT });
-  return useLegacy ? legacyClusterStats : body;
+  const clusterStatsParams: RequestParams.ClusterStats = {
+    timeout: TIMEOUT,
+  };
+  const response: ApiResponse = await esClient.cluster.stats(clusterStatsParams);
+  return useLegacy ? legacyClusterStats : response.body;
 }
 
 /**

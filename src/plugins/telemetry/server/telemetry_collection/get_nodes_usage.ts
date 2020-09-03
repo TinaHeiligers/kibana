@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import { ApiResponse, RequestParams } from '@elastic/elasticsearch';
 import { LegacyAPICaller, ElasticsearchClient } from 'kibana/server';
 import { TIMEOUT } from './constants';
 
@@ -66,8 +67,13 @@ export async function fetchNodesUsage(
       timeout: TIMEOUT,
     },
   });
-  const { body } = await esClient.nodes.usage({ metric: '_all', timeout: TIMEOUT });
-  return useLegacy ? legacyResponse : body;
+  const nodesUsageParams: RequestParams.NodesUsage = {
+    metric: '_all',
+    timeout: TIMEOUT,
+  };
+
+  const response: ApiResponse = await esClient.nodes.usage(nodesUsageParams);
+  return useLegacy ? legacyResponse : response.body;
 }
 
 /**

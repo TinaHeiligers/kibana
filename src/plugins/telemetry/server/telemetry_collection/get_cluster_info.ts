@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
+import { RequestParams } from '@elastic/elasticsearch';
 import { LegacyAPICaller, ElasticsearchClient } from 'kibana/server';
 
 // This can be removed when the ES client improves the types
@@ -42,8 +42,9 @@ export interface ESClusterInfoResponse {
   warnings: string[];
   meta: object;
 }
+
 export async function clusterInfoGetter(esClient: ElasticsearchClient) {
-  const { body } = ((await esClient.info()) as unknown) as ESClusterInfoResponse;
+  const { body } = await esClient.info<RequestParams.Info>();
   return body;
 }
 /**
@@ -65,6 +66,6 @@ export async function clusterInfoGetter(esClient: ElasticsearchClient) {
  * }
  */
 export function getClusterInfo(callCluster: LegacyAPICaller, esClient: ElasticsearchClient) {
-  const useLegacy = true;
+  const useLegacy = false;
   return useLegacy ? callCluster<ESClusterInfo>('info') : clusterInfoGetter(esClient);
 }
