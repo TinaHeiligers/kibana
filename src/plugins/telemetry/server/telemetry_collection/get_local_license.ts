@@ -17,6 +17,7 @@
  * under the License.
  */
 
+import { ApiResponse, RequestParams, errors } from '@elastic/elasticsearch';
 import { LegacyAPICaller, ElasticsearchClient } from 'kibana/server';
 import { ESLicense, LicenseGetter } from 'src/plugins/telemetry_collection_manager/server';
 
@@ -33,7 +34,9 @@ function fetchLicense(callCluster: LegacyAPICaller, local: boolean) {
     },
   });
 }
-
+interface LicenseResponse<T> {
+  license: T;
+}
 /**
  * Get the cluster's license from the connected node.
  *
@@ -42,42 +45,40 @@ function fetchLicense(callCluster: LegacyAPICaller, local: boolean) {
  * Like any X-Pack related API, X-Pack must installed for this to work.
  */
 async function getLicenseFromLocalOrMasterNewClient(esClient: ElasticsearchClient) {
-  let response;
-  try {
-    // Fetching the license from the local node is cheaper than getting it from the master node and good enough
-    const { body } = await esClient.license.get<{ license: ESLicense }>({
-      local: true,
-      accept_enterprise: true,
-    });
-    cachedLicense = body.license;
-    response = body.license;
-  } catch (err) {
-    // if there is an error, try to get the license from the master node:
-    if (cachedLicense) {
-      try {
-        const { body } = await esClient.license.get<{ license: ESLicense }>({
-          local: false,
-          accept_enterprise: true,
-        });
-        cachedLicense = body.license;
-        response = body.license;
-      } catch (masterError) {
-        if (masterError.statusCode === 404) {
-          // the master node doesn't have a license and we assume there isn't a license
-          cachedLicense = undefined;
-          response = undefined;
-        } else {
-          throw err;
+  const localLicenseParams: RequestParams.LicenseGet = {
+    local: true,
+    accept_enterprise: true,
+  };
+  const masterLicenseParams: RequestParams.LicenseGet = {
+    local: false,
+    accept_enterprise: true,
+  };
+  // Fetching the license from the local node is cheaper than getting it from the master node and good enough
+  const response: ApiResponse = await esClient.license
+    .get<LicenseResponse<ESLicense>>(localLicenseParams)
+    .catch(async (err) => {
+      if (cachedLicense) {
+        try {
+          // Fallback to the master node's license info
+          const masterResponse = await esClient.license.get(masterLicenseParams);
+          return masterResponse;
+        } catch (masterError) {
+          if (masterError instanceof errors.ResponseError && masterError.statusCode === 404) {
+            // If the master node does not have a license, we can assume there is no license
+            cachedLicense = undefined;
+          } else {
+            // Any other errors from the master node, throw and do not send any telemetry
+            throw err;
+          }
         }
       }
-    }
-    if (err.statusCode === 404) {
-      cachedLicense = undefined;
-    } else {
-      throw err;
-    }
+      return { ...response, body: { license: void 0 } };
+    });
+
+  if (response.body.license) {
+    cachedLicense = response.body.license;
   }
-  return response;
+  return response.body.license as ESLicense;
 }
 
 /**
@@ -118,7 +119,7 @@ export const getLocalLicense: LicenseGetter = async (
   clustersDetails,
   { callCluster, esClient }
 ) => {
-  const useLegacy = true;
+  const useLegacy = false;
   if (!useLegacy) {
     const license = await getLicenseFromLocalOrMasterNewClient(esClient);
     return clustersDetails.reduce(
