@@ -133,7 +133,7 @@ export function buildDataTelemetryPayload(indices: DataTelemetryIndex[]): DataTe
 
 export async function getDataTelemetry(
   callCluster: LegacyAPICaller,
-  esClient: ElasticsearchClient
+  esClient?: ElasticsearchClient
 ) {
   const useLegacy = false;
   try {
@@ -171,69 +171,93 @@ export async function getDataTelemetry(
         }),
       ]);
       const indexNames = Object.keys({ ...indexMappings, ...indexStats?.indices });
-    }
 
-    const indexMappingsParams: RequestParams.IndicesGetMapping = {
-      index: '*',
-      filter_path: [
-        // _meta.beat tells the shipper
-        '*.mappings._meta.beat',
-        // _meta.package.name tells the Ingest Manager's package
-        '*.mappings._meta.package.name',
-        // _meta.managed_by is usually populated by Ingest Manager for the UI to identify it
-        '*.mappings._meta.managed_by',
-        // Does it have `ecs.version` in the mappings? => It follows the ECS conventions
-        '*.mappings.properties.ecs.properties.version.type',
-
-        // If `data_stream.type` is a `constant_keyword`, it can be reported as a type
-        '*.mappings.properties.data_stream.properties.type.value',
-        // If `data_stream.dataset` is a `constant_keyword`, it can be reported as the dataset
-        '*.mappings.properties.data_stream.properties.dataset.value',
-      ],
-    };
-    const indicesStatsParams: RequestParams.IndicesStats = {
-      index: 'index',
-      level: 'indices',
-      metric: ['docs', 'store'],
-      filter_path: ['indices.*.total'],
-    };
-    const [indexMappingsResponse, indexStatsResponse]: [
-      ApiResponse,
-      ApiResponse
-    ] = await Promise.all([
-      esClient.indices.getMapping(indexMappingsParams),
-      esClient.indices.stats(indicesStatsParams),
-    ]);
-
-    const indexMappings = indexMappingsResponse.body as IndexMappings;
-    const indexStats = indexStatsResponse.body as IndexStats;
-
-    const indexNames = Object.keys({ ...indexMappings, ...indexStats?.indices });
-
-    const indices = indexNames.map((name) => {
-      const baseIndexInfo = {
-        name,
-        isECS: !!indexMappings[name]?.mappings?.properties.ecs?.properties.version?.type,
-        shipper: indexMappings[name]?.mappings?._meta?.beat,
-        packageName: indexMappings[name]?.mappings?._meta?.package?.name,
-        managedBy: indexMappings[name]?.mappings?._meta?.managed_by,
-        dataStreamDataset:
-          indexMappings[name]?.mappings?.properties.data_stream?.properties.dataset?.value,
-        dataStreamType:
-          indexMappings[name]?.mappings?.properties.data_stream?.properties.type?.value,
-      };
-
-      const stats = (indexStats?.indices || {})[name];
-      if (stats) {
-        return {
-          ...baseIndexInfo,
-          docCount: stats.total?.docs?.count,
-          sizeInBytes: stats.total?.store?.size_in_bytes,
+      const indices = indexNames.map((name) => {
+        const baseIndexInfo = {
+          name,
+          isECS: !!indexMappings[name]?.mappings?.properties.ecs?.properties.version?.type,
+          shipper: indexMappings[name]?.mappings?._meta?.beat,
+          packageName: indexMappings[name]?.mappings?._meta?.package?.name,
+          managedBy: indexMappings[name]?.mappings?._meta?.managed_by,
+          dataStreamDataset:
+            indexMappings[name]?.mappings?.properties.data_stream?.properties.dataset?.value,
+          dataStreamType:
+            indexMappings[name]?.mappings?.properties.data_stream?.properties.type?.value,
         };
-      }
-      return baseIndexInfo;
-    });
-    return buildDataTelemetryPayload(indices);
+
+        const stats = (indexStats?.indices || {})[name];
+        if (stats) {
+          return {
+            ...baseIndexInfo,
+            docCount: stats.total?.docs?.count,
+            sizeInBytes: stats.total?.store?.size_in_bytes,
+          };
+        }
+        return baseIndexInfo;
+      });
+      return buildDataTelemetryPayload(indices);
+    } else {
+      const indexMappingsParams: RequestParams.IndicesGetMapping = {
+        index: '*',
+        filter_path: [
+          // _meta.beat tells the shipper
+          '*.mappings._meta.beat',
+          // _meta.package.name tells the Ingest Manager's package
+          '*.mappings._meta.package.name',
+          // _meta.managed_by is usually populated by Ingest Manager for the UI to identify it
+          '*.mappings._meta.managed_by',
+          // Does it have `ecs.version` in the mappings? => It follows the ECS conventions
+          '*.mappings.properties.ecs.properties.version.type',
+
+          // If `data_stream.type` is a `constant_keyword`, it can be reported as a type
+          '*.mappings.properties.data_stream.properties.type.value',
+          // If `data_stream.dataset` is a `constant_keyword`, it can be reported as the dataset
+          '*.mappings.properties.data_stream.properties.dataset.value',
+        ],
+      };
+      const indicesStatsParams: RequestParams.IndicesStats = {
+        index: 'index',
+        level: 'indices',
+        metric: ['docs', 'store'],
+        filter_path: ['indices.*.total'],
+      };
+      const [indexMappingsResponse, indexStatsResponse]: [
+        ApiResponse,
+        ApiResponse
+      ] = await Promise.all([
+        esClient!.indices.getMapping(indexMappingsParams),
+        esClient!.indices.stats(indicesStatsParams),
+      ]);
+      const indexMappings = indexMappingsResponse.body as IndexMappings;
+      const indexStats = indexStatsResponse.body as IndexStats;
+
+      const indexNames = Object.keys({ ...indexMappings, ...indexStats?.indices });
+
+      const indices = indexNames.map((name) => {
+        const baseIndexInfo = {
+          name,
+          isECS: !!indexMappings[name]?.mappings?.properties.ecs?.properties.version?.type,
+          shipper: indexMappings[name]?.mappings?._meta?.beat,
+          packageName: indexMappings[name]?.mappings?._meta?.package?.name,
+          managedBy: indexMappings[name]?.mappings?._meta?.managed_by,
+          dataStreamDataset:
+            indexMappings[name]?.mappings?.properties.data_stream?.properties.dataset?.value,
+          dataStreamType:
+            indexMappings[name]?.mappings?.properties.data_stream?.properties.type?.value,
+        };
+
+        const stats = (indexStats?.indices || {})[name];
+        if (stats) {
+          return {
+            ...baseIndexInfo,
+            docCount: stats.total?.docs?.count,
+            sizeInBytes: stats.total?.store?.size_in_bytes,
+          };
+        }
+        return baseIndexInfo;
+      });
+      return buildDataTelemetryPayload(indices);
+    }
   } catch (e) {
     return [];
   }

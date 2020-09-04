@@ -46,7 +46,7 @@ export interface NodesFeatureUsageResponse {
 
 export type NodesUsageGetter = (
   callCluster: LegacyAPICaller,
-  esClient: ElasticsearchClient
+  esClient?: ElasticsearchClient
 ) => Promise<{ nodes: NodeObj[] | Array<{}> }>;
 /**
  * Get the nodes usage data from the connected cluster.
@@ -57,9 +57,9 @@ export type NodesUsageGetter = (
  */
 export async function fetchNodesUsage(
   callCluster: LegacyAPICaller,
-  esClient: ElasticsearchClient
+  esClient: ElasticsearchClient | undefined
 ): Promise<NodesFeatureUsageResponse> {
-  const useLegacy = false;
+  const useLegacy = !!esClient;
   const legacyResponse = await callCluster('transport.request', {
     method: 'GET',
     path: '/_nodes/usage',
@@ -72,8 +72,8 @@ export async function fetchNodesUsage(
     timeout: TIMEOUT,
   };
 
-  const response: ApiResponse = await esClient.nodes.usage(nodesUsageParams);
-  return useLegacy ? legacyResponse : response.body;
+  const response: ApiResponse | undefined = await esClient?.nodes.usage(nodesUsageParams);
+  return useLegacy ? legacyResponse : response?.body;
 }
 
 /**

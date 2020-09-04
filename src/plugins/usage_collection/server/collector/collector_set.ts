@@ -121,7 +121,7 @@ export class CollectorSet {
   // the shape of the reponse is different when using the new ES client as is the error handling.
   public bulkFetch = async (
     callCluster: LegacyAPICaller,
-    esClient: ElasticsearchClient,
+    esClient?: ElasticsearchClient,
     collectors: Map<string, Collector<any, any>> = this.collectors
   ) => {
     const responses = await Promise.all(
@@ -152,7 +152,10 @@ export class CollectorSet {
     return this.makeCollectorSetFromArray(filtered);
   };
 
-  public bulkFetchUsage = async (callCluster: LegacyAPICaller, esClient: ElasticsearchClient) => {
+  public bulkFetchUsage = async (
+    callCluster: LegacyAPICaller,
+    esClient: ElasticsearchClient | undefined
+  ) => {
     const usageCollectors = this.getFilteredCollectorSet((c) => c instanceof UsageCollector);
     return await this.bulkFetch(callCluster, esClient, usageCollectors.collectors);
   };

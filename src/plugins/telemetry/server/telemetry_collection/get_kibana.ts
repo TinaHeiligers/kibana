@@ -84,8 +84,13 @@ export function handleKibanaStats(
 export async function getKibana(
   usageCollection: UsageCollectionSetup,
   callWithInternalUser: LegacyAPICaller,
-  asInternalUser: ElasticsearchClient
+  asInternalUser: ElasticsearchClient | undefined
 ): Promise<KibanaUsageStats> {
-  const usage = await usageCollection.bulkFetch(callWithInternalUser, asInternalUser);
-  return usageCollection.toObject(usage);
+  if (asInternalUser !== undefined) {
+    const usage = await usageCollection.bulkFetch(callWithInternalUser, asInternalUser!);
+    return usageCollection.toObject(usage);
+  } else {
+    const usage = await usageCollection.bulkFetch(callWithInternalUser);
+    return usageCollection.toObject(usage);
+  }
 }

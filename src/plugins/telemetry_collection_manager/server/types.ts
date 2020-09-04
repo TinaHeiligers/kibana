@@ -74,7 +74,7 @@ export interface StatsCollectionConfig {
   callCluster: LegacyAPICaller;
   start: string | number;
   end: string | number;
-  esClient: ElasticsearchClient;
+  esClient?: ElasticsearchClient;
 }
 
 export interface BasicStatsPayload {

@@ -141,11 +141,16 @@ export class TelemetryCollectionManagerPlugin
       : collection.esCluster.callAsInternalUser;
     // Scope the new elasticsearch Client appropriately and pass to the stats collection config
     // Problem: I need a Scopeable request to pass to asScoped.
-    const esClient = config.unencrypted
-      ? collection.esClientGetter()!.asScoped(config.request).asCurrentUser
-      : collection.esClientGetter()!.asInternalUser;
+    // Another problem is with monitoring collection: esClinetGetter returns undefined.
+    const newClient = collection.esClientGetter();
+    if (newClient) {
+      const esClient = config.unencrypted
+        ? newClient.asScoped(config.request).asCurrentUser
+        : newClient.asInternalUser;
+      return { callCluster, start, end, usageCollection, esClient };
+    }
 
-    return { callCluster, start, end, usageCollection, esClient };
+    return { callCluster, start, end, usageCollection };
   }
 
   private async getOptInStats(optInStatus: boolean, config: StatsGetterConfig) {
@@ -239,7 +244,7 @@ export class TelemetryCollectionManagerPlugin
 
   private async getUsageForCollection(
     collection: Collection, // contains the esClientGetter method
-    statsCollectionConfig: StatsCollectionConfig // contains the already-scoped esClient
+    statsCollectionConfig: StatsCollectionConfig // contains the already-scoped esClient if it is there.
   ): Promise<UsageStatsPayload[]> {
     const context: StatsCollectionContext = {
       logger: this.logger.get(collection.title),
