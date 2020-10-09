@@ -43,8 +43,7 @@ describe('CollectorSet', () => {
 
     const mockCallCluster = jest.fn().mockResolvedValue({ passTest: 1000 });
     const mockEsClient = elasticsearchServiceMock.createClusterClient().asInternalUser;
-
-    it('should throw an error if non-Collector type of object is registered', () => {
+    const mockSavedObjectsClient = it('should throw an error if non-Collector type of object is registered', () => {
       const collectors = new CollectorSet({ logger });
       const registerPojo = () => {
         collectors.registerCollector({

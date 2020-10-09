@@ -34,7 +34,8 @@ import {
   Plugin,
   Logger,
   IClusterClient,
-  UiSettingsServiceStart,, SavedObjectsServiceStart
+  UiSettingsServiceStart,
+  SavedObjectsServiceStart,
 } from '../../../core/server';
 import { registerRoutes } from './routes';
 import { registerCollection } from './telemetry_collection';
@@ -86,11 +87,10 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
    * @private Used to mark the completion of the old UI Settings migration
    */
   private readonly oldUiSettingsHandled$ = new AsyncSubject();
-  private savedObjectsClient?: ISavedObjectsRepository;
+  private savedObjectsInternalRepository?: ISavedObjectsRepository; // Internal repository scoped to the kibana-system user
   private elasticsearchClient?: IClusterClient;
-  // I need to pass in the unscoped Saved Objects Service from the start contract to scope the client either to the internal Kibana user or as the current user
-  // src/core/server/saved_objects/saved_objects_service.ts
-  private savedObjects?: SavedObjectsServiceStart;
+  // unscoped Saved Objects Service  thst can be scoped to the internal Kibana user or as the current user
+  private savedObjectsService?: SavedObjectsServiceStart;
 
   constructor(initializerContext: PluginInitializerContext<TelemetryConfigType>) {
     this.logger = initializerContext.logger.get();
@@ -114,7 +114,7 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
       telemetryCollectionManager,
       elasticsearch.legacy.client,
       () => this.elasticsearchClient,
-      () => this.savedObjects
+      () => this.savedObjectsService
     );
     const router = http.createRouter();
 
@@ -141,9 +141,9 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
   public start(core: CoreStart, { telemetryCollectionManager }: TelemetryPluginsDepsStart) {
     const { savedObjects, uiSettings, elasticsearch } = core;
     const savedObjectsInternalRepository = savedObjects.createInternalRepository();
-    this.savedObjectsClient = savedObjectsInternalRepository;
+    this.savedObjectsInternalRepository = savedObjectsInternalRepository;
     this.elasticsearchClient = elasticsearch.client;
-    this.savedObjects = savedObjects;
+    this.savedObjectsService = savedObjects;
 
     // Not catching nor awaiting these promises because they should never reject
     this.handleOldUiSettings(uiSettings);
@@ -171,7 +171,7 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
   }
 
   private async handleOldUiSettings(uiSettings: UiSettingsServiceStart) {
-    const savedObjectsClient = new SavedObjectsClient(this.savedObjectsClient!);
+    const savedObjectsClient = new SavedObjectsClient(this.savedObjectsInternalRepository!);
     const uiSettingsClient = uiSettings.asScopedToClient(savedObjectsClient);
 
     try {
@@ -228,7 +228,7 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
   }
 
   private registerUsageCollectors(usageCollection: UsageCollectionSetup) {
-    const getSavedObjectsClient = () => this.savedObjectsClient;
+    const getSavedObjectsClient = () => this.savedObjectsInternalRepository;
 
     registerTelemetryPluginUsageCollector(usageCollection, {
       currentKibanaVersion: this.currentKibanaVersion,

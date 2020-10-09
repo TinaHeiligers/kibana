@@ -47,12 +47,12 @@ export function registerCollection(
   telemetryCollectionManager: TelemetryCollectionManagerPluginSetup,
   esCluster: ILegacyClusterClient,
   esClientGetter: () => IClusterClient | undefined,
-  savedObjectsGetter: () => SavedObjectsServiceStart | undefined
+  savedObjectsServiceGetter: () => SavedObjectsServiceStart | undefined
 ) {
   telemetryCollectionManager.setCollection({
     esCluster,
     esClientGetter,
-    savedObjectsGetter,
+    savedObjectsServiceGetter,
     title: 'local',
     priority: 0,
     statsGetter: getLocalStats,

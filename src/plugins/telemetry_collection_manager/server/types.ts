@@ -22,7 +22,10 @@ import {
   Logger,
   KibanaRequest,
   ILegacyClusterClient,
-  IClusterClient,, SavedObjectsServiceStart, SavedObjectsClient, SavedObjectsClientContract, ISavedObjectsRepository
+  IClusterClient,
+  SavedObjectsServiceStart,
+  SavedObjectsClientContract,
+  ISavedObjectsRepository,
 } from 'kibana/server';
 import { UsageCollectionSetup } from 'src/plugins/usage_collection/server';
 import { ElasticsearchClient } from '../../../../src/core/server';
@@ -77,7 +80,7 @@ export interface StatsCollectionConfig {
   start: string | number;
   end: string | number;
   esClient: ElasticsearchClient;
-  soClient: SavedObjectsClientContract | ISavedObjectsRepository; // already scoped to either the internal repository or scopedRepository
+  savedObjectsClient: SavedObjectsClientContract | ISavedObjectsRepository; // already scoped to either the internal repository or scopedRepository
 }
 
 export interface BasicStatsPayload {
@@ -142,7 +145,7 @@ export interface CollectionConfig<
   priority: number;
   esCluster: ILegacyClusterClient;
   esClientGetter: () => IClusterClient | undefined; // --> by now we know that the client getter will return the IClusterClient but we assure that through a code check
-  savedObjectsGetter: () => SavedObjectsServiceStart | undefined;
+  savedObjectsServiceGetter: () => SavedObjectsServiceStart | undefined; // --> by now we know that the service getter will return the SavedObjectsServiceStart but we assure that through a code check
   statsGetter: StatsGetter<CustomContext, T>;
   clusterDetailsGetter: ClusterDetailsGetter<CustomContext>;
   licenseGetter: LicenseGetter<CustomContext>;
@@ -159,6 +162,6 @@ export interface Collection<
   clusterDetailsGetter: ClusterDetailsGetter<CustomContext>;
   esCluster: ILegacyClusterClient;
   esClientGetter: () => IClusterClient | undefined; // the collection could still return undefined for the es client getter.
-  savedObjectsGetter: () => SavedObjectsServiceStart | undefined
+  savedObjectsServiceGetter: () => SavedObjectsServiceStart | undefined; // the collection could still return undefined for the Saved Objects Service getter.
   title: string;
 }
