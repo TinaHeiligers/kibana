@@ -18,7 +18,12 @@
  */
 
 import { snakeCase } from 'lodash';
-import { Logger, LegacyAPICaller, ElasticsearchClient } from 'kibana/server';
+import {
+  Logger,
+  LegacyAPICaller,
+  ElasticsearchClient,
+  ISavedObjectsRepository,
+} from 'kibana/server';
 import { Collector, CollectorOptions } from './collector';
 import { UsageCollector } from './usage_collector';
 
@@ -125,6 +130,7 @@ export class CollectorSet {
   public bulkFetch = async (
     callCluster: LegacyAPICaller,
     esClient: ElasticsearchClient,
+    soClient: ISavedObjectsRepository,
     collectors: Map<string, Collector<any, any>> = this.collectors
   ) => {
     const responses = await Promise.all(
@@ -133,7 +139,7 @@ export class CollectorSet {
         try {
           return {
             type: collector.type,
-            result: await collector.fetch({ callCluster, esClient }),
+            result: await collector.fetch({ callCluster, esClient, soClient }),
           };
         } catch (err) {
           this.logger.warn(err);

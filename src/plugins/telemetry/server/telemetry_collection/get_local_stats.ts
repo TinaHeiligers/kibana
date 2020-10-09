@@ -79,7 +79,7 @@ export const getLocalStats: StatsGetter<{}, TelemetryLocalStats> = async (
         getClusterInfo(esClient), // cluster info
         getClusterStats(esClient), // cluster stats (not to be confused with cluster _state_)
         getNodesUsage(esClient), // nodes_usage info
-        getKibana(usageCollection, callCluster, esClient),
+        getKibana(usageCollection, callCluster, esClient, soClient),
         getDataTelemetry(esClient),
       ]);
       return handleLocalStats(

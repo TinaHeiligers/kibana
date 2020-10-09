@@ -34,7 +34,7 @@ import {
   Plugin,
   Logger,
   IClusterClient,
-  UiSettingsServiceStart,
+  UiSettingsServiceStart,, SavedObjectsServiceStart
 } from '../../../core/server';
 import { registerRoutes } from './routes';
 import { registerCollection } from './telemetry_collection';
@@ -88,6 +88,9 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
   private readonly oldUiSettingsHandled$ = new AsyncSubject();
   private savedObjectsClient?: ISavedObjectsRepository;
   private elasticsearchClient?: IClusterClient;
+  // I need to pass in the unscoped Saved Objects Service from the start contract to scope the client either to the internal Kibana user or as the current user
+  // src/core/server/saved_objects/saved_objects_service.ts
+  private savedObjects?: SavedObjectsServiceStart;
 
   constructor(initializerContext: PluginInitializerContext<TelemetryConfigType>) {
     this.logger = initializerContext.logger.get();
@@ -110,7 +113,8 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
     registerCollection(
       telemetryCollectionManager,
       elasticsearch.legacy.client,
-      () => this.elasticsearchClient
+      () => this.elasticsearchClient,
+      () => this.savedObjects
     );
     const router = http.createRouter();
 
@@ -139,6 +143,7 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
     const savedObjectsInternalRepository = savedObjects.createInternalRepository();
     this.savedObjectsClient = savedObjectsInternalRepository;
     this.elasticsearchClient = elasticsearch.client;
+    this.savedObjects = savedObjects;
 
     // Not catching nor awaiting these promises because they should never reject
     this.handleOldUiSettings(uiSettings);

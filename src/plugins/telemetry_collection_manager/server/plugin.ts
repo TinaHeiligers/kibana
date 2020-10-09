@@ -24,7 +24,7 @@ import {
   CoreStart,
   Plugin,
   Logger,
-  IClusterClient,
+  IClusterClient,, ISavedObjectsRepository, SavedObjectsServiceStart
 } from '../../../core/server';
 
 import {
@@ -90,6 +90,7 @@ export class TelemetryCollectionManagerPlugin
       priority,
       esCluster,
       esClientGetter,
+      savedObjectsGetter,
       statsGetter,
       clusterDetailsGetter,
       licenseGetter,
@@ -112,6 +113,9 @@ export class TelemetryCollectionManagerPlugin
       if (!esClientGetter) {
         throw Error('esClientGetter method not set.');
       }
+      if (!savedObjectsGetter) {
+        throw Error('soClientGetter methos not set.');
+      }
       if (!clusterDetailsGetter) {
         throw Error('Cluster UUIds method is not set.');
       }
@@ -126,6 +130,7 @@ export class TelemetryCollectionManagerPlugin
         esCluster,
         title,
         esClientGetter,
+        savedObjectsGetter,
       });
       this.usageGetterMethodPriority = priority;
     }
@@ -135,6 +140,7 @@ export class TelemetryCollectionManagerPlugin
     config: StatsGetterConfig,
     collection: Collection,
     collectionEsClient: IClusterClient,
+    collectionSavedObjects: SavedObjectsServiceStart,
     usageCollection: UsageCollectionSetup
   ): StatsCollectionConfig {
     const { start, end, request } = config;
@@ -146,7 +152,11 @@ export class TelemetryCollectionManagerPlugin
     const esClient = config.unencrypted
       ? collectionEsClient.asScoped(config.request).asCurrentUser
       : collectionEsClient.asInternalUser;
-    return { callCluster, start, end, usageCollection, esClient };
+    // Scope the saved objects client appropriately and pass to the stats collection config
+    const soClient = config.unencrypted
+      ? collectionSavedObjects.getScopedClient(config.request)
+      : collectionSavedObjects.createInternalRepository();
+    return { callCluster, start, end, usageCollection, esClient, soClient };
   }
 
   private async getOptInStats(optInStatus: boolean, config: StatsGetterConfig) {
@@ -156,11 +166,13 @@ export class TelemetryCollectionManagerPlugin
     for (const collection of this.collections) {
       // first fetch the client and make sure it's not undefined.
       const collectionEsClient = collection.esClientGetter();
-      if (collectionEsClient !== undefined) {
+      const collectionSavedObjectsClient = collection.soClientGetter();
+      if (collectionEsClient !== undefined && collectionSavedObjectsClient !== undefined) {
         const statsCollectionConfig = this.getStatsCollectionConfig(
           config,
           collection,
           collectionEsClient,
+          collectionSavedObjectsClient,
           this.usageCollection
         );
 
@@ -215,11 +227,13 @@ export class TelemetryCollectionManagerPlugin
     }
     for (const collection of this.collections) {
       const collectionEsClient = collection.esClientGetter();
-      if (collectionEsClient !== undefined) {
+      const collectionSoClient = collection.soClientGetter();
+      if (collectionEsClient !== undefined && collectionSoClient !== undefined) {
         const statsCollectionConfig = this.getStatsCollectionConfig(
           config,
           collection,
           collectionEsClient,
+          collectionSoClient,
           this.usageCollection
         );
         try {

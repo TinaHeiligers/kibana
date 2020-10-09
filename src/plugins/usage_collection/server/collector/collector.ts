@@ -17,7 +17,12 @@
  * under the License.
  */
 
-import { Logger, LegacyAPICaller, ElasticsearchClient } from 'kibana/server';
+import {
+  Logger,
+  LegacyAPICaller,
+  ElasticsearchClient,
+  ISavedObjectsRepository,
+} from 'kibana/server';
 
 export type CollectorFormatForBulkUpload<T, U> = (result: T) => { type: string; payload: U };
 
@@ -56,6 +61,7 @@ export interface CollectorFetchContext {
    * - When building the telemetry data payload to report to the remote cluster, the requests are scoped to the `kibana` internal user
    */
   esClient: ElasticsearchClient;
+  soClient: ISavedObjectsRepository;
 }
 export interface CollectorOptions<T = unknown, U = T> {
   type: string;
