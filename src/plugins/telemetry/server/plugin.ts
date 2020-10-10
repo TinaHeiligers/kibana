@@ -87,7 +87,7 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
    * @private Used to mark the completion of the old UI Settings migration
    */
   private readonly oldUiSettingsHandled$ = new AsyncSubject();
-  private savedObjectsInternalRepository?: ISavedObjectsRepository; // Internal repository scoped to the kibana-system user
+  private savedObjectsClient?: ISavedObjectsRepository; // Internal repository scoped to the kibana-system user
   private elasticsearchClient?: IClusterClient;
   // unscoped Saved Objects Service  thst can be scoped to the internal Kibana user or as the current user
   private savedObjectsService?: SavedObjectsServiceStart;
@@ -141,7 +141,7 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
   public start(core: CoreStart, { telemetryCollectionManager }: TelemetryPluginsDepsStart) {
     const { savedObjects, uiSettings, elasticsearch } = core;
     const savedObjectsInternalRepository = savedObjects.createInternalRepository();
-    this.savedObjectsInternalRepository = savedObjectsInternalRepository;
+    this.savedObjectsClient = savedObjectsInternalRepository;
     this.elasticsearchClient = elasticsearch.client;
     this.savedObjectsService = savedObjects;
 
@@ -171,7 +171,7 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
   }
 
   private async handleOldUiSettings(uiSettings: UiSettingsServiceStart) {
-    const savedObjectsClient = new SavedObjectsClient(this.savedObjectsInternalRepository!);
+    const savedObjectsClient = new SavedObjectsClient(this.savedObjectsClient!);
     const uiSettingsClient = uiSettings.asScopedToClient(savedObjectsClient);
 
     try {
@@ -227,8 +227,9 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
     });
   }
 
+  // Usage collection for the telemetry plugin itself
   private registerUsageCollectors(usageCollection: UsageCollectionSetup) {
-    const getSavedObjectsClient = () => this.savedObjectsInternalRepository;
+    const getSavedObjectsClient = () => this.savedObjectsClient;
 
     registerTelemetryPluginUsageCollector(usageCollection, {
       currentKibanaVersion: this.currentKibanaVersion,

@@ -25,7 +25,6 @@ import {
   Plugin,
   Logger,
   IClusterClient,
-  ISavedObjectsRepository,
   SavedObjectsServiceStart,
 } from '../../../core/server';
 
@@ -116,7 +115,7 @@ export class TelemetryCollectionManagerPlugin
         throw Error('esClientGetter method not set.');
       }
       if (!savedObjectsServiceGetter) {
-        throw Error('soClientGetter methos not set.');
+        throw Error('savedObjectsServiceGetter method not set.');
       }
       if (!clusterDetailsGetter) {
         throw Error('Cluster UUIds method is not set.');
