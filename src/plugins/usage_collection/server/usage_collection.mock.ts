@@ -55,7 +55,7 @@ export function createCollectorFetchContextMock(): jest.Mocked<CollectorFetchCon
   const collectorFetchClientsMock: jest.Mocked<CollectorFetchContext> = {
     callCluster: elasticsearchServiceMock.createLegacyClusterClient().callAsInternalUser,
     esClient: elasticsearchServiceMock.createClusterClient().asInternalUser,
-    soClient: savedObjectsRepositoryMock,
+    soClient: savedObjectsRepositoryMock.create(),
   };
   return collectorFetchClientsMock;
 }
