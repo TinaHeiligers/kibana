@@ -151,7 +151,7 @@ export class Plugin {
         telemetryCollectionManager: plugins.telemetryCollectionManager,
         esCluster: this.cluster,
         esClientGetter: () => this.telemetryElasticsearchClient,
-        savedObjectsServiceGetter: () => this.telemetrySavedObjectsService,
+        soServiceGetter: () => this.telemetrySavedObjectsService,
         customContext: {
           maxBucketSize: config.ui.max_bucket_size,
         },

@@ -145,7 +145,7 @@ export interface CollectionConfig<
   priority: number;
   esCluster: ILegacyClusterClient;
   esClientGetter: () => IClusterClient | undefined; // --> by now we know that the client getter will return the IClusterClient but we assure that through a code check
-  savedObjectsServiceGetter: () => SavedObjectsServiceStart | undefined; // --> by now we know that the service getter will return the SavedObjectsServiceStart but we assure that through a code check
+  soServiceGetter: () => SavedObjectsServiceStart | undefined; // --> by now we know that the service getter will return the SavedObjectsServiceStart but we assure that through a code check
   statsGetter: StatsGetter<CustomContext, T>;
   clusterDetailsGetter: ClusterDetailsGetter<CustomContext>;
   licenseGetter: LicenseGetter<CustomContext>;
@@ -162,6 +162,6 @@ export interface Collection<
   clusterDetailsGetter: ClusterDetailsGetter<CustomContext>;
   esCluster: ILegacyClusterClient;
   esClientGetter: () => IClusterClient | undefined; // the collection could still return undefined for the es client getter.
-  savedObjectsServiceGetter: () => SavedObjectsServiceStart | undefined; // the collection could still return undefined for the Saved Objects Service getter.
+  soServiceGetter: () => SavedObjectsServiceStart | undefined; // the collection could still return undefined for the Saved Objects Service getter.
   title: string;
 }

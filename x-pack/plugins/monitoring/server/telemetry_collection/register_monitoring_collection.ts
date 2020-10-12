@@ -18,19 +18,19 @@ export function registerMonitoringCollection({
   telemetryCollectionManager,
   esCluster,
   esClientGetter,
-  savedObjectsServiceGetter,
+  soServiceGetter,
   customContext,
 }: {
   telemetryCollectionManager: TelemetryCollectionManagerPluginSetup;
   esCluster: ILegacyCustomClusterClient;
   esClientGetter: () => IClusterClient | undefined;
-  savedObjectsServiceGetter: () => SavedObjectsServiceStart | undefined;
+  soServiceGetter: () => SavedObjectsServiceStart | undefined;
   customContext: CustomContext;
 }) {
   telemetryCollectionManager.setCollection({
     esCluster,
     esClientGetter,
-    savedObjectsServiceGetter,
+    soServiceGetter,
     title: 'monitoring',
     priority: 2,
     statsGetter: getAllStats,

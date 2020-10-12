@@ -91,7 +91,7 @@ export class TelemetryCollectionManagerPlugin
       priority,
       esCluster,
       esClientGetter,
-      savedObjectsServiceGetter,
+      soServiceGetter,
       statsGetter,
       clusterDetailsGetter,
       licenseGetter,
@@ -114,8 +114,8 @@ export class TelemetryCollectionManagerPlugin
       if (!esClientGetter) {
         throw Error('esClientGetter method not set.');
       }
-      if (!savedObjectsServiceGetter) {
-        throw Error('savedObjectsServiceGetter method not set.');
+      if (!soServiceGetter) {
+        throw Error('soServiceGetter method not set.');
       }
       if (!clusterDetailsGetter) {
         throw Error('Cluster UUIds method is not set.');
@@ -131,7 +131,7 @@ export class TelemetryCollectionManagerPlugin
         esCluster,
         title,
         esClientGetter,
-        savedObjectsServiceGetter,
+        soServiceGetter,
       });
       this.usageGetterMethodPriority = priority;
     }
@@ -167,7 +167,7 @@ export class TelemetryCollectionManagerPlugin
     for (const collection of this.collections) {
       // first fetch the client and make sure it's not undefined.
       const collectionEsClient = collection.esClientGetter();
-      const collectionSavedObjectsService = collection.savedObjectsServiceGetter();
+      const collectionSavedObjectsService = collection.soServiceGetter();
       if (collectionEsClient !== undefined && collectionSavedObjectsService !== undefined) {
         const statsCollectionConfig = this.getStatsCollectionConfig(
           config,
@@ -228,7 +228,7 @@ export class TelemetryCollectionManagerPlugin
     }
     for (const collection of this.collections) {
       const collectionEsClient = collection.esClientGetter();
-      const collectionSavedObjectsService = collection.savedObjectsServiceGetter();
+      const collectionSavedObjectsService = collection.soServiceGetter();
       if (collectionEsClient !== undefined && collectionSavedObjectsService !== undefined) {
         const statsCollectionConfig = this.getStatsCollectionConfig(
           config,

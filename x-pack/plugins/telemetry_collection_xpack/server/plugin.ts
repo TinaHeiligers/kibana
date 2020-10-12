@@ -29,7 +29,7 @@ export class TelemetryCollectionXpackPlugin implements Plugin {
     telemetryCollectionManager.setCollection({
       esCluster: core.elasticsearch.legacy.client,
       esClientGetter: () => this.elasticsearchClient,
-      savedObjectsServiceGetter: () => this.savedObjectsService,
+      soServiceGetter: () => this.savedObjectsService,
       title: 'local_xpack',
       priority: 1,
       statsGetter: getStatsWithXpack,
