@@ -227,7 +227,6 @@ export class TelemetryPlugin implements Plugin<TelemetryPluginSetup, TelemetryPl
     });
   }
 
-  // Usage collection for the telemetry plugin itself
   private registerUsageCollectors(usageCollection: UsageCollectionSetup) {
     const getSavedObjectsClient = () => this.savedObjectsClient;
 
