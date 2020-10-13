@@ -131,7 +131,7 @@ export class CollectorSet {
   public bulkFetch = async (
     callCluster: LegacyAPICaller,
     esClient: ElasticsearchClient,
-    savedObjectsClient: SavedObjectsClientContract | ISavedObjectsRepository,
+    soClient: SavedObjectsClientContract | ISavedObjectsRepository,
     collectors: Map<string, Collector<any, any>> = this.collectors
   ) => {
     const responses = await Promise.all(
@@ -140,7 +140,7 @@ export class CollectorSet {
         try {
           return {
             type: collector.type,
-            result: await collector.fetch({ callCluster, esClient, savedObjectsClient }),
+            result: await collector.fetch({ callCluster, esClient, soClient }),
           };
         } catch (err) {
           this.logger.warn(err);
