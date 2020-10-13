@@ -20,7 +20,6 @@
 import { pluginInitializerContextConfigMock } from '../../../../../core/server/mocks';
 import {
   CollectorOptions,
-  createCollectorFetchContextMock,
   createUsageCollectionSetupMock,
 } from '../../../../usage_collection/server/usage_collection.mock';
 import { createCollectorFetchContextMock } from '../../../../usage_collection/server/mocks';

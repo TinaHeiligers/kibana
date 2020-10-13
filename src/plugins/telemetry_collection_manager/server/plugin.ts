@@ -141,7 +141,7 @@ export class TelemetryCollectionManagerPlugin
     config: StatsGetterConfig,
     collection: Collection,
     collectionEsClient: IClusterClient,
-    collectionSavedObjectsService: SavedObjectsServiceStart,
+    collectionSoService: SavedObjectsServiceStart,
     usageCollection: UsageCollectionSetup
   ): StatsCollectionConfig {
     const { start, end, request } = config;
@@ -154,10 +154,10 @@ export class TelemetryCollectionManagerPlugin
       ? collectionEsClient.asScoped(config.request).asCurrentUser
       : collectionEsClient.asInternalUser;
     // Scope the saved objects client appropriately and pass to the stats collection config
-    const savedObjectsClient = config.unencrypted
-      ? collectionSavedObjectsService.getScopedClient(config.request)
-      : collectionSavedObjectsService.createInternalRepository();
-    return { callCluster, start, end, usageCollection, esClient, savedObjectsClient };
+    const soClient = config.unencrypted
+      ? collectionSoService.getScopedClient(config.request)
+      : collectionSoService.createInternalRepository();
+    return { callCluster, start, end, usageCollection, esClient, soClient };
   }
 
   private async getOptInStats(optInStatus: boolean, config: StatsGetterConfig) {
@@ -167,13 +167,13 @@ export class TelemetryCollectionManagerPlugin
     for (const collection of this.collections) {
       // first fetch the client and make sure it's not undefined.
       const collectionEsClient = collection.esClientGetter();
-      const collectionSavedObjectsService = collection.soServiceGetter();
-      if (collectionEsClient !== undefined && collectionSavedObjectsService !== undefined) {
+      const collectionSoService = collection.soServiceGetter();
+      if (collectionEsClient !== undefined && collectionSoService !== undefined) {
         const statsCollectionConfig = this.getStatsCollectionConfig(
           config,
           collection,
           collectionEsClient,
-          collectionSavedObjectsService,
+          collectionSoService,
           this.usageCollection
         );
 
