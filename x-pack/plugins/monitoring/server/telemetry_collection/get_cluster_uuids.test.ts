@@ -5,7 +5,7 @@
  */
 
 import sinon from 'sinon';
-import { elasticsearchServiceMock, savedObjectsServiceMock } from 'src/core/server/mocks';
+import { elasticsearchServiceMock, savedObjectsRepositoryMock } from 'src/core/server/mocks';
 import {
   getClusterUuids,
   fetchClusterUuids,
@@ -15,7 +15,7 @@ import {
 describe('get_cluster_uuids', () => {
   const callCluster = sinon.stub();
   const esClient = elasticsearchServiceMock.createClusterClient().asInternalUser;
-  const soClient = savedObjectsServiceMock.create();
+  const soClient = savedObjectsRepositoryMock.create();
   const response = {
     aggregations: {
       cluster_uuids: {
