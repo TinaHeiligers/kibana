@@ -40,9 +40,30 @@ export const getAppResults = (
 export const scoreApp = (term: string, appLink: AppLink): number => {
   term = term.toLowerCase();
   const title = [appLink.app.title, ...appLink.subLinkTitles].join(' ').toLowerCase();
+  const appScoreByTerms = scoreAppByTerms(term, title);
+  const keywords =
+    appLink.app.meta && appLink.app.meta.keywords
+      ? [...appLink.app.meta.keywords.map((keyword) => keyword.toLowerCase())]
+      : [''];
+  // now keywords is an array, possibly an array of a single empty string
+  const appScoreByKeywords = scoreAppByKeywords(term, keywords);
+  return Math.max(appScoreByTerms * 100, appScoreByKeywords * 50);
+};
 
-  // shortcuts to avoid calculating the distance when there is an exact match somewhere.
+const scoreAppByKeywords = (term: string, keywords: string[]): number => {
+  if (keywords.indexOf(term) !== -1) {
+    return 100;
+  }
+  if (keywords.includes(term)) {
+    return 75;
+  }
+  const partialMatchCount = keywords.filter((word) => word.startsWith(term));
+  return (partialMatchCount.length / keywords.length) * 100;
+};
+
+const scoreAppByTerms = (term: string, title: string): number => {
   if (title === term) {
+    // shortcuts to avoid calculating the distance when there is an exact match somewhere.
     return 100;
   }
   if (title.startsWith(term)) {

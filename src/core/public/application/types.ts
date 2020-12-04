@@ -83,7 +83,7 @@ export enum AppNavLinkStatus {
  */
 export type AppUpdatableFields = Pick<
   App,
-  'status' | 'navLinkStatus' | 'tooltip' | 'defaultPath' | 'searchDeepLinks'
+  'status' | 'navLinkStatus' | 'tooltip' | 'defaultPath' | 'searchDeepLinks' | 'meta'
 >;
 
 /**
@@ -268,6 +268,39 @@ export interface App<HistoryLocationState = unknown> {
    * - `/app/my_app/sub2/sub`
    */
   searchDeepLinks?: AppSearchDeepLink[];
+
+  /**
+   * Allow to define meta data for an application
+   * When defined, must have keywords defined. See {@link AppMeta}
+   * @remarks
+   * Used for global search results (where available).
+   * Can be updated using the {@link App.updater$} observable.
+   *
+   * @example
+   * ```ts
+   * core.application.register({
+   *   id: 'my_app',
+   *   title: 'Translated title',
+   *   mount,
+   *   meta: {
+   *     keywords: ['tracing', 'distributed tracing']
+   *   }
+   * })
+   * ```
+   */
+  meta?: AppMeta;
+}
+
+export type AppMetaKeyword = string;
+/**
+ * Input type for registering secondary search terms for an application.
+ *
+ * Keywords must include at least one unique string as an array
+ * @public
+ */
+export interface AppMeta {
+  /** Keywords to represent this application */
+  keywords: AppMetaKeyword[];
 }
 
 /**
@@ -308,16 +341,21 @@ export type PublicAppSearchDeepLinkInfo = Omit<AppSearchDeepLink, 'searchDeepLin
 };
 
 /**
+ * Public information about a registered app's { @link AppMeta |}
+ */
+
+/**
  * Public information about a registered {@link App | application}
  *
  * @public
  */
-export type PublicAppInfo = Omit<App, 'mount' | 'updater$' | 'searchDeepLinks'> & {
+export type PublicAppInfo = Omit<App, 'mount' | 'updater$' | 'searchDeepLinks' | 'meta'> & {
   // remove optional on fields populated with default values
   status: AppStatus;
   navLinkStatus: AppNavLinkStatus;
   appRoute: string;
   searchDeepLinks: PublicAppSearchDeepLinkInfo[];
+  meta: AppMeta;
 };
 
 /**
