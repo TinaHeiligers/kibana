@@ -98,6 +98,10 @@ export class ManagementPlugin implements Plugin<ManagementSetup, ManagementStart
       order: 9040,
       euiIconType: 'logoElastic',
       category: DEFAULT_APP_CATEGORIES.management,
+      meta: {
+        // TODO: translate the keywords
+        keywords: ['Management', 'Manage'],
+      },
       updater$: this.appUpdater,
       async mount(params: AppMountParameters) {
         const { renderApp } = await import('./application');

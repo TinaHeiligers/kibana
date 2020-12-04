@@ -83,7 +83,7 @@ export enum AppNavLinkStatus {
  */
 export type AppUpdatableFields = Pick<
   App,
-  'status' | 'navLinkStatus' | 'tooltip' | 'defaultPath' | 'searchDeepLinks' | 'meta'
+  'status' | 'navLinkStatus' | 'tooltip' | 'defaultPath' | 'searchDeepLinks'
 >;
 
 /**

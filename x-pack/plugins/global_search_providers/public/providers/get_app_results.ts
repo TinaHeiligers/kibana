@@ -45,20 +45,15 @@ export const scoreApp = (term: string, appLink: AppLink): number => {
     appLink.app.meta && appLink.app.meta.keywords
       ? [...appLink.app.meta.keywords.map((keyword) => keyword.toLowerCase())]
       : [''];
-  // now keywords is an array, possibly an array of a single empty string
   const appScoreByKeywords = scoreAppByKeywords(term, keywords);
-  return Math.max(appScoreByTerms * 100, appScoreByKeywords * 50);
+  return Math.max(appScoreByTerms, appScoreByKeywords);
 };
 
 const scoreAppByKeywords = (term: string, keywords: string[]): number => {
-  if (keywords.indexOf(term) !== -1) {
-    return 100;
-  }
-  if (keywords.includes(term)) {
-    return 75;
-  }
-  const partialMatchCount = keywords.filter((word) => word.startsWith(term));
-  return (partialMatchCount.length / keywords.length) * 100;
+  const scores = keywords.map((keyword) => {
+    return scoreAppByTerms(term, keyword);
+  });
+  return Math.max.apply(Math, scores);
 };
 
 const scoreAppByTerms = (term: string, title: string): number => {
