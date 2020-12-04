@@ -31,6 +31,7 @@ export {
   AppNavLinkStatus,
   AppUpdatableFields,
   AppUpdater,
+  AppMeta,
   AppSearchDeepLink,
   ApplicationSetup,
   ApplicationStart,

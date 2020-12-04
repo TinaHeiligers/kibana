@@ -270,8 +270,9 @@ export interface App<HistoryLocationState = unknown> {
   searchDeepLinks?: AppSearchDeepLink[];
 
   /**
-   * Allow to define meta data for an application
+   * Meta data for an application that represent additional information for the app
    * When defined, must have keywords defined. See {@link AppMeta}
+   *
    * @remarks
    * Used for global search results (where available).
    * Can be updated using the {@link App.updater$} observable.
@@ -281,28 +282,36 @@ export interface App<HistoryLocationState = unknown> {
    * core.application.register({
    *   id: 'my_app',
    *   title: 'Translated title',
-   *   mount,
    *   meta: {
    *     keywords: ['tracing', 'distributed tracing']
-   *   }
+   *   },
+   *   mount: () => { ... }
    * })
    * ```
    */
   meta?: AppMeta;
 }
 
-export type AppMetaKeyword = string;
 /**
- * Input type for registering secondary search terms for an application.
+ * Input type for meta data for an application.
  *
- * Keywords must include at least one unique string as an array
+ * Meta fields include at least `keywords`, an array of strings with which to associate the app.
+ * Keywords must include at least one unique string as an array.
  * @public
  */
 export interface AppMeta {
   /** Keywords to represent this application */
-  keywords: AppMetaKeyword[];
+  keywords: string[];
 }
 
+/**
+ * Public information about a registered app's {@link AppMeta | keywords }
+ *
+ * @public
+ */
+export type PublicAppMetaInfo = Omit<AppMeta, 'keywords'> & {
+  keywords: string[];
+};
 /**
  * Input type for registering secondary in-app locations for an application.
  *
@@ -341,10 +350,6 @@ export type PublicAppSearchDeepLinkInfo = Omit<AppSearchDeepLink, 'searchDeepLin
 };
 
 /**
- * Public information about a registered app's { @link AppMeta |}
- */
-
-/**
  * Public information about a registered {@link App | application}
  *
  * @public
@@ -355,7 +360,7 @@ export type PublicAppInfo = Omit<App, 'mount' | 'updater$' | 'searchDeepLinks' |
   navLinkStatus: AppNavLinkStatus;
   appRoute: string;
   searchDeepLinks: PublicAppSearchDeepLinkInfo[];
-  meta: AppMeta;
+  meta?: PublicAppMetaInfo;
 };
 
 /**
