@@ -275,7 +275,6 @@ export interface App<HistoryLocationState = unknown> {
    *
    * @remarks
    * Used for global search results (where available).
-   * Can be updated using the {@link App.updater$} observable.
    *
    * @example
    * ```ts
