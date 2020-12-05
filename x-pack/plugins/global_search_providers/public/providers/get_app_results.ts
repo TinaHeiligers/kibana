@@ -49,13 +49,6 @@ export const scoreApp = (term: string, appLink: AppLink): number => {
   return Math.max(appScoreByTerms, appScoreByKeywords);
 };
 
-const scoreAppByKeywords = (term: string, keywords: string[]): number => {
-  const scores = keywords.map((keyword) => {
-    return scoreAppByTerms(term, keyword);
-  });
-  return Math.max.apply(Math, scores);
-};
-
 const scoreAppByTerms = (term: string, title: string): number => {
   if (title === term) {
     // shortcuts to avoid calculating the distance when there is an exact match somewhere.
@@ -76,6 +69,13 @@ const scoreAppByTerms = (term: string, title: string): number => {
     return ratio;
   }
   return 0;
+};
+
+const scoreAppByKeywords = (term: string, keywords: string[]): number => {
+  const scores = keywords.map((keyword) => {
+    return scoreAppByTerms(term, keyword);
+  });
+  return Math.max.apply(Math, scores);
 };
 
 export const appToResult = (appLink: AppLink, score: number): GlobalSearchProviderResult => {

@@ -99,7 +99,6 @@ export class ManagementPlugin implements Plugin<ManagementSetup, ManagementStart
       euiIconType: 'logoElastic',
       category: DEFAULT_APP_CATEGORIES.management,
       meta: {
-        // TODO: translate the keywords
         keywords: ['Management', 'Manage'],
       },
       updater$: this.appUpdater,
