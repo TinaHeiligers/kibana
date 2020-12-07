@@ -300,7 +300,7 @@ export interface App<HistoryLocationState = unknown> {
  */
 export interface AppMeta {
   /** Keywords to represent this application */
-  keywords: string[];
+  keywords?: string[];
 }
 
 /**
@@ -359,7 +359,7 @@ export type PublicAppInfo = Omit<App, 'mount' | 'updater$' | 'searchDeepLinks' |
   navLinkStatus: AppNavLinkStatus;
   appRoute: string;
   searchDeepLinks: PublicAppSearchDeepLinkInfo[];
-  meta?: PublicAppMetaInfo;
+  meta: PublicAppMetaInfo;
 };
 
 /**

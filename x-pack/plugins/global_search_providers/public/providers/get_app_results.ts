@@ -75,7 +75,7 @@ const scoreAppByKeywords = (term: string, keywords: string[]): number => {
   const scores = keywords.map((keyword) => {
     return scoreAppByTerms(term, keyword);
   });
-  return Math.max.apply(Math, scores);
+  return Math.max(...scores);
 };
 
 export const appToResult = (appLink: AppLink, score: number): GlobalSearchProviderResult => {
