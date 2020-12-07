@@ -44,6 +44,9 @@ describe('getAppInfo', () => {
       navLinkStatus: AppNavLinkStatus.visible,
       appRoute: `/app/some-id`,
       searchDeepLinks: [],
+      meta: {
+        keywords: [],
+      },
     });
   });
 
@@ -79,6 +82,9 @@ describe('getAppInfo', () => {
           ],
         },
       ],
+      meta: {
+        keywords: [],
+      },
     });
   });
 
