@@ -72,11 +72,17 @@ describe('getAppInfo', () => {
         {
           id: 'sub-id',
           title: 'sub-title',
+          meta: {
+            keywords: [],
+          },
           searchDeepLinks: [
             {
               id: 'sub-sub-id',
               title: 'sub-sub-title',
               path: '/sub-sub',
+              meta: {
+                keywords: [],
+              },
               searchDeepLinks: [], // default empty array added
             },
           ],
@@ -113,5 +119,50 @@ describe('getAppInfo', () => {
         navLinkStatus: AppNavLinkStatus.visible,
       })
     );
+  });
+
+  it('adds default meta fields to sublinks when needed', () => {
+    const app = createApp({
+      searchDeepLinks: [
+        {
+          id: 'sub-id',
+          title: 'sub-title',
+          searchDeepLinks: [
+            {
+              id: 'sub-sub-id',
+              title: 'sub-sub-title',
+              path: '/sub-sub',
+              meta: { keywords: ['sub sub'] },
+            },
+          ],
+        },
+      ],
+    });
+    const info = getAppInfo(app);
+
+    expect(info).toEqual({
+      id: 'some-id',
+      title: 'some-title',
+      status: AppStatus.accessible,
+      navLinkStatus: AppNavLinkStatus.visible,
+      appRoute: `/app/some-id`,
+      meta: { keywords: [] },
+      searchDeepLinks: [
+        {
+          id: 'sub-id',
+          title: 'sub-title',
+          meta: { keywords: [] }, // default empty array
+          searchDeepLinks: [
+            {
+              id: 'sub-sub-id',
+              title: 'sub-sub-title',
+              path: '/sub-sub',
+              meta: { keywords: ['sub sub'] },
+              searchDeepLinks: [],
+            },
+          ],
+        },
+      ],
+    });
   });
 });

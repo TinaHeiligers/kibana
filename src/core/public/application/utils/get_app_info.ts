@@ -61,6 +61,9 @@ function getSearchDeepLinkInfos(
         title: rawDeepLink.title,
         path: rawDeepLink.path,
         searchDeepLinks: getSearchDeepLinkInfos(app, rawDeepLink.searchDeepLinks),
+        meta: {
+          keywords: rawDeepLink.meta?.keywords || [],
+        },
       };
     }
   );

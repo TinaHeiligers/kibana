@@ -42,6 +42,7 @@ export {
   AppLeaveConfirmAction,
   NavigateToAppOptions,
   PublicAppInfo,
+  PublicAppMetaInfo,
   PublicAppSearchDeepLinkInfo,
   // Internal types
   InternalApplicationSetup,
