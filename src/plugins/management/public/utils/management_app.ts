@@ -23,16 +23,21 @@ import { ManagementItem } from './management_item';
 export interface RegisterManagementAppArgs extends CreateManagementItemArgs {
   mount: Mount;
   basePath: string;
+  meta?: { keywords?: string[] };
 }
 
 export class ManagementApp extends ManagementItem {
   public readonly mount: Mount;
   public readonly basePath: string;
+  public readonly meta?: { keywords?: string[] };
 
   constructor(args: RegisterManagementAppArgs) {
     super(args);
 
     this.mount = args.mount;
     this.basePath = args.basePath;
+    this.meta = {
+      keywords: args.meta?.keywords || [],
+    };
   }
 }

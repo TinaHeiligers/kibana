@@ -58,6 +58,7 @@ export class ManagementPlugin implements Plugin<ManagementSetup, ManagementStart
         id: mgmtApp.id,
         title: mgmtApp.title,
         path: mgmtApp.basePath,
+        meta: { keywords: mgmtApp.meta?.keywords || [] },
       })),
     }));
 
@@ -99,7 +100,7 @@ export class ManagementPlugin implements Plugin<ManagementSetup, ManagementStart
       euiIconType: 'logoElastic',
       category: DEFAULT_APP_CATEGORIES.management,
       meta: {
-        keywords: ['Management', 'Manage'],
+        keywords: ['Stack', 'Manage'],
       },
       updater$: this.appUpdater,
       async mount(params: AppMountParameters) {

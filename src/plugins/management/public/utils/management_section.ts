@@ -41,6 +41,9 @@ export class ManagementSection extends ManagementItem {
     const app = new ManagementApp({
       ...args,
       basePath: `/${this.id}/${args.id}`,
+      meta: {
+        keywords: args.meta?.keywords || [],
+      },
     });
 
     this.apps.push(app);
