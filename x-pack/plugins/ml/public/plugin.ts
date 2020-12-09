@@ -86,6 +86,9 @@ export class MlPlugin implements Plugin<MlPluginSetup, MlPluginStart> {
       appRoute: '/app/ml',
       category: DEFAULT_APP_CATEGORIES.kibana,
       updater$: this.appUpdater,
+      meta: {
+        keywords: ['ml'],
+      },
       mount: async (params: AppMountParameters) => {
         const [coreStart, pluginsStart] = await core.getStartServices();
         const kibanaVersion = this.initializerContext.env.packageInfo.version;
