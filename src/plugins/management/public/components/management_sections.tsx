@@ -68,13 +68,11 @@ const stackTip = i18n.translate('management.sections.stackTip', {
   defaultMessage: 'Manage your license and upgrade the Stack',
 });
 
-// @TODO translate the keywords for each section
 export const IngestSection = {
   id: ManagementSectionId.Ingest,
   title: ingestTitle,
   tip: ingestTip,
   order: 0,
-  meta: { keywords: ['index', 'load data', 'transform', 'reshape', 'wrangle'] },
 };
 
 export const DataSection = {
@@ -82,7 +80,6 @@ export const DataSection = {
   title: dataTitle,
   tip: dataTip,
   order: 1,
-  meta: { keywords: ['backups', 'cluster data'] },
 };
 
 export const InsightsAndAlertingSection = {
@@ -90,7 +87,6 @@ export const InsightsAndAlertingSection = {
   title: insightsAndAlertingTitle,
   tip: insightsAndAlertingTip,
   order: 2,
-  meta: { keywords: ['warnings', 'notifications'] },
 };
 
 export const SecuritySection = {
@@ -98,7 +94,6 @@ export const SecuritySection = {
   title: sectionTitle,
   tip: sectionTip,
   order: 3,
-  meta: { keywords: ['access', 'roles', 'users'] },
 };
 
 export const KibanaSection = {
@@ -106,7 +101,6 @@ export const KibanaSection = {
   title: kibanaTitle,
   tip: kibanaTip,
   order: 4,
-  meta: { keywords: ['Customize', 'Saved Objects'] },
 };
 
 export const StackSection = {
@@ -114,7 +108,6 @@ export const StackSection = {
   title: stackTitle,
   tip: stackTip,
   order: 4,
-  meta: { keywords: ['license', 'upgrade'] },
 };
 
 export const managementSections = [

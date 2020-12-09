@@ -52,18 +52,4 @@ describe('ManagementSection', () => {
 
     expect(section.getAppsEnabled().length).toEqual(0);
   });
-
-  test('can add custom keywords', () => {
-    const section = createSection();
-    const testAppConfig = {
-      id: 'test-app',
-      title: 'Test App',
-      mount: () => () => {},
-      meta: { keywords: ['tester'] },
-    };
-    section.registerApp(testAppConfig);
-    expect(section.getAppsEnabled().length).toEqual(1);
-    const sectionKeys = Object.keys(section.getAppsEnabled()[0]);
-    expect(sectionKeys.includes('meta')).toBeTruthy();
-  });
 });
