@@ -99,7 +99,7 @@ export class ManagementPlugin implements Plugin<ManagementSetup, ManagementStart
       euiIconType: 'logoElastic',
       category: DEFAULT_APP_CATEGORIES.management,
       meta: {
-        keywords: ['Stack', 'Manage'],
+        keywords: ['Organize', 'Command Center'],
       },
       updater$: this.appUpdater,
       async mount(params: AppMountParameters) {
