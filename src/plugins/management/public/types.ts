@@ -81,6 +81,6 @@ export interface CreateManagementItemArgs {
   euiIconType?: string; // takes precedence over `icon` property.
   icon?: string; // URL to image file; fallback if no `euiIconType`
   meta?: {
-    keywords?: string[]; // allows registering alternative keywords for the item
+    keywords?: string[]; // allows registering keywords for search
   };
 }

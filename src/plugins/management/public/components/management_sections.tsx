@@ -74,7 +74,7 @@ export const IngestSection = {
   title: ingestTitle,
   tip: ingestTip,
   order: 0,
-  meta: { keywords: ['index', 'loaddata', 'transform', 'reshape', 'wrangle'] },
+  meta: { keywords: ['index', 'load data', 'transform', 'reshape', 'wrangle'] },
 };
 
 export const DataSection = {
@@ -106,7 +106,7 @@ export const KibanaSection = {
   title: kibanaTitle,
   tip: kibanaTip,
   order: 4,
-  meta: { keywords: ['Customize', 'SavedObjects'] },
+  meta: { keywords: ['Customize', 'Saved Objects'] },
 };
 
 export const StackSection = {

@@ -36,8 +36,10 @@ export class ManagementApp extends ManagementItem {
 
     this.mount = args.mount;
     this.basePath = args.basePath;
-    this.meta = {
-      keywords: args.meta?.keywords || [],
-    };
+    if (args.meta && args.meta.keywords) {
+      this.meta = {
+        keywords: args.meta?.keywords || [],
+      };
+    }
   }
 }

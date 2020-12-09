@@ -52,10 +52,9 @@ export const scoreApp = (term: string, appLink: AppLink): number => {
   term = term.toLowerCase();
   const title = [appLink.app.title, ...appLink.subLinkTitles].join(' ').toLowerCase();
   const appScoreByTerms = scoreAppByTerms(term, title);
-  const keywords = [
-    ...appLink.app.meta.keywords.map((keyword) => keyword.toLowerCase()),
-    ...appLink.subLinkKeywords.map((keyword) => keyword.toLowerCase()),
-  ];
+  const appKeywords = appLink.app.meta.keywords.map((keyword) => keyword.toLowerCase());
+  const appSubLinkKeywords = appLink.subLinkKeywords.map((keyword) => keyword.toLowerCase());
+  const keywords = [...appKeywords, ...appSubLinkKeywords];
   const appScoreByKeywords = scoreAppByKeywords(term, keywords);
   return Math.max(appScoreByTerms, appScoreByKeywords);
 };
@@ -115,6 +114,7 @@ const flattenDeepLinks = (
   app: PublicAppInfo,
   deepLink?: PublicAppSearchDeepLinkInfo
 ): AppLink[] => {
+  // console.log('2. deep-deepLink:', deepLink);
   if (!deepLink) {
     return [
       {
@@ -130,7 +130,7 @@ const flattenDeepLinks = (
       ...app.searchDeepLinks.flatMap((appDeepLink) => flattenDeepLinks(app, appDeepLink)),
     ];
   }
-
+  // console.log('1. deepLink:::', deepLink);
   return [
     ...(deepLink.path
       ? [
@@ -138,7 +138,7 @@ const flattenDeepLinks = (
             id: `${app.id}-${deepLink.id}`,
             app,
             subLinkTitles: [deepLink.title],
-            subLinkKeywords: deepLink.meta.keywords,
+            subLinkKeywords: [...deepLink.meta.keywords],
             path: `${app.appRoute}${deepLink.path}`,
             meta: { ...deepLink.meta },
           },
@@ -146,12 +146,16 @@ const flattenDeepLinks = (
       : []),
     ...deepLink.searchDeepLinks
       .flatMap((deepDeepLink) => flattenDeepLinks(app, deepDeepLink))
-      .map((deepAppLink) => ({
-        ...deepAppLink,
-        // shift current sublink title into array of sub-sublink titles
-        subLinkTitles: [deepLink.title, ...deepAppLink.subLinkTitles],
-        // shift current sublink keywords into array of sub-sblink keywords
-        subLinkKeywords: deepLink.meta.keywords.concat(deepAppLink.subLinkKeywords),
-      })),
+      .map((deepAppLink) => {
+        const finalResult = {
+          ...deepAppLink,
+          // shift current sublink title into array of sub-sublink titles
+          subLinkTitles: [deepLink.title, ...deepAppLink.subLinkTitles],
+          // combine current sublink keywords into array of sub-link keywords
+          subLinkKeywords: deepLink.meta.keywords.concat(deepAppLink.subLinkKeywords),
+        };
+        // console.log('3. finalResult:', finalResult);
+        return finalResult;
+      }),
   ];
 };
