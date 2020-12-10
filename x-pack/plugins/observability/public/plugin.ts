@@ -45,9 +45,6 @@ export class Plugin implements PluginClass<ObservabilityPluginSetup, Observabili
       appRoute: '/app/observability',
       updater$: this.appUpdater$,
       category: DEFAULT_APP_CATEGORIES.observability,
-      meta: {
-        keywords: ['metrics', 'traces', 'monitor', 'Observability'],
-      },
 
       mount: async (params: AppMountParameters<unknown>) => {
         // Load application bundle

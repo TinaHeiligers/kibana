@@ -162,9 +162,6 @@ export class ApmPlugin implements Plugin<ApmPluginSetup, ApmPluginStart> {
       order: 8500,
       euiIconType: 'logoObservability',
       category: DEFAULT_APP_CATEGORIES.observability,
-      meta: {
-        keywords: ['UX'],
-      },
 
       async mount(params: AppMountParameters<unknown>) {
         // Load application bundle and Get start service
