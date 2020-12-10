@@ -114,7 +114,6 @@ const flattenDeepLinks = (
   app: PublicAppInfo,
   deepLink?: PublicAppSearchDeepLinkInfo
 ): AppLink[] => {
-  // console.log('2. deep-deepLink:', deepLink);
   if (!deepLink) {
     return [
       {
@@ -130,7 +129,6 @@ const flattenDeepLinks = (
       ...app.searchDeepLinks.flatMap((appDeepLink) => flattenDeepLinks(app, appDeepLink)),
     ];
   }
-  // console.log('1. deepLink:::', deepLink);
   return [
     ...(deepLink.path
       ? [
@@ -146,16 +144,12 @@ const flattenDeepLinks = (
       : []),
     ...deepLink.searchDeepLinks
       .flatMap((deepDeepLink) => flattenDeepLinks(app, deepDeepLink))
-      .map((deepAppLink) => {
-        const finalResult = {
-          ...deepAppLink,
-          // shift current sublink title into array of sub-sublink titles
-          subLinkTitles: [deepLink.title, ...deepAppLink.subLinkTitles],
-          // combine current sublink keywords into array of sub-link keywords
-          subLinkKeywords: deepLink.meta.keywords.concat(deepAppLink.subLinkKeywords),
-        };
-        // console.log('3. finalResult:', finalResult);
-        return finalResult;
-      }),
+      .map((deepAppLink) => ({
+        ...deepAppLink,
+        // shift current sublink title into array of sub-sublink titles
+        subLinkTitles: [deepLink.title, ...deepAppLink.subLinkTitles],
+        // combine current sublink keywords into array of sub-link keywords
+        subLinkKeywords: deepLink.meta.keywords.concat(deepAppLink.subLinkKeywords),
+      })),
   ];
 };
