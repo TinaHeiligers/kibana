@@ -30,19 +30,33 @@ export interface Usage {
 }
 
 export function fetchProvider(index: string) {
-  return async ({ callCluster }: CollectorFetchContext): Promise<Usage> => {
-    const [response, config] = await Promise.all([
-      callCluster('get', {
+  return async ({ esClient }: CollectorFetchContext): Promise<Usage> => {
+    // const [response, config] = await Promise.all([
+    //   callCluster('get', {
+    //     index,
+    //     id: 'kql-telemetry:kql-telemetry',
+    //     ignore: [404],
+    //   }),
+    //   callCluster('search', {
+    //     index,
+    //     body: { query: { term: { type: 'config' } } },
+    //     ignore: [404],
+    //   }),
+    // ]);
+    const { body: response } = await esClient.get(
+      {
         index,
         id: 'kql-telemetry:kql-telemetry',
-        ignore: [404],
-      }),
-      callCluster('search', {
+      },
+      { ignore: [404] }
+    );
+    const { body: config } = await esClient.search(
+      {
         index,
         body: { query: { term: { type: 'config' } } },
-        ignore: [404],
-      }),
-    ]);
+      },
+      { ignore: [404] }
+    );
 
     const queryLanguageConfigValue: string | null | undefined = get(
       config,
