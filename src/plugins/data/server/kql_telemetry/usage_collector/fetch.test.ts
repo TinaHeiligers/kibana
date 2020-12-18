@@ -39,7 +39,6 @@ function setupMockCallCluster(
   language: string | undefined | null
 ) {
   function mockedEsGetMethod() {
-    // this is the get part
     if (optCount === null) {
       return Promise.resolve({
         body: { _index: '.kibana_1', _id: 'kql-telemetry:kql-telemetry', found: false },

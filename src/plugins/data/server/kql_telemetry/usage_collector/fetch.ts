@@ -31,33 +31,22 @@ export interface Usage {
 
 export function fetchProvider(index: string) {
   return async ({ esClient }: CollectorFetchContext): Promise<Usage> => {
-    // const [response, config] = await Promise.all([
-    //   callCluster('get', {
-    //     index,
-    //     id: 'kql-telemetry:kql-telemetry',
-    //     ignore: [404],
-    //   }),
-    //   callCluster('search', {
-    //     index,
-    //     body: { query: { term: { type: 'config' } } },
-    //     ignore: [404],
-    //   }),
-    // ]);
-    const { body: response } = await esClient.get(
-      {
-        index,
-        id: 'kql-telemetry:kql-telemetry',
-      },
-      { ignore: [404] }
-    );
-    const { body: config } = await esClient.search(
-      {
-        index,
-        body: { query: { term: { type: 'config' } } },
-      },
-      { ignore: [404] }
-    );
-
+    const [{ body: response }, { body: config }] = await Promise.all([
+      esClient.get(
+        {
+          index,
+          id: 'kql-telemetry:kql-telemetry',
+        },
+        { ignore: [404] }
+      ),
+      esClient.search(
+        {
+          index,
+          body: { query: { term: { type: 'config' } } },
+        },
+        { ignore: [404] }
+      ),
+    ]);
     const queryLanguageConfigValue: string | null | undefined = get(
       config,
       `hits.hits[0]._source.config.${UI_SETTINGS.SEARCH_QUERY_LANGUAGE}`
