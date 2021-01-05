@@ -19,6 +19,7 @@
 
 import { ReplaySubject } from 'rxjs';
 import { first } from 'rxjs/operators';
+import { memo } from 'react';
 import { CoreService } from '../../types';
 import { CoreContext } from '../core_context';
 import { Logger } from '../logging';
@@ -58,7 +59,7 @@ export class MetricsService
     await this.refreshMetrics();
 
     this.collectInterval = setInterval(() => {
-      this.refreshMetrics();
+      this.refreshMetrics(); // I'm logging the ops metrics in here
     }, config.interval.asMilliseconds());
 
     const metricsObservable = this.metrics$.asObservable();
@@ -75,13 +76,37 @@ export class MetricsService
     if (!this.service) {
       throw new Error('#setup() needs to be run first');
     }
-
     return this.service;
+  }
+
+  private msToTime(milliseconds: number) {
+    // const millis = (milliseconds % 1000) / 100;
+    const seconds = Math.floor(milliseconds / 1000) % 60;
+    const minutes = Math.floor((milliseconds / (1000 * 60)) % 60);
+    const hours = Math.floor((milliseconds / (1000 * 60 * 60)) % 24);
+    const hoursAsEither = hours < 10 ? '0' + hours : hours;
+    const minutesAsEither = minutes < 10 ? '0' + minutes : minutes;
+    const secondsAsEither = seconds < 10 ? '0' + seconds : seconds;
+    return hoursAsEither + ':' + minutesAsEither + ':' + secondsAsEither;
+  }
+
+  private gatherLogInfoAndLogItOut(metrics: OpsMetrics) {
+    const memoryLogEntry = metrics.process.memory.heap.used_in_bytes;
+    const memoryLogEntryInMB = (memoryLogEntry / 1000000).toFixed(1);
+    const uptimeLogEntry = metrics.process.uptime_in_millis;
+    const uptimeLogEntryPretty = this.msToTime(uptimeLogEntry);
+    const loadLogEntry = [...Object.values(metrics.os.load)].map((num) => num.toFixed(2)).join(' ');
+    const delayLogEntry = metrics.process.event_loop_delay.toFixed(3);
+    return `memory: ${memoryLogEntryInMB}MB uptime: ${uptimeLogEntryPretty} load: [${loadLogEntry}] delay: ${delayLogEntry}`;
   }
 
   private async refreshMetrics() {
     this.logger.debug('Refreshing metrics');
     const metrics = await this.metricsCollector!.collect();
+
+    const opsMetricsPretty = this.gatherLogInfoAndLogItOut(metrics);
+    this.logger.info(opsMetricsPretty);
+
     this.metricsCollector!.reset();
     this.metrics$.next(metrics);
   }
