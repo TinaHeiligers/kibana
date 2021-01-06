@@ -19,7 +19,6 @@
 
 import { ReplaySubject } from 'rxjs';
 import { first } from 'rxjs/operators';
-import { memo } from 'react';
 import { CoreService } from '../../types';
 import { CoreContext } from '../core_context';
 import { Logger } from '../logging';
