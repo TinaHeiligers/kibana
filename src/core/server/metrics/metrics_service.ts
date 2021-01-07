@@ -17,7 +17,6 @@
  * under the License.
  */
 import numeral from '@elastic/numeral';
-import { get } from 'lodash';
 import { ReplaySubject } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { CoreService } from '../../types';
@@ -79,11 +78,11 @@ export class MetricsService
     return this.service;
   }
 
-  private extractOpsLogsData(metrics: OpsMetrics) {
-    const memoryLogEntry = get(metrics, 'process.memory.heap.used_in_bytes');
-    const uptimeLogEntry = metrics.process.uptime_in_millis;
-    const loadLogEntry = metrics.os.load;
-    const delayLogEntry = metrics.process.event_loop_delay;
+  private extractOpsLogsData({ process, os }: Partial<OpsMetrics>): string {
+    const memoryLogEntry = process?.memory?.heap?.used_in_bytes ?? 0;
+    const uptimeLogEntry = process?.uptime_in_millis ?? 0;
+    const loadLogEntry = os?.load ?? [];
+    const delayLogEntry = process?.event_loop_delay ?? 0;
     const memoryLogEntryInMB = numeral(memoryLogEntry).format('0.0b');
     // legacy logging has uptime in seconds (from Hapi Good), whereas we have that in milliseconds in the metrics service
     const uptimeLogEntryPretty = numeral(uptimeLogEntry / 1000).format('00:00:00');
