@@ -17,6 +17,7 @@
  * under the License.
  */
 import numeral from '@elastic/numeral';
+import { get } from 'lodash';
 import { ReplaySubject } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { CoreService } from '../../types';
@@ -79,7 +80,7 @@ export class MetricsService
   }
 
   private extractOpsLogsData(metrics: OpsMetrics) {
-    const memoryLogEntry = metrics.process.memory.heap.used_in_bytes;
+    const memoryLogEntry = get(metrics, 'process.memory.heap.used_in_bytes');
     const uptimeLogEntry = metrics.process.uptime_in_millis;
     const loadLogEntry = metrics.os.load;
     const delayLogEntry = metrics.process.event_loop_delay;
