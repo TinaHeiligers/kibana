@@ -58,7 +58,7 @@ export class MetricsService
     await this.refreshMetrics();
 
     this.collectInterval = setInterval(() => {
-      this.refreshMetrics(); // I'm logging the ops metrics in here
+      this.refreshMetrics();
     }, config.interval.asMilliseconds());
 
     const metricsObservable = this.metrics$.asObservable();
@@ -79,19 +79,15 @@ export class MetricsService
   }
 
   private extractOpsLogsData({ process, os }: Partial<OpsMetrics>): string {
-    const memoryLogEntry = process?.memory?.heap?.used_in_bytes ?? 0;
-    const uptimeLogEntry = process?.uptime_in_millis ?? 0;
-    const loadLogEntry = os?.load ?? [];
-    const delayLogEntry = process?.event_loop_delay ?? 0;
-    const memoryLogEntryInMB = numeral(memoryLogEntry).format('0.0b');
+    const memoryLogEntryInMB = numeral(process?.memory?.heap?.used_in_bytes ?? 0).format('0.0b');
     // legacy logging has uptime in seconds (from Hapi Good), whereas we have that in milliseconds in the metrics service
-    const uptimeLogEntryPretty = numeral(uptimeLogEntry / 1000).format('00:00:00');
-    const loadLogEntryPretty = [...Object.values(loadLogEntry)]
+    const uptimeLogEntryPretty = numeral(process?.uptime_in_millis ?? 0 / 1000).format('00:00:00');
+    const loadLogEntryPretty = [...Object.values(os?.load ?? [])]
       .map((val: number) => {
         return numeral(val).format('0.00');
       })
       .join(' ');
-    const delayLogEntryPretty = numeral(delayLogEntry).format('0.000');
+    const delayLogEntryPretty = numeral(process?.event_loop_delay ?? 0).format('0.000');
 
     return `memory: ${memoryLogEntryInMB} uptime: ${uptimeLogEntryPretty} load: [${loadLogEntryPretty}] delay: ${delayLogEntryPretty}`;
   }
@@ -99,7 +95,6 @@ export class MetricsService
   private async refreshMetrics() {
     this.logger.debug('Refreshing metrics');
     const metrics = await this.metricsCollector!.collect();
-    // TODO: decide if this is the correct place to log the ops metrics from
     const opsMetricsPretty = this.extractOpsLogsData(metrics);
     this.logger.info(opsMetricsPretty);
 
