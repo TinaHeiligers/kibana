@@ -21,11 +21,8 @@
     { "path": "../../plugins/expressions/tsconfig.json" },
     { "path": "../../plugins/home/tsconfig.json" },
     { "path": "../../plugins/bfetch/tsconfig.json"},
-    { "path": "../../plugins/data/tsconfig.json"}
-    //
-    // The following are dependencies that have not been migrated to TS project references yet
-    // { "path": "../../plugins/advanced_settings/tsconfig.json" },
-
-    // { "path": "../../plugins/management/tsconfig.json"},
+    { "path": "../../plugins/data/tsconfig.json"},
+    { "path": "../../plugins/advanced_settings/tsconfig.json" },
+    { "path": "../../plugins/management/tsconfig.json"}
   ]
 }
