@@ -14,8 +14,7 @@
   ],
   "references": [
     { "path": "../../core/tsconfig.json" },
-    // not migrated yet, PR is review
-    // { "path": "../management/tsconfig.json"},
+    { "path": "../management/tsconfig.json"},
     { "path": "../home/tsconfig.json"},
     { "path": "../usage_collection/tsconfig.json"},
     { "path": "../kibana_react/tsconfig.json"}
