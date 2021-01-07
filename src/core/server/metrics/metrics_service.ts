@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
+import numeral from '@elastic/numeral';
 import { ReplaySubject } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { CoreService } from '../../types';
@@ -78,32 +78,29 @@ export class MetricsService
     return this.service;
   }
 
-  private msToTime(milliseconds: number) {
-    // const millis = (milliseconds % 1000) / 100;
-    const seconds = Math.floor(milliseconds / 1000) % 60;
-    const minutes = Math.floor((milliseconds / (1000 * 60)) % 60);
-    const hours = Math.floor((milliseconds / (1000 * 60 * 60)) % 24);
-    const hoursAsEither = hours < 10 ? '0' + hours : hours;
-    const minutesAsEither = minutes < 10 ? '0' + minutes : minutes;
-    const secondsAsEither = seconds < 10 ? '0' + seconds : seconds;
-    return hoursAsEither + ':' + minutesAsEither + ':' + secondsAsEither;
-  }
-
-  private gatherLogInfoAndLogItOut(metrics: OpsMetrics) {
+  private extractOpsLogsData(metrics: OpsMetrics) {
     const memoryLogEntry = metrics.process.memory.heap.used_in_bytes;
-    const memoryLogEntryInMB = (memoryLogEntry / 1000000).toFixed(1);
     const uptimeLogEntry = metrics.process.uptime_in_millis;
-    const uptimeLogEntryPretty = this.msToTime(uptimeLogEntry);
-    const loadLogEntry = [...Object.values(metrics.os.load)].map((num) => num.toFixed(2)).join(' ');
-    const delayLogEntry = metrics.process.event_loop_delay.toFixed(3);
-    return `memory: ${memoryLogEntryInMB}MB uptime: ${uptimeLogEntryPretty} load: [${loadLogEntry}] delay: ${delayLogEntry}`;
+    const loadLogEntry = metrics.os.load;
+    const delayLogEntry = metrics.process.event_loop_delay;
+    const memoryLogEntryInMB = numeral(memoryLogEntry).format('0.0b');
+    // legacy logging has uptime in seconds (from Hapi Good), whereas we have that in milliseconds in the metrics service
+    const uptimeLogEntryPretty = numeral(uptimeLogEntry / 1000).format('00:00:00');
+    const loadLogEntryPretty = [...Object.values(loadLogEntry)]
+      .map((val: number) => {
+        return numeral(val).format('0.00');
+      })
+      .join(' ');
+    const delayLogEntryPretty = numeral(delayLogEntry).format('0.000');
+
+    return `memory: ${memoryLogEntryInMB} uptime: ${uptimeLogEntryPretty} load: [${loadLogEntryPretty}] delay: ${delayLogEntryPretty}`;
   }
 
   private async refreshMetrics() {
     this.logger.debug('Refreshing metrics');
     const metrics = await this.metricsCollector!.collect();
-
-    const opsMetricsPretty = this.gatherLogInfoAndLogItOut(metrics);
+    // TODO: decide if this is the correct place to log the ops metrics from
+    const opsMetricsPretty = this.extractOpsLogsData(metrics);
     this.logger.info(opsMetricsPretty);
 
     this.metricsCollector!.reset();
