@@ -170,6 +170,19 @@ describe('MetricsService', () => {
       await nextEmission();
       expect(loggingSystemMock.collect(logger).info).toMatchSnapshot();
     });
+
+    it('logs default metrics if they are missing or malformed', async () => {
+      mockOpsCollector.collect.mockResolvedValueOnce({ secondMetrics: 'metrics' });
+      await metricsService.setup({ http: httpMock });
+      await metricsService.start();
+      expect(loggingSystemMock.collect(logger).info).toMatchInlineSnapshot(`
+        Array [
+          Array [
+            "memory: 0.0B uptime: 0:00:00 load: [] delay: 0.000",
+          ],
+        ]
+      `);
+    });
   });
 
   describe('#stop', () => {
