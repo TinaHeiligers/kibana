@@ -2,12 +2,9 @@
   "include": [],
   "references": [
     { "path": "./src/core/tsconfig.json" },
-<<<<<<< HEAD
     { "path": "./src/plugins/telemetry_management_section/tsconfig.json" },
     { "path": "./src/plugins/advanced_settings/tsconfig.json" },
-=======
     { "path": "./src/plugins/apm_oss/tsconfig.json" },
->>>>>>> master
     { "path": "./src/plugins/bfetch/tsconfig.json" },
     { "path": "./src/plugins/data/tsconfig.json" },
     { "path": "./src/plugins/dev_tools/tsconfig.json" },
