@@ -81,7 +81,7 @@ export class MetricsService
   private extractOpsLogsData({ process, os }: Partial<OpsMetrics>): string {
     const memoryLogEntryInMB = numeral(process?.memory?.heap?.used_in_bytes ?? 0).format('0.0b');
     // ProcessMetricsCollector converts from seconds to milliseconds. Format here is HH:mm:ss for backward compatibility
-    const uptimeLogEntry = numeral(process?.uptime_in_millis ?? 0 / 1000).format('00:00:00');
+    const uptimeLogEntry = numeral((process?.uptime_in_millis ?? 0) / 1000).format('00:00:00');
     const loadLogEntry = [...Object.values(os?.load ?? [])]
       .map((val: number) => {
         return numeral(val).format('0.00');
