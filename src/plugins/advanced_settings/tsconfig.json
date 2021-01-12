@@ -9,15 +9,13 @@
   },
   "include": [
     "public/**/*",
-    "server/**/*",
-    "../../../typings/**/*"
+    "server/**/*"
   ],
   "references": [
     { "path": "../../core/tsconfig.json" },
-    { "path": "../management/tsconfig.json"},
-    { "path": "../home/tsconfig.json"},
-    { "path": "../usage_collection/tsconfig.json"},
-    { "path": "../kibana_react/tsconfig.json"}
+    { "path": "../management/tsconfig.json" },
+    { "path": "../home/tsconfig.json" },
+    { "path": "../usage_collection/tsconfig.json" },
+    { "path": "../kibana_react/tsconfig.json" },
   ]
 }
-
