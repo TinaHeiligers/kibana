@@ -35,6 +35,7 @@ interface MetricsServiceSetupDeps {
 export class MetricsService
   implements CoreService<InternalMetricsServiceSetup, InternalMetricsServiceStart> {
   private readonly logger: Logger;
+  private readonly opsMetricsLogger: Logger;
   private metricsCollector?: OpsMetricsCollector;
   private collectInterval?: NodeJS.Timeout;
   private metrics$ = new ReplaySubject<OpsMetrics>(1);
@@ -42,6 +43,7 @@ export class MetricsService
 
   constructor(private readonly coreContext: CoreContext) {
     this.logger = coreContext.logger.get('metrics');
+    this.opsMetricsLogger = coreContext.logger.get('metrics', 'ops');
   }
 
   public async setup({ http }: MetricsServiceSetupDeps): Promise<InternalMetricsServiceSetup> {
@@ -79,6 +81,7 @@ export class MetricsService
     return this.service;
   }
   private extractOpsLogsData({ process, os }: Partial<OpsMetrics>): string {
+    // TODO: provide these metrics in a structured ECS-compatible way
     const memoryLogEntryinMB = numeral(process?.memory?.heap?.used_in_bytes ?? 0).format('0.0b');
     // ProcessMetricsCollector converts from seconds to milliseconds. Format here is HH:mm:ss for backward compatibility
     const uptimeLogEntry = numeral((process?.uptime_in_millis ?? 0) / 1000).format('00:00:00');
@@ -95,7 +98,9 @@ export class MetricsService
     this.logger.debug('Refreshing metrics');
     const metrics = await this.metricsCollector!.collect();
     const opsLogsMetrics = this.extractOpsLogsData(metrics);
-    this.logger.info(opsLogsMetrics);
+    // TODO: refactor to report the metrics as a meta property:
+    // this.opsMetricsLogger.debug('ops', opsLogsMetricsMeta)
+    this.opsMetricsLogger.debug(opsLogsMetrics);
     this.metricsCollector!.reset();
     this.metrics$.next(metrics);
   }
