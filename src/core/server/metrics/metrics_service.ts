@@ -21,7 +21,7 @@ import { ReplaySubject } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { CoreService } from '../../types';
 import { CoreContext } from '../core_context';
-import { Logger } from '../logging';
+import { Logger, LogMeta } from '../logging';
 import { InternalHttpServiceSetup } from '../http';
 import { InternalMetricsServiceSetup, InternalMetricsServiceStart, OpsMetrics } from './types';
 import { OpsMetricsCollector } from './ops_metrics_collector';
@@ -80,27 +80,41 @@ export class MetricsService
 
     return this.service;
   }
-  private extractOpsLogsData({ process, os }: Partial<OpsMetrics>): string {
+  private extractOpsLogsData({ process, os }: Partial<OpsMetrics>): LogMeta {
+    // NOTE: verbose refactor to only return parts that are defined.
+
     // TODO: provide these metrics in a structured ECS-compatible way
-    const memoryLogEntryinMB = numeral(process?.memory?.heap?.used_in_bytes ?? 0).format('0.0b');
+    // let logMessageResponses = '';
+    const memoryLogValueinMB = process?.memory?.heap?.used_in_bytes
+      ? numeral(process?.memory?.heap?.used_in_bytes).format('0.0b')
+      : undefined;
     // ProcessMetricsCollector converts from seconds to milliseconds. Format here is HH:mm:ss for backward compatibility
-    const uptimeLogEntry = numeral((process?.uptime_in_millis ?? 0) / 1000).format('00:00:00');
-    const loadLogEntry = [...Object.values(os?.load ?? [])]
-      .map((val: number) => {
-        return numeral(val).format('0.00');
-      })
-      .join(' ');
-    const delayLogEntry = numeral(process?.event_loop_delay ?? 0).format('0.000');
-    return `memory: ${memoryLogEntryinMB} uptime: ${uptimeLogEntry} load: [${loadLogEntry}] delay: ${delayLogEntry}`;
+    const uptimeLogValue = process?.uptime_in_millis
+      ? numeral(process?.uptime_in_millis / 1000).format('00:00:00')
+      : undefined;
+
+    const delayLogValue = process?.event_loop_delay
+      ? numeral(process?.event_loop_delay).format('0.000')
+      : undefined;
+
+    const loadLogValue = [...Object.values(os?.load ?? [])].map((val: number) => {
+      return numeral(val).format('0.00');
+    });
+    const opsMetricsLogMeta = {
+      ...(memoryLogValueinMB && { memory: memoryLogValueinMB }),
+      ...(uptimeLogValue && { uptime: uptimeLogValue }),
+      ...(loadLogValue.length > 0 && { load: loadLogValue }),
+      ...(delayLogValue && { delay: delayLogValue }),
+    };
+    return opsMetricsLogMeta;
   }
 
   private async refreshMetrics() {
     this.logger.debug('Refreshing metrics');
     const metrics = await this.metricsCollector!.collect();
-    const opsLogsMetrics = this.extractOpsLogsData(metrics);
+    const opsLogsMetricsMeta = this.extractOpsLogsData(metrics);
     // TODO: refactor to report the metrics as a meta property:
-    // this.opsMetricsLogger.debug('ops', opsLogsMetricsMeta)
-    this.opsMetricsLogger.debug(opsLogsMetrics);
+    this.opsMetricsLogger.debug('ops metrics', opsLogsMetricsMeta);
     this.metricsCollector!.reset();
     this.metrics$.next(metrics);
   }
