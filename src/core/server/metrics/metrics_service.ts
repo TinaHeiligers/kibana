@@ -100,7 +100,7 @@ export class MetricsService
     const opsLogsMetrics = this.extractOpsLogsData(metrics);
     // TODO: refactor to report the metrics as a meta property:
     // this.opsMetricsLogger.debug('ops', opsLogsMetricsMeta)
-    this.opsMetricsLogger.debug(opsLogsMetrics);
+    this.opsMetricsLogger.info(opsLogsMetrics);
     this.metricsCollector!.reset();
     this.metrics$.next(metrics);
   }
