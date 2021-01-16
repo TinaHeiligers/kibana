@@ -20,6 +20,7 @@ import numeral from '@elastic/numeral';
 import { OpsMetrics } from '..';
 import * as kbnTestServer from '../../../test_helpers/kbn_server';
 import { InternalCoreSetup } from '../../internal_types';
+import { LogMeta } from '../../logging';
 import { Root } from '../../root';
 
 const otherTestSettings = {
@@ -34,30 +35,47 @@ const otherTestSettings = {
         layout: {
           highlight: false,
           kind: 'pattern',
-          pattern: '%message',
+          pattern: '%meta',
         },
       },
     },
     loggers: [
       {
-        context: 'metrics',
+        context: 'metrics.ops',
         appenders: ['custom-console'],
-        level: 'info',
+        level: 'debug',
       },
     ],
   },
 };
 
-function extractTestMetricsOfInterest({ process, os }: Partial<OpsMetrics>) {
-  const memoryLogEntryinMB = numeral(process?.memory?.heap?.used_in_bytes ?? 0).format('0.0b');
-  const uptimeLogEntry = numeral((process?.uptime_in_millis ?? 0) / 1000).format('00:00:00');
-  const loadLogEntry = [...Object.values(os?.load ?? [])]
-    .map((val: number) => {
-      return numeral(val).format('0.00');
-    })
-    .join(' ');
-  const delayLogEntry = numeral(process?.event_loop_delay ?? 0).format('0.000');
-  return `memory: ${memoryLogEntryinMB} uptime: ${uptimeLogEntry} load: [${loadLogEntry}] delay: ${delayLogEntry}`;
+function extractTestMetricsOfInterest({ process, os }: Partial<OpsMetrics>): LogMeta {
+  // NOTE: verbose refactor to only return parts that are defined.
+
+  // TODO: provide these metrics in a structured ECS-compatible way
+  // let logMessageResponses = '';
+  const memoryLogValueinMB = process?.memory?.heap?.used_in_bytes
+    ? numeral(process?.memory?.heap?.used_in_bytes).format('0.0b')
+    : undefined;
+  // ProcessMetricsCollector converts from seconds to milliseconds. Format here is HH:mm:ss for backward compatibility
+  const uptimeLogValue = process?.uptime_in_millis
+    ? numeral(process?.uptime_in_millis / 1000).format('00:00:00')
+    : undefined;
+
+  const delayLogValue = process?.event_loop_delay
+    ? numeral(process?.event_loop_delay).format('0.000')
+    : undefined;
+
+  const loadLogValue = [...Object.values(os?.load ?? [])].map((val: number) => {
+    return numeral(val).format('0.00');
+  });
+  const opsMetricsLogMeta = {
+    ...(memoryLogValueinMB && { memory: memoryLogValueinMB }),
+    ...(uptimeLogValue && { uptime: uptimeLogValue }),
+    ...(loadLogValue.length > 0 && { load: loadLogValue }),
+    ...(delayLogValue && { delay: delayLogValue }),
+  };
+  return opsMetricsLogMeta;
 }
 
 describe('metrics service', () => {
@@ -91,7 +109,9 @@ describe('metrics service', () => {
       coreSetup.metrics.getOpsMetrics$().subscribe((opsMetrics) => {
         testData = opsMetrics;
       });
-      expect(mockConsoleLog).toHaveBeenLastCalledWith(extractTestMetricsOfInterest(testData));
+      const expected = extractTestMetricsOfInterest(testData);
+      const actual = JSON.parse(mockConsoleLog.mock.calls[0]);
+      expect(actual).toMatchObject(expected);
     });
   });
 });
