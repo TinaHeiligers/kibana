@@ -154,8 +154,9 @@ describe('MetricsService', () => {
           load: [20, 30, 40],
         },
       };
+
       const opsLogger = logger.get('metrics', 'ops');
-      const metricsLogger = logger.get('metrics');
+
       mockOpsCollector.collect
         .mockResolvedValueOnce(firstMetrics)
         .mockResolvedValueOnce(secondMetrics);
@@ -168,12 +169,11 @@ describe('MetricsService', () => {
         await new Promise((resolve) => process.nextTick(resolve));
         return emission;
       };
-      expect(loggingSystemMock.collect(metricsLogger).debug[0][0]).toEqual('Refreshing metrics');
-      expect(loggingSystemMock.collect(opsLogger).info[0][0]).toMatchInlineSnapshot(
+      expect(loggingSystemMock.collect(opsLogger).debug[1][0]).toMatchInlineSnapshot(
         `"memory: 100.0B uptime: 0:00:02 load: [10.00 20.00 30.00] delay: 50.000"`
       );
       await nextEmission();
-      expect(loggingSystemMock.collect(opsLogger).info[1][0]).toMatchInlineSnapshot(
+      expect(loggingSystemMock.collect(opsLogger).debug[3][0]).toMatchInlineSnapshot(
         `"memory: 200.0B uptime: 0:00:03 load: [20.00 30.00 40.00] delay: 100.000"`
       );
     });
@@ -183,8 +183,8 @@ describe('MetricsService', () => {
       mockOpsCollector.collect.mockResolvedValueOnce({ secondMetrics: 'metrics' });
       await metricsService.setup({ http: httpMock });
       await metricsService.start();
-      expect(loggingSystemMock.collect(opsLogger).debug[0][0]).toMatchInlineSnapshot(
-        `"Refreshing metrics"`
+      expect(loggingSystemMock.collect(opsLogger).debug[1][0]).toMatchInlineSnapshot(
+        `"memory: 0.0B uptime: 0:00:00 load: [] delay: 0.000"`
       );
     });
   });
