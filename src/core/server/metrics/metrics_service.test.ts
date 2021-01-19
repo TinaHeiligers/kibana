@@ -171,7 +171,7 @@ describe('MetricsService', () => {
       };
       expect(loggingSystemMock.collect(opsLogger).debug[1]).toMatchInlineSnapshot(`
         Array [
-          "ops metrics",
+          "{\\"memory\\":\\"100.0B\\",\\"uptime\\":\\"0:00:02\\",\\"load\\":[\\"10.00\\",\\"20.00\\",\\"30.00\\"],\\"delay\\":\\"50.000\\"}",
           Object {
             "delay": "50.000",
             "load": Array [
@@ -187,7 +187,7 @@ describe('MetricsService', () => {
       await nextEmission();
       expect(loggingSystemMock.collect(opsLogger).debug[3]).toMatchInlineSnapshot(`
         Array [
-          "ops metrics",
+          "{\\"memory\\":\\"200.0B\\",\\"uptime\\":\\"0:00:03\\",\\"load\\":[\\"20.00\\",\\"30.00\\",\\"40.00\\"],\\"delay\\":\\"100.000\\"}",
           Object {
             "delay": "100.000",
             "load": Array [
@@ -209,7 +209,7 @@ describe('MetricsService', () => {
       await metricsService.start();
       expect(loggingSystemMock.collect(opsLogger).debug[1]).toMatchInlineSnapshot(`
         Array [
-          "ops metrics",
+          "{}",
           Object {},
         ]
       `);

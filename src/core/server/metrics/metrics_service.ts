@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import numeral from '@elastic/numeral';
+
 import { ReplaySubject } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { CoreService } from '../../types';
@@ -85,9 +85,9 @@ export class MetricsService
   private async refreshMetrics() {
     this.logger.debug('Refreshing metrics');
     const metrics = await this.metricsCollector!.collect();
-    const opsLogsMetricsMeta = getEcsOpsMetricsLog(metrics);
+    const { message, ...rest } = getEcsOpsMetricsLog(metrics);
     // TODO: refactor to report the metrics as a meta property:
-    this.opsMetricsLogger.debug('ops metrics', opsLogsMetricsMeta);
+    this.opsMetricsLogger.debug(message!, rest);
     this.metricsCollector!.reset();
     this.metrics$.next(metrics);
   }

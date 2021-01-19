@@ -44,5 +44,6 @@ export function getEcsOpsMetricsLog({ process, os }: Partial<OpsMetrics>): LogMe
     ...(loadLogValue.length > 0 && { load: loadLogValue }),
     ...(delayLogValue && { delay: delayLogValue }),
   };
-  return meta;
+  const message: string = JSON.stringify(meta);
+  return { message, ...meta };
 }
