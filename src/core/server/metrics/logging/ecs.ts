@@ -26,7 +26,7 @@
  * @internal
  */
 
-export interface EcsProcess {
+export interface EcsOpsMetricsEvent {
   /**
    * These typings were written as of ECS 1.7.0.
    * Don't change this value without checking the rest
@@ -41,5 +41,12 @@ export interface EcsProcess {
   labels?: Record<string, unknown>;
   message?: string;
   tags?: string[];
+  kind?: string;
+  category?: string[];
   // other fields
+  process?: EcsProcessField;
+}
+
+interface EcsProcessField {
+  uptime?: number;
 }

@@ -141,7 +141,11 @@ describe('MetricsService', () => {
           event_loop_delay: 50,
         },
         os: {
-          load: [10, 20, 30],
+          load: {
+            '1m': 10,
+            '5m': 20,
+            '15m': 30,
+          },
         },
       };
       const secondMetrics = {
@@ -151,7 +155,11 @@ describe('MetricsService', () => {
           event_loop_delay: 100,
         },
         os: {
-          load: [20, 30, 40],
+          load: {
+            '1m': 20,
+            '5m': 30,
+            '15m': 40,
+          },
         },
       };
 
@@ -171,7 +179,7 @@ describe('MetricsService', () => {
       };
       expect(loggingSystemMock.collect(opsLogger).debug[1]).toMatchInlineSnapshot(`
         Array [
-          "{\\"memory\\":\\"100.0B\\",\\"uptime\\":\\"0:00:02\\",\\"load\\":[\\"10.00\\",\\"20.00\\",\\"30.00\\"],\\"delay\\":\\"50.000\\"}",
+          "{\\"memory\\":\\"100.0B\\",\\"uptime\\":\\"0:00:01\\",\\"load\\":[\\"10.00\\",\\"20.00\\",\\"30.00\\"],\\"delay\\":\\"50.000\\"}",
           Object {
             "category": Array [
               "process",
@@ -182,11 +190,11 @@ describe('MetricsService', () => {
             },
             "host": Object {
               "os": Object {
-                "load": Array [
-                  10,
-                  20,
-                  30,
-                ],
+                "load": Object {
+                  "15m": 30,
+                  "1m": 10,
+                  "5m": 20,
+                },
               },
             },
             "kind": "metric",
@@ -197,7 +205,7 @@ describe('MetricsService', () => {
                   "usedInBytes": 100,
                 },
               },
-              "uptime": 1.5,
+              "uptime": 1,
             },
           },
         ]
@@ -216,11 +224,11 @@ describe('MetricsService', () => {
             },
             "host": Object {
               "os": Object {
-                "load": Array [
-                  20,
-                  30,
-                  40,
-                ],
+                "load": Object {
+                  "15m": 40,
+                  "1m": 20,
+                  "5m": 30,
+                },
               },
             },
             "kind": "metric",
@@ -238,7 +246,7 @@ describe('MetricsService', () => {
       `);
     });
 
-    it('logs default metrics if they are missing or malformed', async () => {
+    it('omits metrics from log message if they are missing or malformed', async () => {
       const opsLogger = logger.get('metrics', 'ops');
       mockOpsCollector.collect.mockResolvedValueOnce({ secondMetrics: 'metrics' });
       await metricsService.setup({ http: httpMock });
@@ -256,7 +264,11 @@ describe('MetricsService', () => {
             },
             "host": Object {
               "os": Object {
-                "load": Array [],
+                "load": Object {
+                  "15m": undefined,
+                  "1m": undefined,
+                  "5m": undefined,
+                },
               },
             },
             "kind": "metric",
