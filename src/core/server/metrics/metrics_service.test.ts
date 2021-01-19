@@ -173,14 +173,32 @@ describe('MetricsService', () => {
         Array [
           "{\\"memory\\":\\"100.0B\\",\\"uptime\\":\\"0:00:02\\",\\"load\\":[\\"10.00\\",\\"20.00\\",\\"30.00\\"],\\"delay\\":\\"50.000\\"}",
           Object {
-            "delay": "50.000",
-            "load": Array [
-              "10.00",
-              "20.00",
-              "30.00",
+            "category": Array [
+              "process",
+              "host",
             ],
-            "memory": "100.0B",
-            "uptime": "0:00:02",
+            "ecs": Object {
+              "version": "1.7.0",
+            },
+            "host": Object {
+              "os": Object {
+                "load": Array [
+                  10,
+                  20,
+                  30,
+                ],
+              },
+            },
+            "kind": "metric",
+            "process": Object {
+              "eventLoopDelay": 50,
+              "memory": Object {
+                "heap": Object {
+                  "usedInBytes": 100,
+                },
+              },
+              "uptime": 1.5,
+            },
           },
         ]
       `);
@@ -189,14 +207,32 @@ describe('MetricsService', () => {
         Array [
           "{\\"memory\\":\\"200.0B\\",\\"uptime\\":\\"0:00:03\\",\\"load\\":[\\"20.00\\",\\"30.00\\",\\"40.00\\"],\\"delay\\":\\"100.000\\"}",
           Object {
-            "delay": "100.000",
-            "load": Array [
-              "20.00",
-              "30.00",
-              "40.00",
+            "category": Array [
+              "process",
+              "host",
             ],
-            "memory": "200.0B",
-            "uptime": "0:00:03",
+            "ecs": Object {
+              "version": "1.7.0",
+            },
+            "host": Object {
+              "os": Object {
+                "load": Array [
+                  20,
+                  30,
+                  40,
+                ],
+              },
+            },
+            "kind": "metric",
+            "process": Object {
+              "eventLoopDelay": 100,
+              "memory": Object {
+                "heap": Object {
+                  "usedInBytes": 200,
+                },
+              },
+              "uptime": 3,
+            },
           },
         ]
       `);
@@ -210,7 +246,30 @@ describe('MetricsService', () => {
       expect(loggingSystemMock.collect(opsLogger).debug[1]).toMatchInlineSnapshot(`
         Array [
           "{}",
-          Object {},
+          Object {
+            "category": Array [
+              "process",
+              "host",
+            ],
+            "ecs": Object {
+              "version": "1.7.0",
+            },
+            "host": Object {
+              "os": Object {
+                "load": Array [],
+              },
+            },
+            "kind": "metric",
+            "process": Object {
+              "eventLoopDelay": undefined,
+              "memory": Object {
+                "heap": Object {
+                  "usedInBytes": undefined,
+                },
+              },
+              "uptime": undefined,
+            },
+          },
         ]
       `);
     });

@@ -23,27 +23,67 @@ import { OpsMetrics } from '..';
 export function getEcsOpsMetricsLog({ process, os }: Partial<OpsMetrics>): LogMeta {
   // NOTE: verbose refactor to only return parts that are defined.
   // TODO: provide these metrics in a structured ECS-compatible way
-  const memoryLogValueinMB = process?.memory?.heap?.used_in_bytes
-    ? numeral(process?.memory?.heap?.used_in_bytes).format('0.0b')
-    : undefined;
-  // ProcessMetricsCollector converts from seconds to milliseconds. Format here is HH:mm:ss for backward compatibility
-  const uptimeLogValue = process?.uptime_in_millis
+  const processMemoryUsedInBytes = process?.memory?.heap?.used_in_bytes;
+  const processMemoryUsedInBytesMsg = processMemoryUsedInBytes
+    ? numeral(processMemoryUsedInBytes).format('0.0b')
+    : '';
+
+  // ProcessMetricsCollector converts from seconds to milliseconds.
+  // ECS process.uptime is in seconds:
+  const uptimeVal = process?.uptime_in_millis ? process.uptime_in_millis / 1000 : undefined;
+  // Format here is HH:mm:ss for backward compatibility
+  const uptimeValMsg = process?.uptime_in_millis
     ? numeral(process?.uptime_in_millis / 1000).format('00:00:00')
     : undefined;
 
-  const delayLogValue = process?.event_loop_delay
+  const eventLoopDelayVal = process?.event_loop_delay;
+  const eventLoopDelayValMsg = process?.event_loop_delay
     ? numeral(process?.event_loop_delay).format('0.000')
     : undefined;
 
-  const loadLogValue = [...Object.values(os?.load ?? [])].map((val: number) => {
+  const loadVals = [...Object.values(os?.load ?? [])];
+  const loadValsMsg = loadVals.map((val: number) => {
     return numeral(val).format('0.00');
   });
-  const meta = {
-    ...(memoryLogValueinMB && { memory: memoryLogValueinMB }),
-    ...(uptimeLogValue && { uptime: uptimeLogValue }),
-    ...(loadLogValue.length > 0 && { load: loadLogValue }),
-    ...(delayLogValue && { delay: delayLogValue }),
+
+  // the only ECS field in this response is process.uptime, add in event.kind = metric
+  const metaData = {
+    ...(processMemoryUsedInBytes && { memory: processMemoryUsedInBytesMsg }),
+    ...(uptimeVal && { uptime: uptimeValMsg }),
+    ...(loadVals.length > 0 && { load: loadValsMsg }),
+    ...(eventLoopDelayVal && { delay: eventLoopDelayValMsg }),
   };
-  const message: string = JSON.stringify(meta);
-  return { message, ...meta };
+  const metaDataMessage: string = JSON.stringify(metaData);
+
+  // return ECS event with custom fields added
+  const meta = {
+    ecs: { version: '1.7.0' },
+    message: `${metaDataMessage}`,
+    kind: 'metric',
+    category: ['process', 'host'],
+    process: {
+      uptime: uptimeVal,
+    },
+    host: {
+      os: {},
+    },
+  };
+
+  return {
+    ...meta,
+    process: {
+      ...meta.process,
+      memory: {
+        heap: {
+          usedInBytes: processMemoryUsedInBytes,
+        },
+      },
+      eventLoopDelay: eventLoopDelayVal,
+    },
+    host: {
+      os: {
+        load: loadVals,
+      },
+    },
+  };
 }
