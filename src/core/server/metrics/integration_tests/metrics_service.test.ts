@@ -35,7 +35,7 @@ const otherTestSettings = {
         layout: {
           highlight: false,
           kind: 'pattern',
-          pattern: '%meta',
+          pattern: '%message|%meta',
         },
       },
     },
@@ -69,13 +69,13 @@ function extractTestMetricsOfInterest({ process, os }: Partial<OpsMetrics>): Log
   const loadLogValue = [...Object.values(os?.load ?? [])].map((val: number) => {
     return numeral(val).format('0.00');
   });
-  const opsMetricsLogMeta = {
+  const opsMetricsLogMetaMessage = {
     ...(memoryLogValueinMB && { memory: memoryLogValueinMB }),
     ...(uptimeLogValue && { uptime: uptimeLogValue }),
     ...(loadLogValue.length > 0 && { load: loadLogValue }),
     ...(delayLogValue && { delay: delayLogValue }),
   };
-  return opsMetricsLogMeta;
+  return opsMetricsLogMetaMessage;
 }
 
 describe('metrics service', () => {
@@ -109,9 +109,16 @@ describe('metrics service', () => {
       coreSetup.metrics.getOpsMetrics$().subscribe((opsMetrics) => {
         testData = opsMetrics;
       });
-      const expected = extractTestMetricsOfInterest(testData);
-      const actual = JSON.parse(mockConsoleLog.mock.calls[0]);
-      expect(actual).toMatchObject(expected);
+      expect(mockConsoleLog).toHaveBeenCalledTimes(1);
+      const [message, meta] = mockConsoleLog.mock.calls[0][0].split('|');
+      // the contents of the message are variable based on the process environment,
+      // so we are only performing assertions against parts of the string
+      expect(message.includes('memory')).toBe(true);
+      expect(message.includes('uptime')).toBe(true);
+      expect(message.includes('load')).toBe(true);
+      expect(message.includes('delay')).toBe(true);
+      expect(JSON.parse(meta).kind).toBe('metric');
+      expect(Object.keys(JSON.parse(meta).host.os.load)).toEqual(['1m', '5m', '15m']);
     });
   });
 });
