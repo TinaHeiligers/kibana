@@ -75,7 +75,6 @@ export class MetricsService
     this.logger.debug('Refreshing metrics');
     const metrics = await this.metricsCollector!.collect();
     const { message, ...rest } = getEcsOpsMetricsLog(metrics);
-    // TODO: refactor to report the metrics as a meta property:
     this.opsMetricsLogger.debug(message!, rest);
     this.metricsCollector!.reset();
     this.metrics$.next(metrics);

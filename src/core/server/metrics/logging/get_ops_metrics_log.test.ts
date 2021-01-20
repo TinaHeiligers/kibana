@@ -39,7 +39,7 @@ function createMockOpsMetrics(testMetrics: any) {
     ...testMetrics,
   };
 }
-const firstMetrics = {
+const testMetrics = {
   process: {
     memory: { heap: { used_in_bytes: 100 } },
     uptime_in_millis: 1500,
@@ -55,14 +55,14 @@ const firstMetrics = {
 };
 describe('getEcsOpsMetricsLog', () => {
   it('provides correctly formatted message', () => {
-    const result = getEcsOpsMetricsLog(createMockOpsMetrics(firstMetrics));
+    const result = getEcsOpsMetricsLog(createMockOpsMetrics(testMetrics));
     expect(result.message).toMatchInlineSnapshot(
       `"memory: 100.0B uptime: 0:00:01 load: [10.00,20.00,30.00] delay: 50.000"`
     );
   });
 
   it('correctly formats process uptime', () => {
-    const logMeta = getEcsOpsMetricsLog(createMockOpsMetrics(firstMetrics));
+    const logMeta = getEcsOpsMetricsLog(createMockOpsMetrics(testMetrics));
     expect(logMeta.process.uptime).toEqual(1);
   });
 

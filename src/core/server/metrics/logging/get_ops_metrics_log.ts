@@ -61,7 +61,7 @@ export function getEcsOpsMetricsLog({ process, os }: Partial<OpsMetrics>): LogMe
     },
   };
 
-  // return ECS event with custom fields added
+  // return ECS event with custom fields not yet part of ECS
   return {
     ...meta,
     process: {
