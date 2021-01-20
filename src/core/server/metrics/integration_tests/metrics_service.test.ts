@@ -6,12 +6,10 @@
  * Public License, v 1.
  */
 
-import numeral from '@elastic/numeral';
-import { OpsMetrics } from '..';
 import * as kbnTestServer from '../../../test_helpers/kbn_server';
 import { InternalCoreSetup } from '../../internal_types';
-import { LogMeta } from '../../logging';
 import { Root } from '../../root';
+import { OpsMetrics } from '../types';
 
 const otherTestSettings = {
   ops: {
@@ -43,6 +41,7 @@ describe('metrics service', () => {
   let root: Root;
   let coreSetup: InternalCoreSetup;
   let mockConsoleLog: jest.SpyInstance;
+  let testData: OpsMetrics;
 
   describe('setup', () => {
     beforeAll(async () => {
@@ -69,6 +68,7 @@ describe('metrics service', () => {
       coreSetup.metrics.getOpsMetrics$().subscribe((opsMetrics) => {
         testData = opsMetrics;
       });
+      expect(testData).toBeTruthy();
       expect(mockConsoleLog).toHaveBeenCalledTimes(1);
       const [message, meta] = mockConsoleLog.mock.calls[0][0].split('|');
       // the contents of the message are variable based on the process environment,
