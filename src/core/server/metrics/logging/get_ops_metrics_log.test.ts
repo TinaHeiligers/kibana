@@ -6,6 +6,7 @@
  * Public License, v 1.
  */
 
+import { OpsMetrics } from '..';
 import { getEcsOpsMetricsLog } from './get_ops_metrics_log';
 
 const createBaseOpsMetrics = () => ({
@@ -31,7 +32,7 @@ const createBaseOpsMetrics = () => ({
   concurrent_connections: 1,
 });
 
-function createMockTestData(testMetrics: any) {
+function createMockOpsMetrics(testMetrics: any) {
   const base = createBaseOpsMetrics();
   return {
     ...base,
@@ -52,12 +53,67 @@ const firstMetrics = {
     },
   },
 };
-
 describe('getEcsOpsMetricsLog', () => {
   it('provides correctly formatted message', () => {
-    const result = getEcsOpsMetricsLog(createMockTestData(firstMetrics));
+    const result = getEcsOpsMetricsLog(createMockOpsMetrics(firstMetrics));
     expect(result.message).toMatchInlineSnapshot(
       `"memory: 100.0B uptime: 0:00:01 load: [10.00,20.00,30.00] delay: 50.000"`
     );
+  });
+
+  it('correctly formats process uptime', () => {
+    const logMeta = getEcsOpsMetricsLog(createMockOpsMetrics(firstMetrics));
+    expect(logMeta.process.uptime).toEqual(1);
+  });
+
+  it('excludes values from the message if unavailable', () => {
+    const baseMetrics = createBaseOpsMetrics();
+    const missingMetrics = ({
+      ...baseMetrics,
+      process: {},
+      os: {},
+    } as unknown) as Partial<OpsMetrics>;
+    const logMeta = getEcsOpsMetricsLog(missingMetrics);
+    expect(logMeta.message).toMatchInlineSnapshot(`"   "`);
+  });
+
+  it('specifies correct ECS version', () => {
+    const logMeta = getEcsOpsMetricsLog(createBaseOpsMetrics());
+    expect(logMeta.ecs.version).toBe('1.7.0');
+  });
+
+  it('provides an ECS-compatible response', () => {
+    const logMeta = getEcsOpsMetricsLog(createBaseOpsMetrics());
+    expect(logMeta).toMatchInlineSnapshot(`
+      Object {
+        "category": Array [
+          "process",
+          "host",
+        ],
+        "ecs": Object {
+          "version": "1.7.0",
+        },
+        "host": Object {
+          "os": Object {
+            "load": Object {
+              "15m": 1,
+              "1m": 1,
+              "5m": 1,
+            },
+          },
+        },
+        "kind": "metric",
+        "message": "memory: 1.0B  load: [1.00,1.00,1.00] delay: 1.000",
+        "process": Object {
+          "eventLoopDelay": 1,
+          "memory": Object {
+            "heap": Object {
+              "usedInBytes": 1,
+            },
+          },
+          "uptime": 0,
+        },
+      }
+    `);
   });
 });

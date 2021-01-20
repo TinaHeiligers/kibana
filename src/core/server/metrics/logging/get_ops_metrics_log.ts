@@ -37,9 +37,9 @@ export function getEcsOpsMetricsLog({ process, os }: Partial<OpsMetrics>): LogMe
     : '';
 
   const loadEntries = {
-    '1m': os?.load['1m'] ?? undefined,
-    '5m': os?.load['5m'] ?? undefined,
-    '15m': os?.load['15m'] ?? undefined,
+    '1m': os?.load ? os?.load['1m'] : undefined,
+    '5m': os?.load ? os?.load['5m'] : undefined,
+    '15m': os?.load ? os?.load['15m'] : undefined,
   };
 
   const loadVals = [...Object.values(os?.load ?? [])];
