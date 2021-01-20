@@ -57,7 +57,7 @@ describe('getEcsOpsMetricsLog', () => {
   it('provides correctly formatted message', () => {
     const result = getEcsOpsMetricsLog(createMockTestData(firstMetrics));
     expect(result.message).toMatchInlineSnapshot(
-      `"{\\"memory\\":\\"100.0B\\",\\"uptime\\":\\"0:00:01\\",\\"load\\":[\\"10.00\\",\\"20.00\\",\\"30.00\\"],\\"delay\\":\\"50.000\\"}"`
+      `"memory: 100.0B uptime: 0:00:01 load: [10.00,20.00,30.00] delay: 50.000"`
     );
   });
 });
