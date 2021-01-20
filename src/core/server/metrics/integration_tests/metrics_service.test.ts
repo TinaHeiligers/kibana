@@ -68,17 +68,36 @@ describe('metrics service', () => {
       coreSetup.metrics.getOpsMetrics$().subscribe((opsMetrics) => {
         testData = opsMetrics;
       });
-      expect(testData).toBeTruthy();
+      const expectedArray = ['memory:', 'uptime:', 'load:', 'delay:'];
+
+      expect(testData).toBeTruthy(); // new it block
       expect(mockConsoleLog).toHaveBeenCalledTimes(1);
-      const [message, meta] = mockConsoleLog.mock.calls[0][0].split('|');
+      const [message] = mockConsoleLog.mock.calls[0][0].split('|');
+
+      const messageParts = message.split(' ');
+      const testParts = [messageParts[0], messageParts[2], messageParts[4], messageParts[6]];
       // the contents of the message are variable based on the process environment,
       // so we are only performing assertions against parts of the string
-      expect(message.includes('memory')).toBe(true);
-      expect(message.includes('uptime')).toBe(true);
-      expect(message.includes('load')).toBe(true);
-      expect(message.includes('delay')).toBe(true);
-      expect(JSON.parse(meta).kind).toBe('metric');
-      expect(Object.keys(JSON.parse(meta).host.os.load)).toEqual(['1m', '5m', '15m']);
+      expect(testParts).toEqual(expect.arrayContaining(expectedArray));
+    });
+
+    it('logs structured data in the log meta', async () => {
+      coreSetup.metrics.getOpsMetrics$().subscribe((opsMetrics) => {
+        testData = opsMetrics;
+      });
+      const [, meta] = mockConsoleLog.mock.calls[0][0].split('|');
+      expect(JSON.parse(meta).kind).toBe('metric'); // new it block
+      expect(Object.keys(JSON.parse(meta).host.os.load)).toEqual(['1m', '5m', '15m']); // new it block
+    });
+
+    it('logs ECS fields in the log meta', async () => {
+      coreSetup.metrics.getOpsMetrics$().subscribe((opsMetrics) => {
+        testData = opsMetrics;
+      });
+      const [, meta] = mockConsoleLog.mock.calls[0][0].split('|');
+      expect(JSON.parse(meta).kind).toBe('metric'); // new it block
+      expect(JSON.parse(meta).ecs.version).toBe('1.7.0');
+      expect(JSON.parse(meta).category).toEqual(expect.arrayContaining(['process', 'host']));
     });
   });
 });
