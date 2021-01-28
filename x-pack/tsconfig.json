@@ -29,7 +29,6 @@
     "plugins/translations/**/*",
     "plugins/triggers_actions_ui/**/*",
     "plugins/ui_actions_enhanced/**/*",
-    "plugins/vis_type_timeseries_enhanced/**/*",
     "plugins/spaces/**/*",
     "plugins/security/**/*",
     "plugins/stack_alerts/**/*",
@@ -39,6 +38,7 @@
     "plugins/saved_objects_tagging/**/*",
     "plugins/global_search_bar/**/*",
     "plugins/watcher/**/*",
+    "plugins/license_management/**/*",
     "test/**/*"
   ],
   "compilerOptions": {
@@ -97,7 +97,6 @@
     { "path": "./plugins/task_manager/tsconfig.json" },
     { "path": "./plugins/telemetry_collection_xpack/tsconfig.json" },
     { "path": "./plugins/ui_actions_enhanced/tsconfig.json" },
-    { "path": "./plugins/vis_type_timeseries_enhanced/tsconfig.json" },
     { "path": "./plugins/translations/tsconfig.json" },
     { "path": "./plugins/spaces/tsconfig.json" },
     { "path": "./plugins/security/tsconfig.json" },
@@ -111,5 +110,6 @@
     { "path": "./plugins/triggers_actions_ui/tsconfig.json"},
     { "path": "./plugins/stack_alerts/tsconfig.json"},
     { "path": "./plugins/watcher/tsconfig.json"}
+    { "path": "./plugins/license_management/tsconfig.json" },
   ]
 }
