@@ -109,7 +109,7 @@
     { "path": "./plugins/alerts/tsconfig.json"},
     { "path": "./plugins/triggers_actions_ui/tsconfig.json"},
     { "path": "./plugins/stack_alerts/tsconfig.json"},
-    { "path": "./plugins/watcher/tsconfig.json"}
+    { "path": "./plugins/watcher/tsconfig.json"},
     { "path": "./plugins/license_management/tsconfig.json" },
   ]
 }
