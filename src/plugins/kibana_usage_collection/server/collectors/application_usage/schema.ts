@@ -10,7 +10,7 @@ import { MakeSchemaFrom } from 'src/plugins/usage_collection/server';
 import { ApplicationUsageTelemetryReport } from './telemetry_application_usage_collector';
 
 const commonSchema: MakeSchemaFrom<ApplicationUsageTelemetryReport[string]> = {
-  appId: { type: 'keyword' },
+  appId: { type: 'keyword', _meta: { description: 'Application ID' } },
   viewId: { type: 'keyword' },
   clicks_total: { type: 'long' },
   clicks_7_days: { type: 'long' },
