@@ -83,7 +83,10 @@
         "dashboards": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -120,7 +123,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -154,7 +160,10 @@
         "dev_tools": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -191,7 +200,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -225,7 +237,10 @@
         "discover": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -262,7 +277,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -296,7 +314,10 @@
         "home": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -333,7 +354,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -367,7 +391,10 @@
         "kibana": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -404,7 +431,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -438,7 +468,10 @@
         "management": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -475,7 +508,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -509,7 +545,10 @@
         "short_url_redirect": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -546,7 +585,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -580,7 +622,10 @@
         "timelion": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -617,7 +662,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -651,7 +699,10 @@
         "visualize": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -688,7 +739,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -722,7 +776,10 @@
         "error": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -759,7 +816,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -793,7 +853,10 @@
         "status": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -830,7 +893,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -864,7 +930,10 @@
         "kibanaOverview": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -901,7 +970,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -935,7 +1007,10 @@
         "apm": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -972,7 +1047,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -1006,7 +1084,10 @@
         "canvas": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -1043,7 +1124,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -1077,7 +1161,10 @@
         "dashboard_mode": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -1114,7 +1201,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -1148,7 +1238,10 @@
         "enterpriseSearch": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -1185,7 +1278,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -1219,7 +1315,10 @@
         "appSearch": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -1256,7 +1355,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -1290,7 +1392,10 @@
         "workplaceSearch": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -1327,7 +1432,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -1361,7 +1469,10 @@
         "graph": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -1398,7 +1509,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -1432,7 +1546,10 @@
         "logs": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -1469,7 +1586,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -1503,7 +1623,10 @@
         "metrics": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -1540,7 +1663,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -1574,7 +1700,10 @@
         "infra": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -1611,7 +1740,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -1645,7 +1777,10 @@
         "fleet": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -1682,7 +1817,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -1716,7 +1854,10 @@
         "ingestManager": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -1753,7 +1894,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -1787,7 +1931,10 @@
         "lens": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -1824,7 +1971,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -1858,7 +2008,10 @@
         "maps": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -1895,7 +2048,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -1929,7 +2085,10 @@
         "ml": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -1966,7 +2125,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2000,7 +2162,10 @@
         "monitoring": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -2037,7 +2202,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2071,7 +2239,10 @@
         "observability-overview": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -2108,7 +2279,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2142,7 +2316,10 @@
         "security_account": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -2179,7 +2356,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2213,7 +2393,10 @@
         "security_access_agreement": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -2250,7 +2433,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2284,7 +2470,10 @@
         "security_capture_url": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -2321,7 +2510,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2355,7 +2547,10 @@
         "security_logged_out": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -2392,7 +2587,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2426,7 +2624,10 @@
         "security_login": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -2463,7 +2664,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2497,7 +2701,10 @@
         "security_logout": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -2534,7 +2741,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2568,7 +2778,10 @@
         "security_overwritten_session": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -2605,7 +2818,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2639,7 +2855,10 @@
         "securitySolution": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -2676,7 +2895,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2710,7 +2932,10 @@
         "securitySolution:overview": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -2747,7 +2972,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2781,7 +3009,10 @@
         "securitySolution:detections": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -2818,7 +3049,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2852,7 +3086,10 @@
         "securitySolution:hosts": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -2889,7 +3126,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2923,7 +3163,10 @@
         "securitySolution:network": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -2960,7 +3203,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -2994,7 +3240,10 @@
         "securitySolution:timelines": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -3031,7 +3280,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -3065,7 +3317,10 @@
         "securitySolution:case": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -3102,7 +3357,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -3136,7 +3394,10 @@
         "securitySolution:administration": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -3173,7 +3434,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -3207,7 +3471,10 @@
         "siem": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -3244,7 +3511,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -3278,7 +3548,10 @@
         "space_selector": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -3315,7 +3588,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -3349,7 +3625,10 @@
         "uptime": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -3386,7 +3665,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -3420,7 +3702,10 @@
         "ux": {
           "properties": {
             "appId": {
-              "type": "keyword"
+              "type": "keyword",
+              "_meta": {
+                "description": "Application ID"
+              }
             },
             "viewId": {
               "type": "keyword"
@@ -3457,7 +3742,10 @@
                     "type": "keyword"
                   },
                   "viewId": {
-                    "type": "keyword"
+                    "type": "keyword",
+                    "_meta": {
+                      "description": "Subview id for Application"
+                    }
                   },
                   "clicks_total": {
                     "type": "long"
@@ -4063,17 +4351,26 @@
     "localization": {
       "properties": {
         "locale": {
-          "type": "keyword"
+          "type": "keyword",
+          "_meta": {
+            "description": "The default locale set on the Kibana system"
+          }
         },
         "integrities": {
           "properties": {
             "DYNAMIC_KEY": {
-              "type": "text"
+              "type": "text",
+              "_meta": {
+                "description": "Translation file hash. If the hash is different it indicates that a custom translation file is used"
+              }
             }
           }
         },
         "labelsCount": {
-          "type": "long"
+          "type": "long",
+          "_meta": {
+            "description": "The number of translated labels"
+          }
         }
       }
     },

@@ -59,6 +59,16 @@ export function* extractCollectors(fullPaths: string[], tsConfig: any) {
   });
 
   for (const sourceFile of sourceFiles) {
+    // yields [relativePath, collectorDetails] where collectorDetails contains
+    //   collectorName: typePropertyValue,
+    //   schema: {
+    //     value: schemaPropertyValue,
+    //   },
+    //   fetch: {
+    //     typeName: usageTypeName,
+    //     typeDescriptor: usageType,
+    //   },
+    // };
     yield* parseUsageCollection(sourceFile, program);
   }
 }

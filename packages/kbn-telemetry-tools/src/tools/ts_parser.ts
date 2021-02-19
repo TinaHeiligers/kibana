@@ -186,6 +186,19 @@ export function* parseUsageCollection(
     for (const node of traverseNodes(sourceFile)) {
       if (isMakeUsageCollectorFunction(node, sourceFile)) {
         try {
+          /**
+           * collectorDetails: CollectorDetails is:
+           * {
+              collectorName: typePropertyValue,
+              schema: {
+                value: schemaPropertyValue,
+              },
+              fetch: {
+                typeName: usageTypeName,
+                typeDescriptor: usageType,
+              },
+            };
+           */
           const collectorDetails = extractCollectorDetails(node, program, sourceFile);
           yield [relativePath, collectorDetails];
         } catch (err) {

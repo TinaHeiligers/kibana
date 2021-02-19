@@ -46,7 +46,8 @@ export function checkCompatibleTypeDescriptor(
         },
         {} as any
       );
-
+      // check the schema "type" only. We're only checking the value of the property types here, not the properties themselves.
+      // This means that we're skipping any properties that don't have a type defined.
       const schemaTypes = flattenKeys(pickDeep(collectorDetails.schema.value, 'type'));
       const transformedMappingKinds = reduce(
         schemaTypes,
