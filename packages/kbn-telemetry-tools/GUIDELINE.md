@@ -150,8 +150,27 @@ Any field property in the schema accepts a `type` field. By default the type is 
 ```
 'long', 'integer', 'short', 'byte', 'double', 'float', 'keyword', 'text', 'boolean', 'date'
 ```
+### Optional description
 
+Any field property in the schema can be annotated with a `description` field. The `description` field only supports strings and is there for you to give a brief summary of what the field represents. Since descriptions aren't data themselves, the field is embedded in a `_meta` object:
 
+```
+interface Usage {
+  someStat: number;
+}
+
+usageCollection.makeUsageCollector<Usage>({
+  schema: {
+    someStat: {
+      type: 'long',
+      _meta: {
+        description: 'A numeric statistic of some event that accumulates over time'
+      }
+    }
+  },
+  ...
+})
+```
 ### Dealing with arrays
 
 You can optionally define a property to be an array by setting the `isArray` to `true`. Note that the `isArray` property is not currently required.

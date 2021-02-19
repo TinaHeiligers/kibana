@@ -24,7 +24,12 @@ const commonSchema: MakeSchemaFrom<ApplicationUsageTelemetryReport[string]> = {
     type: 'array',
     items: {
       appId: { type: 'keyword' },
-      viewId: { type: 'keyword' },
+      viewId: {
+        type: 'keyword',
+        _meta: {
+          description: 'Subview id for Application',
+        },
+      },
       clicks_total: { type: 'long' },
       clicks_7_days: { type: 'long' },
       clicks_30_days: { type: 'long' },

@@ -69,7 +69,7 @@ What will not be caught by the validator:
 
 * Mistyped SavedObject/CallCluster return value. Since the hits returned from ES can be typed to anything without any checks. It is advised to add functional tests that grabs the schema json file and checks that the returned usage matches the types exactly. 
 
-* Fields in the schema that are never collected. If you are trying to report a field from ES but that value is never stored in ES, the check will not be able to detect if that field is ever collected in the first palce. It is advised to add unit/functional tests to check that all the fields are being reported as expected.
+* Fields in the schema that are never collected. If you are trying to report a field from ES but that value is never stored in ES, the check will not be able to detect if that field is ever collected in the first place. It is advised to add unit/functional tests to check that all the fields are being reported as expected.
 
 The tool looks for `.telemetryrc.json` files in the root of the project and in the `x-pack` dir for its runtime configurations.
 
