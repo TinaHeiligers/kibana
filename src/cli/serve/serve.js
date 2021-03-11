@@ -112,9 +112,17 @@ function applyConfigOverrides(rawConfig, opts, extraCliOptions) {
   if (opts.elasticsearch) set('elasticsearch.hosts', opts.elasticsearch.split(','));
   if (opts.port) set('server.port', opts.port);
   if (opts.host) set('server.host', opts.host);
-  if (opts.quiet) set('logging.quiet', true);
-  if (opts.silent) set('logging.silent', true);
-  if (opts.verbose) set('logging.verbose', true);
+  if (opts.quiet) {
+    set('logging.root.level', 'error') &&
+      set('logging.root.appenders[0]', 'console') &&
+      set('logging.root.appenders[1]', 'default');
+  }
+  if (opts.silent) set('logging.root.level', 'off');
+  if (opts.verbose) {
+    set('logging.root.level', 'debug') &&
+      set('logging.root.appenders[0]', 'console') &&
+      set('logging.root.appenders[1]', 'default');
+  }
   if (opts.logFile) set('logging.dest', opts.logFile);
 
   set('plugins.scanDirs', _.compact([].concat(get('plugins.scanDirs'), opts.pluginDir)));
