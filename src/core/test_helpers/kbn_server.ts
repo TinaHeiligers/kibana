@@ -29,6 +29,16 @@ import { Root } from '../server/root';
 import KbnServer from '../../legacy/server/kbn_server';
 
 export type HttpMethod = 'delete' | 'get' | 'head' | 'post' | 'put';
+interface CliArgsSupported {
+  dev: false;
+  watch: false;
+  basePath: false;
+  runExamples: false;
+  oss: true;
+  disableOptimizer: true;
+  cache: true;
+  dist: false;
+}
 
 const DEFAULTS_SETTINGS = {
   server: {
@@ -38,7 +48,7 @@ const DEFAULTS_SETTINGS = {
     port: 0,
     xsrf: { disableProtection: true },
   },
-  logging: { silent: true },
+  logging: { root: { level: 'off' } },
   plugins: {},
   migrations: { skip: false },
 };
@@ -54,14 +64,12 @@ const DEFAULT_SETTINGS_WITH_CORE_PLUGINS = {
 
 export function createRootWithSettings(
   settings: Record<string, any>,
-  cliArgs: Partial<CliArgs> = {}
+  cliArgs: Partial<CliArgsSupported> = {}
 ) {
   const env = Env.createDefault(REPO_ROOT, {
     configs: [],
     cliArgs: {
       dev: false,
-      quiet: false,
-      silent: false,
       watch: false,
       basePath: false,
       runExamples: false,
@@ -102,7 +110,7 @@ export function getSupertest(root: Root, method: HttpMethod, path: string) {
  * @param {Object} [settings={}] Any config overrides for this instance.
  * @returns {Root}
  */
-export function createRoot(settings = {}, cliArgs: Partial<CliArgs> = {}) {
+export function createRoot(settings = {}, cliArgs: Partial<CliArgsSupported> = {}) {
   return createRootWithSettings(settings, cliArgs);
 }
 
@@ -113,7 +121,7 @@ export function createRoot(settings = {}, cliArgs: Partial<CliArgs> = {}) {
  *  @param {Object} [settings={}] Any config overrides for this instance.
  *  @returns {Root}
  */
-export function createRootWithCorePlugins(settings = {}, cliArgs: Partial<CliArgs> = {}) {
+export function createRootWithCorePlugins(settings = {}, cliArgs: Partial<CliArgsSupported> = {}) {
   return createRootWithSettings(
     defaultsDeep({}, settings, DEFAULT_SETTINGS_WITH_CORE_PLUGINS),
     cliArgs
