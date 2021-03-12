@@ -17,6 +17,7 @@ describe('reconfigureLogging', () => {
       silent: false,
       quiet: false,
       verbose: true,
+      level: 'all',
       events: {},
       dest: '/tmp/foo',
       filter: {},

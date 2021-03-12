@@ -22,8 +22,10 @@ export interface EnvOptions {
 export interface CliArgs {
   dev: boolean;
   envName?: string;
-  quiet: boolean;
-  silent: boolean;
+  /** @deprecated */
+  quiet?: boolean;
+  verbose?: boolean; // behavior of the arg has changed to support the plain `--verbose` flag
+  silent?: boolean; // behavior of the arg has changed to support the plain `--verbose` flag
   watch: boolean;
   basePath: boolean;
   oss: boolean;

@@ -112,9 +112,16 @@ function applyConfigOverrides(rawConfig, opts, extraCliOptions) {
   if (opts.elasticsearch) set('elasticsearch.hosts', opts.elasticsearch.split(','));
   if (opts.port) set('server.port', opts.port);
   if (opts.host) set('server.host', opts.host);
-  if (opts.quiet) set('logging.quiet', true);
-  if (opts.silent) set('logging.silent', true);
-  if (opts.verbose) set('logging.verbose', true);
+  // deprecated
+  // if (opts.quiet) set('logging.quiet', true);
+  // unfold to legacy logging.level value & KP logging.root.level value, this sets the values as `rawConfig` in the `applyOverrides` function that gets passed into bootstrap
+  if (opts.silent) {
+    set('logging.level', 'off') && set('logging.root.level', 'off');
+  }
+  // unfold to legacy logging.level value & KP logging.root.level value. We don't set the root appender since just applying the cli arg shouldn't automatically opt you in for new logging appenders
+  if (opts.verbose) {
+    set('logging.level', 'all') && set('logging.root.level', 'debug');
+  }
   if (opts.logFile) set('logging.dest', opts.logFile);
 
   set('plugins.scanDirs', _.compact([].concat(get('plugins.scanDirs'), opts.pluginDir)));
@@ -140,11 +147,17 @@ export default function (program) {
       [getConfigPath()]
     )
     .option('-p, --port <port>', 'The port to bind to', parseInt)
-    .option('-q, --quiet', 'Prevent all logging except errors')
+    .option(
+      '-q, --quiet',
+      'Deprecated, you can use "logging.root.level:error" in your logging configuration.'
+    )
     .option('-Q, --silent', 'Prevent all logging')
     .option('--verbose', 'Turns on verbose logging')
     .option('-H, --host <host>', 'The host to bind to')
-    .option('-l, --log-file <path>', 'The file to log to')
+    .option(
+      '-l, --log-file <path>',
+      'Deprecated, you can set the log file destination in your configuration'
+    )
     .option(
       '--plugin-dir <path>',
       'A path to scan for plugins, this can be specified multiple ' +
@@ -204,8 +217,9 @@ export default function (program) {
       cliArgs: {
         dev: !!opts.dev,
         envName: unknownOptions.env ? unknownOptions.env.name : undefined,
-        quiet: !!opts.quiet,
-        silent: !!opts.silent,
+        // no longer supported and we don't set defaults for them
+        // quiet: !!opts.quiet,
+        // silent: !!opts.silent,
         watch: !!opts.watch,
         runExamples: !!opts.runExamples,
         // We want to run without base path when the `--run-examples` flag is given so that we can use local

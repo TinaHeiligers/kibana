@@ -32,15 +32,20 @@ interface BootstrapArgs {
  */
 export async function bootstrap({
   configs,
-  cliArgs,
-  applyConfigOverrides,
+  // the cli args must take precedence aver configuration yamls
+  cliArgs, // won't contain the logging stuff now BUT will have already set the logging levels
+  applyConfigOverrides, // these are set in serve and that's where I mustn't apply the overrides
   features,
 }: BootstrapArgs) {
   if (cliArgs.optimize) {
     // --optimize is deprecated and does nothing now, avoid starting up and just shutdown
     return;
   }
-
+  // TODO: --quiet is deprecated and does nothin now, do we avoid startup and shut down or just continue?
+  if (cliArgs.quiet) {
+    // --quiet is deprecated and does nothing now, avoid starting up and just shutdown
+    return;
+  }
   // `bootstrap` is exported from the `src/core/server/index` module,
   // meaning that any test importing, implicitly or explicitly, anything concrete
   // from `core/server` will load `dev-utils`. As some tests are mocking the `fs` package,

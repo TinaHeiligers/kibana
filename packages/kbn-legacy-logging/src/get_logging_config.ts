@@ -36,6 +36,21 @@ export function getLoggingConfiguration(config: LegacyLoggingConfig, opsInterval
       request: '!',
       response: '!',
     });
+  } else if (config.level === 'off') {
+    // support for cli --silent flag
+    _.defaults(events, {});
+  } else if (config.level === 'all') {
+    // support for cli --verbose flag
+    _.defaults(events, {
+      error: '*',
+      log: '*',
+      // To avoid duplicate logs, we explicitly disable these in verbose
+      // mode as they are already provided by the new logging config under
+      // the `http.server.response` and `metrics.ops` contexts.
+      ops: '!',
+      request: '!',
+      response: '!',
+    });
   } else {
     _.defaults(events, {
       log: ['info', 'warning', 'error', 'fatal'],

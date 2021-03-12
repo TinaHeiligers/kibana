@@ -12,7 +12,11 @@ const HANDLED_IN_KIBANA_PLATFORM = Joi.any().description(
   'This key is handled in the new platform ONLY'
 );
 
+type LegacyLogLevel = 'off' | 'all';
 export interface LegacyLoggingConfig {
+  // support for cliArgs
+  level: LegacyLogLevel;
+  // make these optional or remove them?
   silent: boolean;
   quiet: boolean;
   verbose: boolean;
@@ -36,7 +40,8 @@ export const legacyLoggingConfigSchema = Joi.object()
     appenders: HANDLED_IN_KIBANA_PLATFORM,
     loggers: HANDLED_IN_KIBANA_PLATFORM,
     root: HANDLED_IN_KIBANA_PLATFORM,
-
+    // support for cliArgs `--verbose` (unfolds to logging.level: 'all') and `--silent` (unfolds to logging.level: 'off')
+    level: Joi.string().allow('off', 'all').default('off'),
     silent: Joi.boolean().default(false),
 
     quiet: Joi.boolean().when('silent', {
@@ -50,6 +55,7 @@ export const legacyLoggingConfigSchema = Joi.object()
       then: Joi.valid(false).default(false),
       otherwise: Joi.boolean().default(false),
     }),
+
     events: Joi.any().default({}),
     dest: Joi.string().default('stdout'),
     filter: Joi.any().default({}),
