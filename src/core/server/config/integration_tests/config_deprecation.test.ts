@@ -31,7 +31,7 @@ describe('configuration deprecations', () => {
     const logs = loggingSystemMock.collect(mockLoggingSystem);
     expect(logs.warn.flat()).toMatchInlineSnapshot(`
       Array [
-        "\\"logging.silent\\"has been deprecated and will be removed in 8.0. Moving forward, you can use \\"logging.root.level:off\\" in your logging configuration. ",
+        "\\"logging.silent\\" has been deprecated and will be removed in 8.0. Moving forward, you can use \\"logging.root.level:off\\" in your logging configuration. ",
       ]
     `);
   });
@@ -51,7 +51,7 @@ describe('configuration deprecations', () => {
       Array [
         "optimize.lazy is deprecated and is no longer used",
         "optimize.lazyPort is deprecated and is no longer used",
-        "\\"logging.silent\\"has been deprecated and will be removed in 8.0. Moving forward, you can use \\"logging.root.level:off\\" in your logging configuration. ",
+        "\\"logging.silent\\" has been deprecated and will be removed in 8.0. Moving forward, you can use \\"logging.root.level:off\\" in your logging configuration. ",
       ]
     `);
   });
