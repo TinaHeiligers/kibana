@@ -57,7 +57,7 @@ export async function runResilientMigrator({
   return migrationStateActionMachine({
     initialState,
     logger,
-    next: next(client, transformRawDocs),
+    next: next(client, transformRawDocs, captureTransformRawDocsErrors),
     model,
   });
 }
