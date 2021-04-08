@@ -53,7 +53,7 @@ const logActionResponse = (
 ) => {
   logger.debug(logMessagePrefix + `${state.controlState} RESPONSE`, res as LogMeta);
 };
-
+// naming here is misleading, dumpExecutionLog "dumps" the log messages, it doesn't delete them.
 const dumpExecutionLog = (logger: Logger, logMessagePrefix: string, executionLog: ExecutionLog) => {
   logger.error(logMessagePrefix + 'migration failed, dumping execution log:');
   executionLog.forEach((log) => {
@@ -151,7 +151,6 @@ export async function migrationStateActionMachine({
       }
     } else if (finalState.controlState === 'FATAL') {
       dumpExecutionLog(logger, logMessagePrefix, executionLog);
-      // store this error and return the collection on final failure
       return Promise.reject(
         new Error(
           `Unable to complete saved object migrations for the [${initialState.indexPrefix}] index: ` +
@@ -163,12 +162,10 @@ export async function migrationStateActionMachine({
     }
   } catch (e) {
     if (e instanceof EsErrors.ResponseError) {
-      // store this error and return the collection on final failure
       logger.error(
         logMessagePrefix + `[${e.body?.error?.type}]: ${e.body?.error?.reason ?? e.message}`
       );
       dumpExecutionLog(logger, logMessagePrefix, executionLog);
-      // store this error and return the collection on final failure
       throw new Error(
         `Unable to complete saved object migrations for the [${
           initialState.indexPrefix
@@ -181,7 +178,6 @@ export async function migrationStateActionMachine({
 
       dumpExecutionLog(logger, logMessagePrefix, executionLog);
       if (e instanceof CorruptSavedObjectError) {
-        // store this error and return the collection on final failure
         throw new Error(
           `${e.message} To allow migrations to proceed, please delete this document from the [${initialState.indexPrefix}_${initialState.kibanaVersion}_001] index.`
         );
