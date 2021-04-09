@@ -9,7 +9,8 @@
 /*
  * This file provides logic for migrating raw documents.
  */
-
+import * as Either from 'fp-ts/lib/Either';
+import * as TaskEither from 'fp-ts/lib/TaskEither';
 import {
   SavedObjectsRawDoc,
   SavedObjectsSerializer,
@@ -34,6 +35,7 @@ export class CorruptSavedObjectError extends Error {
     Object.setPrototypeOf(this, CorruptSavedObjectError.prototype);
   }
 }
+
 /**
  * Applies the specified migration function to every saved object document in the list
  * of raw docs. Any raw docs that are not valid saved objects will simply be passed through.
@@ -69,24 +71,37 @@ export async function migrateRawDocs(
   }
   return processedDocs;
 }
-export interface MigrateRawDocsNonThrowing {
-  processedDocs: SavedObjectsRawDoc[];
-  corruptSavedObjectErrors?: CorruptSavedObjectError[];
+export interface SavedObjectsRawDocsAndCorruptDocIds {
+Promise<TaskEither.TaskEither<{
+    type: 'document_transform_failed';
+    corruptSavedObjectIds: string[];
+}, {
+    processedDocs: SavedObjectsRawDoc[];
+}>>
 }
-/** approach options:
- * 1. use a collection of processed docs and errors that we generate
- * 2. log the errors -> we have the logger but aren't using it
- * 3. return the transformed docs and throw away the corruptSavedObjectsErrors
+/** TINA: approach options for https://github.com/elastic/kibana/issues/90279:
+ * don't log the errors
+ * return a list of processed docs and errors
+ * log those errors somewhere upstream in the next method that returns a complete list (using a new log message "corrupt-saved-object-${index-prefix}-${doc._id}" type)
  */
+// convert the return to a task to a Task
+
+// TINA: PROBLEM: the funciton itself is async because we await in the map
+// We're not returning a promise, we're returning Either.left or Either.right
 export async function migrateRawDocsNonThrowing(
   serializer: SavedObjectsSerializer,
   migrateDoc: MigrateAndConvertFn,
   rawDocs: SavedObjectsRawDoc[],
   log: SavedObjectsMigrationLogger
-): Promise<SavedObjectsRawDoc[]> {
+): Promise<
+  TaskEither.TaskEither<
+    { type: 'document_transform_failed', corruptSavedObjectIds: string[] },
+    { processedDocs: SavedObjectsRawDoc[] }
+  >
+> {
   const migrateDocWithoutBlocking = transformNonBlocking(migrateDoc);
-  const processedDocs = [];
-  const corruptSavedObjectErrors = [];
+  const processedDocs: SavedObjectsRawDoc[] = [];
+  const corruptSavedObjectIds: string[] = [];
   for (const raw of rawDocs) {
     const options = { namespaceTreatment: 'lax' as const };
     if (serializer.isRawSavedObject(raw, options)) {
@@ -101,16 +116,23 @@ export async function migrateRawDocsNonThrowing(
         )
       );
     } else {
-      corruptSavedObjectErrors.push(new CorruptSavedObjectError(raw._id));
+      corruptSavedObjectIds.push(raw._id);
     }
   }
-  if (corruptSavedObjectErrors.length > 0) {
-    corruptSavedObjectErrors.forEach((error) => {
-      log.error(error.message, error);
-    });
+  // this would go away when we return Tasks
+  if (corruptSavedObjectIds.length > 0) {
+    return new Promise((resolve) => {
+      resolve(Either.left(
+        { type: 'document_transform_failed', corruptSavedObjectIds }
+      ))
+    })
   }
-  // a promise only returns one thing. We want to return both things
-  return processedDocs;
+  return new Promise((resolve) => {
+    resolve(Either.right({ processedDocs }))
+  });
+  // return a Task for either returning errors or processed docs if there are any errors.
+  // These get accumulated on state of the state machine and then we handle them in the actions -> see the recording
+  // Either.{ processedDocs, corruptSavedObjectErrors };
 }
 /**
  * Migration transform functions are potentially CPU heavy e.g. doing decryption/encryption

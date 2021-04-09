@@ -595,6 +595,17 @@ export const waitForPickupUpdatedMappingsTask = flow(
   )
 );
 
+/**
+ * TINA: Dealing with not failing on first doc transform issue
+ */
+
+const transformRawDocsNonThrowing = (): TaskEither.TaskEither<
+  { type: 'document_transform_failed'; corruptSavedObjectIds: string[] },
+  SavedObjectsRawDoc[]
+> => () => {
+  // we would have returned the indexing step in here
+  return 'hello' as const;
+};
 export interface AliasNotFound {
   type: 'alias_not_found_exception';
 }
