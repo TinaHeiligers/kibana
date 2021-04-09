@@ -589,8 +589,9 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
     }
   } else if (stateP.controlState === 'OUTDATED_DOCUMENTS_TRANSFORM') {
     // if any docs can't be migrated we don't try to index any ones that can and continue with the search to build up a complete list of all the error docs
-    // res should now have processedDocs and the corruptSavedObjectErrors (actual errors with the doc Id embedded in the error message string it)
-    const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
+    // res should have processedDocs and the corruptSavedObjectIds (actual error with the doc Ids embedded in the error message string.
+    // there may be more than document Id in the error string and we'll need to split the string to do a count)
+    const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>; // we actually need both the success and failed results here.
     if (Either.isRight(res)) {
       // if we don't have any corrupt documents on state then index the transformed docs
       // state needs a new property for corruptSavedObjects
