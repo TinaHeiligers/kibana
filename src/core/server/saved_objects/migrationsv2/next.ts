@@ -35,13 +35,18 @@ import type {
 } from './types';
 import * as Actions from './actions';
 import { ElasticsearchClient } from '../../elasticsearch';
-import { SavedObjectsRawDoc } from '..';
-import { LogCorruptSavedObjectsErrors } from '../migrations/kibana/kibana_migrator';
-import { SavedObjectsRawDocsAndCorruptDocsErrors } from '../migrations/core/migrate_raw_docs';
+import { SavedObjectsRawDoc } from '../serialization';
+import {
+  DocumentsTransformFailed,
+  DocumentsTransformSuccess,
+} from '../migrations/core/migrate_raw_docs';
 
+// How do i handle this type now that transformRawDocs is actually running migrateRawDocsNonThrowing
+// migrateRawDocsNonThrowing returns an Either.left with failed docs or an Either.right with successfylly processed/transformed docs
 export type TransformRawDocs = (
-  rawDocs: SavedObjectsRawDoc[]
-) => Promise<SavedObjectsRawDocsAndCorruptDocsErrors>;
+  processedDocs: SavedObjectsRawDoc[] | { corruptSavedObjectIds: string[]; type: string }
+) => Promise<DocumentsTransformSuccess | DocumentsTransformFailed>;
+
 type ActionMap = ReturnType<typeof nextActionMap>;
 
 /**
@@ -94,23 +99,19 @@ export const nextActionMap = (client: ElasticsearchClient, transformRawDocs: Tra
     OUTDATED_DOCUMENTS_TRANSFORM: (state: OutdatedDocumentsTransform) =>
       // this needs to change because we're no longer throwing anything from the transformRawDocs method
       TaskEither.tryCatch(
-        () => transformRawDocs(state.outdatedDocuments), // { processDocs, errorsFromTransform}
+        () => transformRawDocs(state.outdatedDocuments), // one of { processedDocs } or { type: 'document_transform_failed', corruptSavedObjectIds }
         (e) => {
-          // we will fail, check if e is a specific case of the transform function failing
-          // then return the response that transforms in migrations failed.
-          // captureTransformRawDocsErrors(state.errors, e);
           // TINA: we throw for realy bad errors
           throw e;
         }
       ),
-    // if we decide to return the CorruptSavedObjectsErrors, the return signature of `transformRawDocs` will change
     TRANSFORMED_DOCUMENTS_BULK_INDEX: (state: any) =>
-      // I need access to the docs that have been processed. I only have stuff from state now.
       // The call to this action was being handled in OUTDATES_DOCUMENTS_TRANSFORM:
       //         TaskEither.chain((docs) =>
       //     Actions.bulkOverwriteTransformedDocuments(client, state.targetIndex, docs)
       //   )
       // ),
+      // How to I get access to the processedDocs now?
       Actions.bulkOverwriteTransformedDocuments(client, state.targetIndex, docs.processedDocs),
     MARK_VERSION_INDEX_READY: (state: MarkVersionIndexReady) =>
       Actions.updateAliases(client, state.versionIndexReadyActions.value),
@@ -136,12 +137,8 @@ export const nextActionMap = (client: ElasticsearchClient, transformRawDocs: Tra
   };
 };
 
-export const next = (
-  client: ElasticsearchClient,
-  transformRawDocs: TransformRawDocs,
-  captureTransformRawDocsErrors: LogCorruptSavedObjectsErrors
-) => {
-  const map = nextActionMap(client, transformRawDocs, captureTransformRawDocsErrors);
+export const next = (client: ElasticsearchClient, transformRawDocs: TransformRawDocs) => {
+  const map = nextActionMap(client, transformRawDocs);
   return (state: State) => {
     const delay = <F extends (...args: any) => any>(fn: F): (() => ReturnType<F>) => {
       return () => {

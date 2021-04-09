@@ -9,8 +9,7 @@
 /*
  * This file provides logic for migrating raw documents.
  */
-import * as Either from 'fp-ts/lib/Either';
-import * as TaskEither from 'fp-ts/lib/TaskEither';
+import { TaskEither } from 'fp-ts/lib/TaskEither';
 import {
   SavedObjectsRawDoc,
   SavedObjectsSerializer,
@@ -71,68 +70,59 @@ export async function migrateRawDocs(
   }
   return processedDocs;
 }
-export interface SavedObjectsRawDocsAndCorruptDocIds {
-Promise<TaskEither.TaskEither<{
-    type: 'document_transform_failed';
-    corruptSavedObjectIds: string[];
-}, {
-    processedDocs: SavedObjectsRawDoc[];
-}>>
-}
+
 /** TINA: approach options for https://github.com/elastic/kibana/issues/90279:
  * don't log the errors
  * return a list of processed docs and errors
  * log those errors somewhere upstream in the next method that returns a complete list (using a new log message "corrupt-saved-object-${index-prefix}-${doc._id}" type)
  */
-// convert the return to a task to a Task
+export interface DocumentsTransformFailed {
+  type: string;
+  corruptSavedObjectIds: string[];
+}
+export interface DocumentsTransformSuccess {
+  processedDocs: SavedObjectsRawDoc[];
+}
 
-// TINA: PROBLEM: the funciton itself is async because we await in the map
-// We're not returning a promise, we're returning Either.left or Either.right
 export async function migrateRawDocsNonThrowing(
   serializer: SavedObjectsSerializer,
   migrateDoc: MigrateAndConvertFn,
   rawDocs: SavedObjectsRawDoc[],
   log: SavedObjectsMigrationLogger
-): Promise<
-  TaskEither.TaskEither<
-    { type: 'document_transform_failed', corruptSavedObjectIds: string[] },
-    { processedDocs: SavedObjectsRawDoc[] }
-  >
-> {
+  // This method should never fail because we're returning an array of something, either transformed raw saved objects or an array of saved object ids.
+  // According to the docs we should be using a Task for process that will never fail
+): TaskEither<DocumentsTransformFailed, DocumentsTransformSuccess> {
   const migrateDocWithoutBlocking = transformNonBlocking(migrateDoc);
   const processedDocs: SavedObjectsRawDoc[] = [];
   const corruptSavedObjectIds: string[] = [];
-  for (const raw of rawDocs) {
-    const options = { namespaceTreatment: 'lax' as const };
-    if (serializer.isRawSavedObject(raw, options)) {
-      const savedObject = serializer.rawToSavedObject(raw, options);
-      savedObject.migrationVersion = savedObject.migrationVersion || {};
-      processedDocs.push(
-        ...(await migrateDocWithoutBlocking(savedObject)).map((attrs) =>
-          serializer.savedObjectToRaw({
-            references: [],
-            ...attrs,
-          })
-        )
-      );
-    } else {
-      corruptSavedObjectIds.push(raw._id);
+  try {
+    for (const raw of rawDocs) {
+      const options = { namespaceTreatment: 'lax' as const };
+      if (serializer.isRawSavedObject(raw, options)) {
+        const savedObject = serializer.rawToSavedObject(raw, options);
+        savedObject.migrationVersion = savedObject.migrationVersion || {};
+        processedDocs.push(
+          ...(await migrateDocWithoutBlocking(savedObject)).map((attrs) =>
+            serializer.savedObjectToRaw({
+              references: [],
+              ...attrs,
+            })
+          )
+        );
+      } else {
+        // should we be pushing only the id onto this array or the whole doc?
+        corruptSavedObjectIds.push(raw._id);
+      }
     }
+    if (corruptSavedObjectIds.length > 0) {
+      // Do we need to return an error in order to transform the method into a TaskEither? i.e. should we return an error for a bulk failure. e.g.
+      // return Either.left({ type: 'document_transform_failed', new DocumentTransformFailuresError(corruptSavedObjectIds.toString())})
+      return { type: 'document_transform_failed', corruptSavedObjectIds };
+    }
+    return { processedDocs };
+  } catch (e) {
+    throw e;
   }
-  // this would go away when we return Tasks
-  if (corruptSavedObjectIds.length > 0) {
-    return new Promise((resolve) => {
-      resolve(Either.left(
-        { type: 'document_transform_failed', corruptSavedObjectIds }
-      ))
-    })
-  }
-  return new Promise((resolve) => {
-    resolve(Either.right({ processedDocs }))
-  });
-  // return a Task for either returning errors or processed docs if there are any errors.
-  // These get accumulated on state of the state machine and then we handle them in the actions -> see the recording
-  // Either.{ processedDocs, corruptSavedObjectErrors };
 }
 /**
  * Migration transform functions are potentially CPU heavy e.g. doing decryption/encryption
