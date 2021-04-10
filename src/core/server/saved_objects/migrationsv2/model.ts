@@ -588,34 +588,45 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
       throwBadResponse(stateP, res);
     }
   } else if (stateP.controlState === 'OUTDATED_DOCUMENTS_TRANSFORM') {
-    // if any docs can't be migrated we don't try to index any ones that can and continue with the search to build up a complete list of all the error docs
-    // res should have processedDocs and the corruptSavedObjectIds (actual error with the doc Ids embedded in the error message string.
-    // there may be more than document Id in the error string and we'll need to split the string to do a count)
-    const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>; // we actually need both the success and failed results here.
+    // migrate_raw_docs now returns two arrays: one for proceddDocs, another for the ids of corrupt docs (ids were changed in some way)
+    const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
     if (Either.isRight(res)) {
-      // if we don't have any corrupt documents on state then index the transformed docs
-      // state needs a new property for corruptSavedObjects
-      if (stateP.corruptSavedObjectIds.length === 0) {
+      if (stateP.failedDocumentIds?.length === 0 && res.right.failedDocsIds.length === 0) {
+        // we don't have any failed docs on state nor do we have failed docs from the transform
+        // reindex the processed docs then continue the outdated document search
         return {
           ...stateP,
-          controlState: 'TRANSFORMED_DOCUMENTS_BULK_INDEX',
+          controlState: 'TRANSFORMED_DOCUMENTS_BULK_INDEX', // question, when do we pass control flow back to carry on searching?
+          processedDocuments: [...res.right.processedDocs], // we're working under the assumption that we have PIT search for outdated documents (i.e. we can index the transformed docs batch by batch)
         };
-      } else {
-        // we do have a collection of corruptSavedObjectDocs and need to reissue the OUTDATED_DOCUMENTS_SEARCH
-        // carry on searching through the rest of the batches
+      } else if (stateP.failedDocumentIds?.length === 0 && res.right.failedDocsIds.length > 0) {
+        // we stop indexing the transformed docs because we know the migration will eventually fail
+        // we don't have any failed docs on state but we do we have failed docs from the transform. Note: we don't need to pass the failed docs ids to the next step
         return {
           ...stateP,
           controlState: 'OUTDATED_DOCUMENTS_SEARCH',
+          failedDocumentIds: [...res.right.failedDocsIds], // initialize the array of failed doc ids
+        };
+      } else {
+        // we have failed docs on state and we have failed docs from the transform and need to add the new failed doc ids to those on state
+        return {
+          ...stateP,
+          controlState: 'OUTDATED_DOCUMENTS_SEARCH',
+          failedDocumentIds: [...stateP.failedDocumentIds!, ...res.right.failedDocsIds],
         };
       }
     } else {
-      // handles the case when we return a Either.Left situation that is when the return from migrateRawDocsNonThrowing is an instance of Either.Left containing the function that returns the promise of corruptSavedObjects (they're errors right now but we might want to change that to a list of raw._id)
+      throwBadResponse(stateP, res);
+    }
+  } else if (stateP.controlState === 'TRANSFORMED_DOCUMENTS_BULK_INDEX') {
+    const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
+    if (Either.isRight(res)) {
       return {
         ...stateP,
         controlState: 'OUTDATED_DOCUMENTS_SEARCH',
-        corruptSavedObjectIds: [...stateP.corruptSavedObjectIds, res.corruptSavedObjectIds],
       };
-      // throwBadResponse(stateP, res);
+    } else {
+      throwBadResponse(stateP, res);
     }
   } else if (stateP.controlState === 'UPDATE_TARGET_MAPPINGS') {
     const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;

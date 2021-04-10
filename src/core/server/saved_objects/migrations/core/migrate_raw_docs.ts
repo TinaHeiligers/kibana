@@ -9,7 +9,8 @@
 /*
  * This file provides logic for migrating raw documents.
  */
-import { TaskEither } from 'fp-ts/lib/TaskEither';
+import * as TaskEither from 'fp-ts/lib/TaskEither';
+import * as Either from 'fp-ts/lib/Either';
 import {
   SavedObjectsRawDoc,
   SavedObjectsSerializer,
@@ -17,6 +18,7 @@ import {
 } from '../../serialization';
 import { MigrateAndConvertFn } from './document_migrator';
 import { SavedObjectsMigrationLogger } from '.';
+import { DocumentTransformFailuresError } from './migrate_raw_docs_errors';
 
 /**
  * Error thrown when saved object migrations encounter a corrupt saved object.
@@ -75,13 +77,17 @@ export async function migrateRawDocs(
  * don't log the errors
  * return a list of processed docs and errors
  * log those errors somewhere upstream in the next method that returns a complete list (using a new log message "corrupt-saved-object-${index-prefix}-${doc._id}" type)
+ *
+ * Thoughts:
+ * Could we rather throw an error containing all the so ids that couldn't be transformed as the either.left option? If we do that
+ * we can parse out the ids later on to report those
+ *
+ * OR:
+ * go back to returning both arrays and let the model handle the control flow and decision making of what to do with the two arrays and what they represent.
  */
-export interface DocumentsTransformFailed {
-  type: string;
-  corruptSavedObjectIds: string[];
-}
-export interface DocumentsTransformSuccess {
+export interface DocumentsTransformResult {
   processedDocs: SavedObjectsRawDoc[];
+  failedDocsIds: string[];
 }
 
 export async function migrateRawDocsNonThrowing(
@@ -91,10 +97,10 @@ export async function migrateRawDocsNonThrowing(
   log: SavedObjectsMigrationLogger
   // This method should never fail because we're returning an array of something, either transformed raw saved objects or an array of saved object ids.
   // According to the docs we should be using a Task for process that will never fail
-): TaskEither<DocumentsTransformFailed, DocumentsTransformSuccess> {
+): Promise<DocumentsTransformResult> {
   const migrateDocWithoutBlocking = transformNonBlocking(migrateDoc);
   const processedDocs: SavedObjectsRawDoc[] = [];
-  const corruptSavedObjectIds: string[] = [];
+  const corruptSavedObjectsIds: string[] = [];
   try {
     for (const raw of rawDocs) {
       const options = { namespaceTreatment: 'lax' as const };
@@ -111,15 +117,10 @@ export async function migrateRawDocsNonThrowing(
         );
       } else {
         // should we be pushing only the id onto this array or the whole doc?
-        corruptSavedObjectIds.push(raw._id);
+        corruptSavedObjectsIds.push(raw._id);
       }
     }
-    if (corruptSavedObjectIds.length > 0) {
-      // Do we need to return an error in order to transform the method into a TaskEither? i.e. should we return an error for a bulk failure. e.g.
-      // return Either.left({ type: 'document_transform_failed', new DocumentTransformFailuresError(corruptSavedObjectIds.toString())})
-      return { type: 'document_transform_failed', corruptSavedObjectIds };
-    }
-    return { processedDocs };
+    return { processedDocs, failedDocsIds: corruptSavedObjectsIds };
   } catch (e) {
     throw e;
   }
