@@ -26,7 +26,7 @@ import { SavedObjectsMigrationLogger } from '.';
  */
 export class CorruptSavedObjectError extends Error {
   constructor(public readonly rawId: string) {
-    super(`Unable to migrate the corrupt saved object document with _id: '${rawId}'.`);
+    super(`Unable to migrate the corrupt saved object document(s) with _id: '${rawId}'.`);
 
     // Set the prototype explicitly, see:
     // https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work

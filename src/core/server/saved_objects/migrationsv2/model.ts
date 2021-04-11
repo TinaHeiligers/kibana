@@ -17,6 +17,7 @@ import { ResponseType } from './next';
 import { SavedObjectsMigrationVersion } from '../types';
 import { disableUnknownTypeMappingFields } from '../migrations/core/migration_context';
 import { SavedObjectsMigrationConfigType } from '../saved_objects_config';
+import { CorruptSavedObjectError } from '../migrations/core/migrate_raw_docs';
 
 /**
  * A helper function/type for ensuring that all control state's are handled.
@@ -146,6 +147,7 @@ export type ExcludeRetryableEsError<Response> = Exclude<
   Either.Left<never>
 >;
 
+// Tina notes: "State" here claims that: "Function lacks ending return statement and return type does not include 'undefined'."
 export const model = (currentState: State, resW: ResponseType<AllActionStates>): State => {
   // The action response `resW` is weakly typed, the type includes all action
   // responses. Each control state only triggers one action so each control
@@ -577,12 +579,18 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
           outdatedDocuments: res.right.outdatedDocuments,
         };
       } else {
-        // If there are no more results we have transformed all outdated
-        // documents and can proceed to the next step
-        return {
-          ...stateP,
-          controlState: 'UPDATE_TARGET_MAPPINGS',
-        };
+        if (stateP.failedDocumentIds && stateP.failedDocumentIds?.length > 0) {
+          // we exit out here and throw an error with the ids of documents that we'ren't transformed
+          throw new CorruptSavedObjectError(stateP.failedDocumentIds?.toString());
+        } else {
+          // if there are no more results and we don't have any documents that failed the transform step
+          // If there are no more results we have transformed all outdated
+          // documents and can proceed to the next step
+          return {
+            ...stateP,
+            controlState: 'UPDATE_TARGET_MAPPINGS',
+          };
+        }
       }
     } else {
       throwBadResponse(stateP, res);
@@ -591,24 +599,38 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
     // migrate_raw_docs now returns two arrays: one for proceddDocs, another for the ids of corrupt docs (ids were changed in some way)
     const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
     if (Either.isRight(res)) {
-      if (stateP.failedDocumentIds?.length === 0 && res.right.failedDocsIds.length === 0) {
+      if (!stateP.failedDocumentIds && res.right.failedDocsIds.length === 0) {
         // we don't have any failed docs on state nor do we have failed docs from the transform
         // reindex the processed docs then continue the outdated document search
+        // we're working under the assumption that we have PIT search for outdated documents (i.e. we can index the transformed docs batch by batch)
         return {
           ...stateP,
-          controlState: 'TRANSFORMED_DOCUMENTS_BULK_INDEX', // question, when do we pass control flow back to carry on searching?
-          processedDocuments: [...res.right.processedDocs], // we're working under the assumption that we have PIT search for outdated documents (i.e. we can index the transformed docs batch by batch)
+          controlState: 'TRANSFORMED_DOCUMENTS_BULK_INDEX',
+          processedDocuments: [...res.right.processedDocs],
         };
-      } else if (stateP.failedDocumentIds?.length === 0 && res.right.failedDocsIds.length > 0) {
-        // we stop indexing the transformed docs because we know the migration will eventually fail
+      } else if (!stateP.failedDocumentIds && res.right.failedDocsIds.length > 0) {
         // we don't have any failed docs on state but we do we have failed docs from the transform. Note: we don't need to pass the failed docs ids to the next step
+        // we stop indexing the transformed docs because we know the migration will eventually fail
         return {
           ...stateP,
           controlState: 'OUTDATED_DOCUMENTS_SEARCH',
           failedDocumentIds: [...res.right.failedDocsIds], // initialize the array of failed doc ids
         };
-      } else {
-        // we have failed docs on state and we have failed docs from the transform and need to add the new failed doc ids to those on state
+      } else if (
+        stateP.failedDocumentIds &&
+        stateP.failedDocumentIds?.length > 0 &&
+        res.right.failedDocsIds.length === 0
+      ) {
+        // we have failed docs on state but no new failed docs from the transform for the new batch of documents, we pass the state up as is
+        return {
+          ...stateP,
+          controlState: 'OUTDATED_DOCUMENTS_SEARCH',
+        };
+      } else if (
+        stateP.failedDocumentIds &&
+        stateP.failedDocumentIds?.length > 0 &&
+        res.right.failedDocsIds.length > 0
+      ) {
         return {
           ...stateP,
           controlState: 'OUTDATED_DOCUMENTS_SEARCH',

@@ -166,9 +166,12 @@ export async function migrationStateActionMachine({
       logger.error(e);
 
       dumpExecutionLog(logger, logMessagePrefix, executionLog);
+      // here we detect the CorruptSavedObjectError thrown when we've finished searching through outdated documents and collected those that we didn't transform
+      // ideally, we'd change the error message to either detect the number of failed documents (would require parsing the string of ids) or to something like:
+      // "To allow migrations to proceed, please delete the following documents from the the [${initialState.indexPrefix}_${initialState.kibanaVersion}_001] index."
       if (e instanceof CorruptSavedObjectError) {
         throw new Error(
-          `${e.message} To allow migrations to proceed, please delete this document from the [${initialState.indexPrefix}_${initialState.kibanaVersion}_001] index.`
+          `${e.message} To allow migrations to proceed, please delete this/these document(s) from the [${initialState.indexPrefix}_${initialState.kibanaVersion}_001] index.`
         );
       }
 
