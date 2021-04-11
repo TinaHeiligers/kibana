@@ -9,8 +9,6 @@
 /*
  * This file provides logic for migrating raw documents.
  */
-import * as TaskEither from 'fp-ts/lib/TaskEither';
-import * as Either from 'fp-ts/lib/Either';
 import {
   SavedObjectsRawDoc,
   SavedObjectsSerializer,
@@ -18,7 +16,6 @@ import {
 } from '../../serialization';
 import { MigrateAndConvertFn } from './document_migrator';
 import { SavedObjectsMigrationLogger } from '.';
-import { DocumentTransformFailuresError } from './migrate_raw_docs_errors';
 
 /**
  * Error thrown when saved object migrations encounter a corrupt saved object.
