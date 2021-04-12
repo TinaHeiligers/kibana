@@ -193,7 +193,7 @@ export type OutdatedDocumentsSearch = PostInitState & {
   readonly controlState: 'OUTDATED_DOCUMENTS_SEARCH';
   readonly failedDocumentIds: string[];
 };
-// this has changed because we're no longer writing the latest version of the documents to the target index.
+
 export type OutdatedDocumentsTransform = PostInitState & {
   /** Transform a batch of outdated documents to their latest version and write them to the target index */
   readonly controlState: 'OUTDATED_DOCUMENTS_TRANSFORM';
