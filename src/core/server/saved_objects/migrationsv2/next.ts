@@ -41,8 +41,6 @@ import {
   DocumentsTransformSuccess,
 } from '../migrations/core/migrate_raw_docs';
 
-// How do i handle this type now that transformRawDocs is actually running migrateRawDocsNonThrowing
-// migrateRawDocsNonThrowing returns an Either.left with failed docs or an Either.right with successfylly processed/transformed docs
 export type TransformRawDocs = (
   processedDocs: SavedObjectsRawDoc[]
 ) => TaskEither.TaskEither<DocumentsTransformFailed, DocumentsTransformSuccess>;
@@ -97,7 +95,7 @@ export const nextActionMap = (client: ElasticsearchClient, transformRawDocs: Tra
         outdatedDocumentsQuery: state.outdatedDocumentsQuery,
       }),
     OUTDATED_DOCUMENTS_TRANSFORM: (state: OutdatedDocumentsTransform) =>
-      transformRawDocs(state.outdatedDocuments), // one of { processedDocs } or { type: 'document_transform_failed', corruptSavedObjectIds }
+      transformRawDocs(state.outdatedDocuments),
     TRANSFORMED_DOCUMENTS_BULK_INDEX: (state: any) =>
       Actions.bulkOverwriteTransformedDocuments(client, state.targetIndex, state.processedDocs),
     MARK_VERSION_INDEX_READY: (state: MarkVersionIndexReady) =>

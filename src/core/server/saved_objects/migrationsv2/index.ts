@@ -41,7 +41,6 @@ export async function runResilientMigrator({
   migrationVersionPerType: SavedObjectsMigrationVersion;
   indexPrefix: string;
   migrationsConfig: SavedObjectsMigrationConfigType;
-  // TINA: added to log errors and not throw in OUTDATED_DOCUMENTS_TRANSFORM
 }): Promise<MigrationResult> {
   const initialState = createInitialState({
     kibanaVersion,
