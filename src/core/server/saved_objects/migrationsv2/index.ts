@@ -15,7 +15,6 @@ import { next, TransformRawDocs } from './next';
 import { createInitialState, model } from './model';
 import { migrationStateActionMachine } from './migrations_state_action_machine';
 import { SavedObjectsMigrationConfigType } from '../saved_objects_config';
-import { LogCorruptSavedObjectsErrors } from '../migrations/kibana/kibana_migrator';
 
 /**
  * Migrates the provided indexPrefix index using a resilient algorithm that is
@@ -32,7 +31,6 @@ export async function runResilientMigrator({
   migrationVersionPerType,
   indexPrefix,
   migrationsConfig,
-  captureTransformRawDocsErrors,
 }: {
   client: ElasticsearchClient;
   kibanaVersion: string;
@@ -44,7 +42,6 @@ export async function runResilientMigrator({
   indexPrefix: string;
   migrationsConfig: SavedObjectsMigrationConfigType;
   // TINA: added to log errors and not throw in OUTDATED_DOCUMENTS_TRANSFORM
-  captureTransformRawDocsErrors: LogCorruptSavedObjectsErrors;
 }): Promise<MigrationResult> {
   const initialState = createInitialState({
     kibanaVersion,
@@ -57,7 +54,7 @@ export async function runResilientMigrator({
   return migrationStateActionMachine({
     initialState,
     logger,
-    next: next(client, transformRawDocs, captureTransformRawDocsErrors),
+    next: next(client, transformRawDocs),
     model,
   });
 }
