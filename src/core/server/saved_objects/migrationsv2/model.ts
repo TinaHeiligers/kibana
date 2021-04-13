@@ -621,16 +621,12 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
     if (Either.isRight(res)) {
       if (res.right.processedDocs.length > 0) {
         if (stateP.failedDocumentIds.length === 0) {
-          return {
-            ...stateP,
-            controlState: 'TRANSFORMED_DOCUMENTS_BULK_INDEX',
-          };
+          return { ...stateP, controlState: 'TRANSFORMED_DOCUMENTS_BULK_INDEX' };
         } else {
-          return {
-            ...stateP,
-            controlState: 'OUTDATED_DOCUMENTS_SEARCH',
-          };
+          return { ...stateP, controlState: 'OUTDATED_DOCUMENTS_SEARCH' };
         }
+      } else {
+        return { ...stateP, controlState: 'OUTDATED_DOCUMENTS_SEARCH' };
       }
     } else if (Either.isLeft(res) && isLeftTypeof(res.left, 'documents_transform_failed')) {
       if (stateP.failedDocumentIds.length === 0) {
