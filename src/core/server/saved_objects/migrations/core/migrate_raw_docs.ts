@@ -90,8 +90,6 @@ export function migrateRawDocsNonThrowing(
   migrateDoc: MigrateAndConvertFn,
   rawDocs: SavedObjectsRawDoc[],
   log: SavedObjectsMigrationLogger
-  // This method should never fail because we're returning an array of something, either transformed raw saved objects or an array of saved object ids.
-  // According to the docs we should be using a Task for process that will never fail
 ): TaskEither.TaskEither<DocumentsTransformFailed, DocumentsTransformSuccess> {
   return async () => {
     const migrateDocWithoutBlocking = transformNonBlocking(migrateDoc);
@@ -111,13 +109,10 @@ export function migrateRawDocsNonThrowing(
           )
         );
       } else {
-        // should we be pushing only the id onto this array or the whole doc?
         corruptSavedObjectIds.push(raw._id);
       }
     }
     if (corruptSavedObjectIds.length > 0) {
-      // Do we need to return an error in order to transform the method into a TaskEither? i.e. should we return an error for a bulk failure. e.g.
-      // return Either.left({ type: 'document_transform_failed', new DocumentTransformFailuresError(corruptSavedObjectIds.toString())})
       return Either.left({
         type: 'documents_transform_failed',
         failedDocumentIds: [...corruptSavedObjectIds],
