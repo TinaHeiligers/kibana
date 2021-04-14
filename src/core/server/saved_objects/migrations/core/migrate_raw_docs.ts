@@ -27,7 +27,7 @@ import { SavedObjectsMigrationLogger } from '.';
  *    properties
  */
 export class CorruptSavedObjectError extends Error {
-  constructor(public readonly rawId: string) {
+  constructor(public readonly rawId: string, originalError: Error) {
     super(`Unable to migrate the corrupt saved object document with _id: '${rawId}'.`);
 
     // Set the prototype explicitly, see:
@@ -112,7 +112,7 @@ export function migrateRawDocsNonThrowing(
           );
           processedDocs.push(...migratedDocs);
         } catch (e) {
-          transformErrors.push(e);
+          transformErrors.push(e); // we'll get an error that contains the unserialized if embedded in it that I need to parse and convert using the serializer
         }
       } else {
         corruptSavedObjectIds.push(raw._id);
@@ -145,7 +145,7 @@ function transformNonBlocking(
       // set immediate is though
       setImmediate(() => {
         try {
-          resolve(transform(doc));
+          resolve(transform(doc)); // WE'LL ALWAYS RETURN SOMETHING NOW
         } catch (e) {
           reject(e); // we're no longer throwing an error deep within the tryTransformDoc
         }

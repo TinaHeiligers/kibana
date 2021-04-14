@@ -62,6 +62,7 @@ import {
   SavedObjectsType,
 } from '../../types';
 import { MigrationLogger } from './migration_logger';
+import { TransformSavedObjectError } from './transform_document_error';
 import { ISavedObjectTypeRegistry } from '../../saved_objects_type_registry';
 import { SavedObjectMigrationFn, SavedObjectMigrationMap } from '../types';
 import { DEFAULT_NAMESPACE_STRING } from '../../service/lib/utils';
@@ -71,7 +72,6 @@ const DEFAULT_MINIMUM_CONVERT_VERSION = '8.0.0';
 
 export type MigrateFn = (doc: SavedObjectUnsanitizedDoc) => SavedObjectUnsanitizedDoc;
 export type MigrateAndConvertFn = (doc: SavedObjectUnsanitizedDoc) => SavedObjectUnsanitizedDoc[];
-
 interface TransformResult {
   /**
    * This is the original document that has been transformed.
@@ -648,10 +648,33 @@ function transformComparator(a: Transform, b: Transform) {
   }
   return 0;
 }
-
+/**
+ *
+ * @param version
+ * @param type
+ * @param migrationFn
+ * @param log
+ * @returns
+ */
 /**
  * If a specific transform function fails, this tacks on a bit of information
  * about the document and transform that caused the failure.
+ * @remarks
+ * ideally (to make debugging failed migrations easier), we want to return an Either.left type with:
+ *    the actual error and
+ *     the failedTransform
+ *     the rawDoc Id (not the id on the unsanitizedDoc that we have here),
+ *        the serializer has a `generateRawId` method to do that but it's using other stuff from within the Serializer class
+ *        we can either pass the serializer.generateRawId down into here somehow or
+ *        send the stuff the method needs back up and generate the ids from within migrateRawDocsNonThrowing
+ *     FYI: rawDocumentId: generateRawId(doc.namespace, doc.type, doc.id), // (doc.id) just the uuid part, so doesn't tell users what the full elasticsearch id is
+ *     return {
+ *       failedTransform,
+ *       error,
+ *       namespace: doc.namespace,
+ *       type: doc.type,
+ *       id: doc.id,
+ *     };
  */
 function wrapWithTry(
   version: string,
@@ -677,23 +700,18 @@ function wrapWithTry(
       return { transformedDoc: result, additionalDocs: [] };
     } catch (error) {
       const failedTransform = `${type.name}:${version}`;
-      // const failedDoc = JSON.stringify(doc);
+      const failedDoc = JSON.stringify(doc);
       log.error(error);
-      // ideally (to make debugging failed migrations easier), we want to return an Either.left type with:
-      // the actual error and
-      // the failedTransform
-      // the rawDoc Id (not the id on the unsanitizedDoc that we have here),
-      //    the serializer has a `generateRawId` method to do that but it's using other stuff from within the Serializer class
-      //    we can either pass the serializer.generateRawId down into here somehow or
-      //    send the stuff the method needs back up and generate the ids from within migrateRawDocsNonThrowing
-      // FYI: rawDocumentId: generateRawId(doc.namespace, doc.type, doc.id), // (doc.id) just the uuid part, so doesn't tell users what the full elasticsearch id is
-      return {
+      // changing the error being thrown to an object or an instance of Either.left requires refactoring a lot of try/catch implementations further upstream within v2 migrations.
+      // as an initial improvement, we're adding more information to the error that's thrown.
+      throw new TransformSavedObjectError(
+        doc.id,
+        doc.type,
         failedTransform,
+        failedDoc,
         error,
-        namespace: doc.namespace,
-        type: doc.type,
-        id: doc.id,
-      };
+        doc.namespace ?? 'N/A'
+      );
     }
   };
 }
