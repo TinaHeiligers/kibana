@@ -619,42 +619,35 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
   } else if (stateP.controlState === 'OUTDATED_DOCUMENTS_TRANSFORM') {
     const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
     if (Either.isRight(res)) {
-      if (res.right.processedDocs.length > 0) {
-        if (stateP.failedDocumentIds.length === 0) {
-          return {
-            ...stateP,
-            controlState: 'TRANSFORMED_DOCUMENTS_BULK_INDEX',
-            transformedDocs: [...res.right.processedDocs],
-          };
-        } else {
-          return {
-            ...stateP,
-            controlState: 'OUTDATED_DOCUMENTS_SEARCH',
-            failedDocumentIds: [...stateP.failedDocumentIds], // not strictly nescessary but being explicit for readability
-          };
-        }
-      } else {
-        // we shouldn't get to this condition because migrateRawDocsNonThrowing that means:
-        // we've received outdated documents from OUTDATED_DOCUMENTS_SEARCH
-        // none of thos outdated documents were successfully transformed (processedDocs is empty)
-        // we're in the success case
-        // Question: Should be not be throwing a Bad Response?
-        return { ...stateP, controlState: 'OUTDATED_DOCUMENTS_SEARCH' };
-      }
-    } else if (Either.isLeft(res) && isLeftTypeof(res.left, 'documents_transform_failed')) {
+      // if (res.right.processedDocs.length > 0) {
       if (stateP.failedDocumentIds.length === 0) {
         return {
           ...stateP,
-          controlState: 'OUTDATED_DOCUMENTS_SEARCH',
-          failedDocumentIds: [...res.left.failedDocumentIds],
+          controlState: 'TRANSFORMED_DOCUMENTS_BULK_INDEX',
+          transformedDocs: [...res.right.processedDocs],
         };
       } else {
         return {
           ...stateP,
           controlState: 'OUTDATED_DOCUMENTS_SEARCH',
-          failedDocumentIds: [...stateP.failedDocumentIds, ...res.left.failedDocumentIds],
+          failedDocumentIds: [...stateP.failedDocumentIds], // not strictly nescessary but being explicit for readability
         };
       }
+      // } else {
+      //   // we shouldn't get to this condition because migrateRawDocsNonThrowing that means:
+      //   // we've received outdated documents from OUTDATED_DOCUMENTS_SEARCH
+      //   // none of those outdated documents were successfully transformed (processedDocs is empty)
+      //   // we're in the success case
+      //   // Question: Should be not be throwing a Bad Response?
+      //   return { ...stateP, controlState: 'OUTDATED_DOCUMENTS_SEARCH' };
+      // }
+    } else if (Either.isLeft(res) && isLeftTypeof(res.left, 'documents_transform_failed')) {
+      return {
+        ...stateP,
+        controlState: 'OUTDATED_DOCUMENTS_SEARCH',
+        failedDocumentIds: [...stateP.failedDocumentIds, ...res.left.failedDocumentIds],
+        transformErrors: [...stateP.transformErrors, ...res.left.transformErrors],
+      };
     } else {
       throwBadResponse(stateP, res as never);
     }

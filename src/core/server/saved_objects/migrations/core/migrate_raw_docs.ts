@@ -94,28 +94,33 @@ export function migrateRawDocsNonThrowing(
   return async () => {
     const migrateDocWithoutBlocking = transformNonBlocking(migrateDoc);
     const processedDocs: SavedObjectsRawDoc[] = [];
+    const transformErrors: Error[] = [];
     const corruptSavedObjectIds: string[] = [];
     for (const raw of rawDocs) {
       const options = { namespaceTreatment: 'lax' as const };
       if (serializer.isRawSavedObject(raw, options)) {
         const savedObject = serializer.rawToSavedObject(raw, options);
         savedObject.migrationVersion = savedObject.migrationVersion || {};
-        processedDocs.push(
-          ...(await migrateDocWithoutBlocking(savedObject)).map((attrs) =>
+        try {
+          const migratedDocs = await migrateDocWithoutBlocking(savedObject).map((attrs) =>
             serializer.savedObjectToRaw({
               references: [],
               ...attrs,
             })
-          )
-        );
+          );
+          processedDocs.push(...migratedDocs);
+        } catch (e) {
+          transformErrors.push(e);
+        }
       } else {
         corruptSavedObjectIds.push(raw._id);
       }
     }
-    if (corruptSavedObjectIds.length > 0) {
+    if (corruptSavedObjectIds.length > 0 || transformErrors.length > 0) {
       return Either.left({
         type: 'documents_transform_failed',
-        failedDocumentIds: [...corruptSavedObjectIds],
+        failedDocumentIds: [...corruptSavedObjectIds], // rename to corruptDocumentIds
+        transformErrors,
       });
     }
     return Either.right({ processedDocs });

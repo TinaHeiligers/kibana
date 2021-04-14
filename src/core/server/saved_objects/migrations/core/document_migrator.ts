@@ -680,9 +680,11 @@ function wrapWithTry(
       const failedDoc = JSON.stringify(doc);
       log.error(error);
 
-      throw new Error(
-        `Failed to transform document ${doc?.id}. Transform: ${failedTransform}\nDoc: ${failedDoc}`
-      );
+      return {
+        failedTransform,
+        error,
+        rawDocumentId: generateRawId(doc.namespace, doc.type, doc.id), // just the uuid part, so doesn't tell users what the full elasticsearch id is
+      };
     }
   };
 }
