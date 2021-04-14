@@ -677,13 +677,22 @@ function wrapWithTry(
       return { transformedDoc: result, additionalDocs: [] };
     } catch (error) {
       const failedTransform = `${type.name}:${version}`;
-      const failedDoc = JSON.stringify(doc);
+      // const failedDoc = JSON.stringify(doc);
       log.error(error);
-
+      // ideally (to make debugging failed migrations easier), we want to return an Either.left type with:
+      // the actual error and
+      // the failedTransform
+      // the rawDoc Id (not the id on the unsanitizedDoc that we have here),
+      //    the serializer has a `generateRawId` method to do that but it's using other stuff from within the Serializer class
+      //    we can either pass the serializer.generateRawId down into here somehow or
+      //    send the stuff the method needs back up and generate the ids from within migrateRawDocsNonThrowing
+      // FYI: rawDocumentId: generateRawId(doc.namespace, doc.type, doc.id), // (doc.id) just the uuid part, so doesn't tell users what the full elasticsearch id is
       return {
         failedTransform,
         error,
-        rawDocumentId: generateRawId(doc.namespace, doc.type, doc.id), // just the uuid part, so doesn't tell users what the full elasticsearch id is
+        namespace: doc.namespace,
+        type: doc.type,
+        id: doc.id,
       };
     }
   };

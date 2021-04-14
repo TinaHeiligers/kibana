@@ -92,9 +92,11 @@ export function migrateRawDocsNonThrowing(
   log: SavedObjectsMigrationLogger
 ): TaskEither.TaskEither<DocumentsTransformFailed, DocumentsTransformSuccess> {
   return async () => {
-    const migrateDocWithoutBlocking = transformNonBlocking(migrateDoc);
+    const generateRawIdFnct: (namespace: string | undefined, type: string, id: string) => string =
+      serializer.generateRawId;
+    const migrateDocWithoutBlocking = transformNonBlocking(migrateDoc, generateRawIdFnct);
     const processedDocs: SavedObjectsRawDoc[] = [];
-    const transformErrors: Error[] = [];
+    const transformErrors: Error[] = []; // this isn't going to be an instance of an Error anymore since we're going to return an object
     const corruptSavedObjectIds: string[] = [];
     for (const raw of rawDocs) {
       const options = { namespaceTreatment: 'lax' as const };
@@ -102,7 +104,7 @@ export function migrateRawDocsNonThrowing(
         const savedObject = serializer.rawToSavedObject(raw, options);
         savedObject.migrationVersion = savedObject.migrationVersion || {};
         try {
-          const migratedDocs = await migrateDocWithoutBlocking(savedObject).map((attrs) =>
+          const migratedDocs = [...(await migrateDocWithoutBlocking(savedObject))].map((attrs) =>
             serializer.savedObjectToRaw({
               references: [],
               ...attrs,
@@ -134,7 +136,8 @@ export function migrateRawDocsNonThrowing(
  * work in between each transform.
  */
 function transformNonBlocking(
-  transform: MigrateAndConvertFn
+  transform: MigrateAndConvertFn,
+  generateRawIdFnct: (namespace: string | undefined, type: string, id: string) => string
 ): (doc: SavedObjectUnsanitizedDoc) => Promise<SavedObjectUnsanitizedDoc[]> {
   // promises aren't enough to unblock the event loop
   return (doc: SavedObjectUnsanitizedDoc) =>
@@ -144,7 +147,7 @@ function transformNonBlocking(
         try {
           resolve(transform(doc));
         } catch (e) {
-          reject(e);
+          reject(e); // we're no longer throwing an error deep within the tryTransformDoc
         }
       });
     });
