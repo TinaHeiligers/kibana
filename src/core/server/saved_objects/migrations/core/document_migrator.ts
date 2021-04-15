@@ -142,6 +142,7 @@ export interface VersionedTransformer {
 /**
  * A concrete implementation of the VersionedTransformer interface.
  */
+// TINA: NOTE that the DocumentMigrator is used in both v1 and v2 migrations
 export class DocumentMigrator implements VersionedTransformer {
   private documentMigratorOptions: Omit<DocumentMigratorOptions, 'minimumConvertVersion'>;
   private migrations?: ActiveMigrations;

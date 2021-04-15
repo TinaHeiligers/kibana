@@ -79,10 +79,14 @@ export async function migrateRawDocs(
  */
 export interface DocumentsTransformFailed {
   type: string;
-  failedDocumentIds: string[];
+  corruptDocumentIds: string[];
 }
 export interface DocumentsTransformSuccess {
   processedDocs: SavedObjectsRawDoc[];
+}
+interface TransformErrorObjects {
+  rawId: string;
+  err: TransformSavedObjectDocumentError;
 }
 
 export function migrateRawDocsNonThrowing(
@@ -92,11 +96,9 @@ export function migrateRawDocsNonThrowing(
   log: SavedObjectsMigrationLogger
 ): TaskEither.TaskEither<DocumentsTransformFailed, DocumentsTransformSuccess> {
   return async () => {
-    const generateRawIdFnct: (namespace: string | undefined, type: string, id: string) => string =
-      serializer.generateRawId;
     const migrateDocWithoutBlocking = transformNonBlocking(migrateDoc);
     const processedDocs: SavedObjectsRawDoc[] = [];
-    const transformErrors: Error[] = []; // this isn't going to be an instance of an Error anymore since we're going to return an object
+    const transformErrors: TransformErrorObjects[] = []; // this isn't going to be an instance of an Error anymore since we're going to return an object
     const corruptSavedObjectIds: string[] = [];
     for (const raw of rawDocs) {
       const options = { namespaceTreatment: 'lax' as const };
@@ -111,21 +113,22 @@ export function migrateRawDocsNonThrowing(
             })
           );
           processedDocs.push(...migratedDocs);
-        } catch (e) {
-          if (e instanceof TransformSavedObjectDocumentError) {
+        } catch (err) {
+          if (err instanceof TransformSavedObjectDocumentError) {
             // the error message contains a Doc:... item that's a stringified version of the doc itself.
             // we can JSON.parse(the Doc section only) to get the namespace, type and id (in that order) to use serializer.generateRawId(namespace, type, id)
             // transform the id in the error message to a serialized SO id.
             // we need to parse out the id, type and namespace from the error message
             // const itemsOfInterest = JSON.parse(e.message.split('Doc: ')[1]);
-            // const serializedId = serializer.generateRawId(
-            //   itemsOfInterest.namespace,
-            //   itemsOfInterest.type,
-            //   itemsOfInterest.id
-            // );
+            const serializedId = serializer.generateRawId(
+              err.getNamespace(),
+              err.getType(),
+              err.getId()
+            );
             // createSerializedIdTransformErrors(serializedId, e);
             // now we have the seriialized ID and need a new error using that BUT also containing the original stack trace (from the error within e -> e.stack );
-            transformErrors.push(e); // we'll get an error that contains the unserialized if embedded in it that I need to parse and convert using the serializer
+
+            transformErrors.push({ rawId: serializedId, err }); // we'll get an error that contains the unserialized if embedded in it that I need to parse and convert using the serializer
           }
         }
       } else {
@@ -135,7 +138,7 @@ export function migrateRawDocsNonThrowing(
     if (corruptSavedObjectIds.length > 0 || transformErrors.length > 0) {
       return Either.left({
         type: 'documents_transform_failed',
-        failedDocumentIds: [...corruptSavedObjectIds], // rename to corruptDocumentIds
+        corruptDocumentIds: [...corruptSavedObjectIds], // rename to corruptDocumentIds
         transformErrors,
       });
     }
@@ -158,9 +161,9 @@ function transformNonBlocking(
       // set immediate is though
       setImmediate(() => {
         try {
-          resolve(transform(doc)); // WE'LL ALWAYS RETURN SOMETHING NOW
+          resolve(transform(doc)); // we can't always resolve something because the v1 migrations expect an error when the document migrator runs the transform
         } catch (e) {
-          reject(e); // we're no longer throwing an error deep within the tryTransformDoc
+          reject(e); // We need to continue to throw from within the transform for v1 migrations to carry on working. This can be changed when we remove v1 migrations
         }
       });
     });

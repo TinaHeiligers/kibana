@@ -187,7 +187,7 @@ export class KibanaMigrator {
               transformRawDocs: (rawDocs: SavedObjectsRawDoc[]) =>
                 migrateRawDocsNonThrowing(
                   this.serializer,
-                  this.documentMigrator.migrateAndConvert,
+                  this.documentMigrator.migrateAndConvert, // used in both v1 and v2 migrations
                   rawDocs,
                   new MigrationLogger(this.log)
                 ),

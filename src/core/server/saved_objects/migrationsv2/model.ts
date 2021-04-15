@@ -202,7 +202,7 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
             indices[aliases[stateP.currentAlias]].mappings
           ),
           versionIndexReadyActions: Option.none,
-          failedDocumentIds: [],
+          corruptDocumentIds: [],
         };
       } else if (
         // `.kibana` is pointing to an index that belongs to a later
@@ -564,7 +564,7 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
       return {
         ...stateP,
         controlState: 'OUTDATED_DOCUMENTS_SEARCH',
-        failedDocumentIds: [],
+        corruptDocumentIds: [],
       };
     } else {
       const left = res.left;
@@ -577,7 +577,7 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
         return {
           ...stateP,
           controlState: 'OUTDATED_DOCUMENTS_SEARCH',
-          failedDocumentIds: [],
+          corruptDocumentIds: [],
         };
       } else {
         throwBadResponse(stateP, left);
@@ -595,13 +595,13 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
           outdatedDocuments: res.right.outdatedDocuments,
         };
       } else {
-        if (stateP.failedDocumentIds.length > 0) {
+        if (stateP.corruptDocumentIds.length > 0) {
           // We have documents that couldn't be transformed and exit out of the migration
           return {
             ...stateP,
             controlState: 'FATAL',
             reason: `Migrations failed because of the following corrupt saved object documents: ${JSON.stringify(
-              stateP.failedDocumentIds
+              stateP.corruptDocumentIds
             )}. To allow migrations to proceed, please delete thse documents.`,
           };
         } else {
@@ -620,7 +620,7 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
     const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
     if (Either.isRight(res)) {
       // if (res.right.processedDocs.length > 0) {
-      if (stateP.failedDocumentIds.length === 0) {
+      if (stateP.corruptDocumentIds.length === 0) {
         return {
           ...stateP,
           controlState: 'TRANSFORMED_DOCUMENTS_BULK_INDEX',
@@ -630,7 +630,7 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
         return {
           ...stateP,
           controlState: 'OUTDATED_DOCUMENTS_SEARCH',
-          failedDocumentIds: [...stateP.failedDocumentIds], // not strictly nescessary but being explicit for readability
+          corruptDocumentIds: [...stateP.corruptDocumentIds], // not strictly nescessary but being explicit for readability
         };
       }
       // } else {
@@ -645,7 +645,7 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
       return {
         ...stateP,
         controlState: 'OUTDATED_DOCUMENTS_SEARCH',
-        failedDocumentIds: [...stateP.failedDocumentIds, ...res.left.failedDocumentIds],
+        corruptDocumentIds: [...stateP.corruptDocumentIds, ...res.left.corruptDocumentIds],
         transformErrors: [...stateP.transformErrors, ...res.left.transformErrors],
       };
     } else {
@@ -668,7 +668,7 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
       return {
         ...stateP,
         controlState: 'OUTDATED_DOCUMENTS_SEARCH',
-        failedDocumentIds: [],
+        corruptDocumentIds: [],
       };
     } else {
       throwBadResponse(stateP, res);

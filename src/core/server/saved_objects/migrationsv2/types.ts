@@ -204,7 +204,7 @@ export type UpdateTargetMappingsWaitForTaskState = PostInitState & {
 export type OutdatedDocumentsSearch = PostInitState & {
   /** Search for outdated documents in the target index */
   readonly controlState: 'OUTDATED_DOCUMENTS_SEARCH';
-  readonly failedDocumentIds: string[];
+  readonly corruptDocumentIds: string[];
 };
 
 export type OutdatedDocumentsTransform = PostInitState & {
@@ -212,7 +212,7 @@ export type OutdatedDocumentsTransform = PostInitState & {
   readonly controlState: 'OUTDATED_DOCUMENTS_TRANSFORM';
   readonly outdatedDocuments: SavedObjectsRawDoc[];
   readonly errors?: Error[];
-  readonly failedDocumentIds: string[];
+  readonly corruptDocumentIds: string[];
 };
 export type TransformedDocumentsBulkIndex = PostInitState & {
   /**

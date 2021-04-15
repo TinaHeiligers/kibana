@@ -14,6 +14,8 @@
  * - namespace: doc.namespace,
  * - type: doc.type,
  * - id: doc.id,
+ * The new error class helps with v2 migrations.
+ * For backward compatibility with v1 migrations, the error message is the same as what was previouslt thrown as a plain error
  */
 
 // TINA TODO: create getters for retrieving the id, type and namespace to use in migrate_raw_doc for generating the serialized SO id
@@ -27,10 +29,21 @@ export class TransformSavedObjectDocumentError extends Error {
     public readonly originalError: Error // public readonly namespace?: string--> part of the stringified failedDoc
   ) {
     super(`Failed to transform document ${id}. Transform: ${failedTransform}\nDoc: ${failedDoc}`);
-
+    this.id = id;
+    this.namespace = namespace;
+    this.type = type;
     // Removed because not including still seems to work, it may have been an old Typescript 2.1 issue:
     // Set the prototype explicitly, see:
     // https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
     // Object.setPrototypeOf(this, TransformSavedObjectDocumentError.prototype);
+  }
+  public getId() {
+    return this.id;
+  }
+  public getNamespace() {
+    return this.namespace;
+  }
+  public getType() {
+    return this.type;
   }
 }
