@@ -34,7 +34,6 @@ describe('TransformSavedObjectDocumentError', () => {
       originalError
     );
     expect(err.message).toMatchInlineSnapshot(
-      '',
       `
       "Failed to transform document id. Transform: failedTransform
       Doc: failedDoc"
