@@ -62,7 +62,7 @@ import {
   SavedObjectsType,
 } from '../../types';
 import { MigrationLogger } from './migration_logger';
-import { TransformSavedObjectError } from './transform_document_error';
+import { TransformSavedObjectDocumentError } from '.';
 import { ISavedObjectTypeRegistry } from '../../saved_objects_type_registry';
 import { SavedObjectMigrationFn, SavedObjectMigrationMap } from '../types';
 import { DEFAULT_NAMESPACE_STRING } from '../../service/lib/utils';
@@ -704,7 +704,14 @@ function wrapWithTry(
       log.error(error);
       // changing the error being thrown to an object or an instance of Either.left requires refactoring a lot of try/catch implementations further upstream within v2 migrations.
       // as an initial improvement, we're adding more information to the error that's thrown (full error itself).
-      throw new TransformSavedObjectError(doc.id, failedTransform, failedDoc, error);
+      throw new TransformSavedObjectDocumentError(
+        doc.id,
+        doc.type,
+        doc.namespace ?? 'N/A',
+        failedTransform,
+        failedDoc,
+        error
+      );
     }
   };
 }

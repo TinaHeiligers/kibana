@@ -11,7 +11,7 @@ import { set } from '@elastic/safer-lodash-set';
 import _ from 'lodash';
 import { SavedObjectUnsanitizedDoc } from '../../serialization';
 import { DocumentMigrator } from './document_migrator';
-import { TransformSavedObjectError } from './transform_document_error';
+import { TransformSavedObjectDocumentError } from './transform_saved_object_document_error';
 import { loggingSystemMock } from '../../../logging/logging_system.mock';
 import { SavedObjectsType } from '../../types';
 import { SavedObjectTypeRegistry } from '../../saved_objects_type_registry';
@@ -722,7 +722,7 @@ describe('DocumentMigrator', () => {
         coreMigrationVersion: kibanaVersion,
       });
     });
-    // TINA TODO: Change the expected error message and the error type
+    // TINA
     it('logs the original error and throws a transform error if a document transform fails', () => {
       const log = mockLogger;
       const failedDoc = {
@@ -746,7 +746,6 @@ describe('DocumentMigrator', () => {
         log,
       });
       migrator.prepareMigrations();
-
       try {
         migrator.migrate(_.cloneDeep(failedDoc));
         expect('Did not throw').toEqual('But it should have!');
@@ -756,7 +755,7 @@ describe('DocumentMigrator', () => {
           "Failed to transform document smelly. Transform: dog:1.2.3
           Doc: {\\"id\\":\\"smelly\\",\\"type\\":\\"dog\\",\\"namespace\\":\\"needs_a_bath\\",\\"attributes\\":{},\\"migrationVersion\\":{}}"
         `);
-        expect(error).toBeInstanceOf(TransformSavedObjectError);
+        expect(error).toBeInstanceOf(TransformSavedObjectDocumentError);
         expect(loggingSystemMock.collect(mockLoggerFactory).error[0][0]).toMatchInlineSnapshot(
           `[Error: Dang diggity!]`
         );

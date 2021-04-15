@@ -15,4 +15,4 @@ export type { MigrationResult, MigrationStatus } from './migration_coordinator';
 export { createMigrationEsClient } from './migration_es_client';
 export type { MigrationEsClient } from './migration_es_client';
 export { excludeUnusedTypesQuery } from './elastic_index';
-export { TransformSavedObjectError } from './transform_document_error';
+export { TransformSavedObjectDocumentError } from './transform_saved_object_document_error';

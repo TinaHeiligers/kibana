@@ -15,20 +15,22 @@
  * - type: doc.type,
  * - id: doc.id,
  */
-export class TransformSavedObjectError extends Error {
+
+// TINA TODO: create getters for retrieving the id, type and namespace to use in migrate_raw_doc for generating the serialized SO id
+export class TransformSavedObjectDocumentError extends Error {
   constructor(
-    public readonly id_uuid_part: string,
-    // public readonly type: string, --> part of the stringified failedDoc
+    public readonly id: string,
+    public readonly type: string,
+    public readonly namespace: string,
     public readonly failedTransform: string,
     public readonly failedDoc: string,
     public readonly originalError: Error // public readonly namespace?: string--> part of the stringified failedDoc
   ) {
-    super(
-      `Failed to transform document ${id_uuid_part}. Transform: ${failedTransform}\nDoc: ${failedDoc}`
-    );
+    super(`Failed to transform document ${id}. Transform: ${failedTransform}\nDoc: ${failedDoc}`);
 
+    // Removed because not including still seems to work, it may have been an old Typescript 2.1 issue:
     // Set the prototype explicitly, see:
     // https://github.com/Microsoft/TypeScript/wiki/Breaking-Changes#extending-built-ins-like-error-array-and-map-may-no-longer-work
-    Object.setPrototypeOf(this, TransformSavedObjectError.prototype);
+    // Object.setPrototypeOf(this, TransformSavedObjectDocumentError.prototype);
   }
 }

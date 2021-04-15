@@ -17,7 +17,7 @@ import {
   SavedObjectUnsanitizedDoc,
 } from '../../serialization';
 import { MigrateAndConvertFn } from './document_migrator';
-import { SavedObjectsMigrationLogger, TransformSavedObjectError } from '.';
+import { SavedObjectsMigrationLogger, TransformSavedObjectDocumentError } from '.';
 
 /**
  * Error thrown when saved object migrations encounter a corrupt saved object.
@@ -27,7 +27,7 @@ import { SavedObjectsMigrationLogger, TransformSavedObjectError } from '.';
  *    properties
  */
 export class CorruptSavedObjectError extends Error {
-  constructor(public readonly rawId: string, originalError: Error) {
+  constructor(public readonly rawId: string) {
     super(`Unable to migrate the corrupt saved object document with _id: '${rawId}'.`);
 
     // Set the prototype explicitly, see:
@@ -94,7 +94,7 @@ export function migrateRawDocsNonThrowing(
   return async () => {
     const generateRawIdFnct: (namespace: string | undefined, type: string, id: string) => string =
       serializer.generateRawId;
-    const migrateDocWithoutBlocking = transformNonBlocking(migrateDoc, generateRawIdFnct);
+    const migrateDocWithoutBlocking = transformNonBlocking(migrateDoc);
     const processedDocs: SavedObjectsRawDoc[] = [];
     const transformErrors: Error[] = []; // this isn't going to be an instance of an Error anymore since we're going to return an object
     const corruptSavedObjectIds: string[] = [];
@@ -112,19 +112,18 @@ export function migrateRawDocsNonThrowing(
           );
           processedDocs.push(...migratedDocs);
         } catch (e) {
-          if (e instanceof TransformSavedObjectError) {
+          if (e instanceof TransformSavedObjectDocumentError) {
             // the error message contains a Doc:... item that's a stringified version of the doc itself.
             // we can JSON.parse(the Doc section only) to get the namespace, type and id (in that order) to use serializer.generateRawId(namespace, type, id)
             // transform the id in the error message to a serialized SO id.
             // we need to parse out the id, type and namespace from the error message
-            const itemsOfInterest = JSON.parse(e.message.split('Doc: ')[1]);
-            const stackTrace = e.stack;
-            const serializedId = serializer.generateRawId(
-              itemsOfInterest.namespace,
-              itemsOfInterest.type,
-              itemsOfInterest.id
-            );
-            createSerializedIdTransformErrors(serializedId, e);
+            // const itemsOfInterest = JSON.parse(e.message.split('Doc: ')[1]);
+            // const serializedId = serializer.generateRawId(
+            //   itemsOfInterest.namespace,
+            //   itemsOfInterest.type,
+            //   itemsOfInterest.id
+            // );
+            // createSerializedIdTransformErrors(serializedId, e);
             // now we have the seriialized ID and need a new error using that BUT also containing the original stack trace (from the error within e -> e.stack );
             transformErrors.push(e); // we'll get an error that contains the unserialized if embedded in it that I need to parse and convert using the serializer
           }
@@ -151,8 +150,7 @@ export function migrateRawDocsNonThrowing(
  * work in between each transform.
  */
 function transformNonBlocking(
-  transform: MigrateAndConvertFn,
-  generateRawIdFnct: (namespace: string | undefined, type: string, id: string) => string
+  transform: MigrateAndConvertFn
 ): (doc: SavedObjectUnsanitizedDoc) => Promise<SavedObjectUnsanitizedDoc[]> {
   // promises aren't enough to unblock the event loop
   return (doc: SavedObjectUnsanitizedDoc) =>
