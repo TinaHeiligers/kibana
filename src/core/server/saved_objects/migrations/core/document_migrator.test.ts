@@ -753,8 +753,8 @@ describe('DocumentMigrator', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
         expect(error.message).toMatchInlineSnapshot(`
-          "Unable to transform the saved object document with id: 'smelly', namespace: needs_a_bath, type: dog, Transform: dog:1.2.3
-          Doc: {\\"id\\":\\"smelly\\",\\"type\\":\\"dog\\",\\"namespace\\":\\"needs_a_bath\\",\\"attributes\\":{},\\"migrationVersion\\":{}}."
+          "Failed to transform document smelly. Transform: dog:1.2.3
+          Doc: {\\"id\\":\\"smelly\\",\\"type\\":\\"dog\\",\\"namespace\\":\\"needs_a_bath\\",\\"attributes\\":{},\\"migrationVersion\\":{}}"
         `);
         expect(error).toBeInstanceOf(TransformSavedObjectError);
         expect(loggingSystemMock.collect(mockLoggerFactory).error[0][0]).toMatchInlineSnapshot(

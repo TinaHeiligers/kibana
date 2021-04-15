@@ -703,15 +703,8 @@ function wrapWithTry(
       const failedDoc = JSON.stringify(doc);
       log.error(error);
       // changing the error being thrown to an object or an instance of Either.left requires refactoring a lot of try/catch implementations further upstream within v2 migrations.
-      // as an initial improvement, we're adding more information to the error that's thrown.
-      throw new TransformSavedObjectError(
-        doc.id,
-        doc.type,
-        failedTransform,
-        failedDoc,
-        error,
-        doc.namespace ?? 'N/A'
-      );
+      // as an initial improvement, we're adding more information to the error that's thrown (full error itself).
+      throw new TransformSavedObjectError(doc.id, failedTransform, failedDoc, error);
     }
   };
 }

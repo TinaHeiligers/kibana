@@ -10,7 +10,7 @@
  * Error thrown when saved object migrations encounter a transformation error.
  * Transformation errors happen when a transform function throws an error for an unsanitized saved object
  * The id (doc.id) reported in this error class is just the uuid part and doesn't tell users what the full elasticsearch id is.
- * in order to convert the id to the serialized version further upstream using transform.generateRawId, we need to provide the following items:
+ * in order to convert the id to the serialized version further upstream using serializer.generateRawId, we need to provide the following items:
  * - namespace: doc.namespace,
  * - type: doc.type,
  * - id: doc.id,
@@ -18,14 +18,13 @@
 export class TransformSavedObjectError extends Error {
   constructor(
     public readonly id_uuid_part: string,
-    public readonly type: string,
+    // public readonly type: string, --> part of the stringified failedDoc
     public readonly failedTransform: string,
     public readonly failedDoc: string,
-    public readonly originalError: Error,
-    public readonly namespace?: string
+    public readonly originalError: Error // public readonly namespace?: string--> part of the stringified failedDoc
   ) {
     super(
-      `Unable to transform the saved object document with id: '${id_uuid_part}', namespace: ${namespace}, type: ${type}, Transform: ${failedTransform}\nDoc: ${failedDoc}.`
+      `Failed to transform document ${id_uuid_part}. Transform: ${failedTransform}\nDoc: ${failedDoc}`
     );
 
     // Set the prototype explicitly, see:
