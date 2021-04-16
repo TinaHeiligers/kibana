@@ -86,7 +86,7 @@ export interface DocumentsTransformSuccess {
 }
 interface TransformErrorObjects {
   rawId: string;
-  err: TransformSavedObjectDocumentError;
+  err: TransformSavedObjectDocumentError | Error; // do we want the full error here or just the stack trace?
 }
 
 export function migrateRawDocsNonThrowing(
@@ -114,12 +114,12 @@ export function migrateRawDocsNonThrowing(
           );
           processedDocs.push(...migratedDocs);
         } catch (err) {
+          // if there is an error, we want to intercept it and convert the id (that is only the uuid part) to the raw document id so that users can actually act on the document where the transform script failed.
+          // We're passing the stack trace back up to allow easier debugging.
           if (err instanceof TransformSavedObjectDocumentError) {
             // the error message contains a Doc:... item that's a stringified version of the doc itself.
-            // we can JSON.parse(the Doc section only) to get the namespace, type and id (in that order) to use serializer.generateRawId(namespace, type, id)
-            // transform the id in the error message to a serialized SO id.
-            // we need to parse out the id, type and namespace from the error message
-            // const itemsOfInterest = JSON.parse(e.message.split('Doc: ')[1]);
+            // the doc id we get from the error isn't a raw saved object id. The transform method throws an error from a document where the _id is only the uuid part
+            // transform the id in the error message to a raw saved object id.
             const serializedId = serializer.generateRawId(
               err.getNamespace(),
               err.getType(),
@@ -129,6 +129,8 @@ export function migrateRawDocsNonThrowing(
             // now we have the seriialized ID and need a new error using that BUT also containing the original stack trace (from the error within e -> e.stack );
 
             transformErrors.push({ rawId: serializedId, err }); // we'll get an error that contains the unserialized if embedded in it that I need to parse and convert using the serializer
+          } else {
+            transformErrors.push({ rawId: 'unknown', err }); // cases we haven't accounted for yet
           }
         }
       } else {
