@@ -80,11 +80,12 @@ export async function migrateRawDocs(
 export interface DocumentsTransformFailed {
   type: string;
   corruptDocumentIds: string[];
+  transformErrors: TransformErrorObjects[];
 }
 export interface DocumentsTransformSuccess {
   processedDocs: SavedObjectsRawDoc[];
 }
-interface TransformErrorObjects {
+export interface TransformErrorObjects {
   rawId: string;
   err: TransformSavedObjectDocumentError | Error; // do we want the full error here or just the stack trace?
 }
@@ -125,10 +126,7 @@ export function migrateRawDocsNonThrowing(
               err.getType(),
               err.getId()
             );
-            // createSerializedIdTransformErrors(serializedId, e);
-            // now we have the seriialized ID and need a new error using that BUT also containing the original stack trace (from the error within e -> e.stack );
-
-            transformErrors.push({ rawId: serializedId, err }); // we'll get an error that contains the unserialized if embedded in it that I need to parse and convert using the serializer
+            transformErrors.push({ rawId: serializedId, err });
           } else {
             transformErrors.push({ rawId: 'unknown', err }); // cases we haven't accounted for yet
           }

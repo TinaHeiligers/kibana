@@ -12,6 +12,7 @@ import { ControlState } from './state_action_machine';
 import { AliasAction } from './actions';
 import { IndexMapping } from '../mappings';
 import { SavedObjectsRawDoc } from '..';
+import { TransformErrorObjects } from '../migrations/core';
 
 export interface BaseState extends ControlState {
   /** The first part of the index name such as `.kibana` or `.kibana_task_manager` */
@@ -205,6 +206,7 @@ export type OutdatedDocumentsSearch = PostInitState & {
   /** Search for outdated documents in the target index */
   readonly controlState: 'OUTDATED_DOCUMENTS_SEARCH';
   readonly corruptDocumentIds: string[];
+  readonly transformErrors: TransformErrorObjects[];
 };
 
 export type OutdatedDocumentsTransform = PostInitState & {
@@ -213,6 +215,7 @@ export type OutdatedDocumentsTransform = PostInitState & {
   readonly outdatedDocuments: SavedObjectsRawDoc[];
   readonly errors?: Error[];
   readonly corruptDocumentIds: string[];
+  readonly transformErrors: TransformErrorObjects[];
 };
 export type TransformedDocumentsBulkIndex = PostInitState & {
   /**
