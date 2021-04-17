@@ -38,6 +38,7 @@ import { AliasAction, RetryableEsClientError } from './actions';
 import { createInitialState, model } from './model';
 import { ResponseType } from './next';
 import { SavedObjectsMigrationConfigType } from '../saved_objects_config';
+import { TransformErrorObjects } from '../migrations/core';
 
 describe('migrations v2 model', () => {
   const baseState: BaseState = {
@@ -870,6 +871,7 @@ describe('migrations v2 model', () => {
         sourceIndex: Option.some('.kibana') as Option.Some<string>,
         targetIndex: '.kibana_7.11.0_001',
         corruptDocumentIds: [],
+        transformErrors: [],
       };
       test('OUTDATED_DOCUMENTS_SEARCH -> OUTDATED_DOCUMENTS_TRANSFORM if some outdated documents were found', () => {
         const outdatedDocuments = ([
@@ -926,12 +928,17 @@ describe('migrations v2 model', () => {
         targetIndex: '.kibana_7.11.0_001',
         outdatedDocuments,
         corruptDocumentIds: [],
+        transformErrors: [],
       };
       describe('OUTDATED_DOCUMENTS_TRANSFORM if action succeeds', () => {
         const processedDocs = ([Symbol('raw saved object doc')] as unknown) as SavedObjectsRawDoc[];
-        const failedTransformDocumentIds = ([
-          Symbol('raw saved object doc ID'),
-        ] as unknown) as string[];
+        const corruptDocumentIds = ([Symbol('raw saved object doc ID')] as unknown) as string[];
+        const transformationErrors = ([
+          {
+            rawId: Symbol('transform error object') as unknown,
+            err: Symbol('transform error itself') as unknown,
+          },
+        ] as unknown) as TransformErrorObjects[];
         test('OUTDATED_DOCUMENTS_TRANSFORM -> TRANSFORMED_DOCUMENTS_BULK_INDEX if action succeeds', () => {
           const res: ResponseType<'OUTDATED_DOCUMENTS_TRANSFORM'> = Either.right({ processedDocs });
           const newState = model(
@@ -943,10 +950,11 @@ describe('migrations v2 model', () => {
           expect(newState.retryCount).toEqual(0);
           expect(newState.retryDelay).toEqual(0);
         });
-        test('OUTDATED_DOCUMENTS_TRANSFORM -> OUTDATED_DOCUMENTS_SEARCH if there are are existing documents that failed transformation', () => {
+        test('OUTDATED_DOCUMENTS_TRANSFORM -> OUTDATED_DOCUMENTS_SEARCH if there are are existing documents that failed transformation because of corrupt document ids', () => {
           const outdatedDocumentsTransformStateWithFailedDocuments: OutdatedDocumentsTransform = {
             ...outdatedDocumentsTransformState,
-            corruptDocumentIds: [...failedTransformDocumentIds],
+            corruptDocumentIds: [...corruptDocumentIds],
+            transformErrors: [],
           };
           const res: ResponseType<'OUTDATED_DOCUMENTS_TRANSFORM'> = Either.right({ processedDocs });
           const newState = model(
@@ -954,46 +962,60 @@ describe('migrations v2 model', () => {
             res
           ) as OutdatedDocumentsSearch;
           expect(newState.controlState).toEqual('OUTDATED_DOCUMENTS_SEARCH');
-          expect(newState.corruptDocumentIds).toEqual(failedTransformDocumentIds);
+          expect(newState.corruptDocumentIds).toEqual(corruptDocumentIds);
           expect(newState.retryCount).toEqual(0);
           expect(newState.retryDelay).toEqual(0);
         });
-        test("OUTDATED_DOCUMENTS_TRANSFORM -> OUTDATED_DOCUMENTS_SEARCH if we don't have any processed docs returned", () => {
-          const res: ResponseType<'OUTDATED_DOCUMENTS_TRANSFORM'> = Either.right({
-            processedDocs: [],
-          });
-          const newState = model(outdatedDocumentsTransformState, res) as OutdatedDocumentsSearch;
+        test('OUTDATED_DOCUMENTS_TRANSFORM -> OUTDATED_DOCUMENTS_SEARCH if there are are existing documents that failed transformation because of transform errors', () => {
+          const outdatedDocumentsTransformStateWithFailedDocuments: OutdatedDocumentsTransform = {
+            ...outdatedDocumentsTransformState,
+            corruptDocumentIds: [],
+            transformErrors: [...transformationErrors],
+          };
+          const res: ResponseType<'OUTDATED_DOCUMENTS_TRANSFORM'> = Either.right({ processedDocs });
+          const newState = model(
+            outdatedDocumentsTransformStateWithFailedDocuments,
+            res
+          ) as OutdatedDocumentsSearch;
           expect(newState.controlState).toEqual('OUTDATED_DOCUMENTS_SEARCH');
-          expect(newState.corruptDocumentIds).toEqual([]);
+          expect(newState.corruptDocumentIds.length).toEqual(0);
+          expect(newState.transformErrors.length).toEqual(1);
+          expect(newState.retryCount).toEqual(0);
+          expect(newState.retryDelay).toEqual(0);
         });
       });
       describe('OUTDATED_DOCUMENTS_TRANSFORM if action fails', () => {
         test('OUTDATED_DOCUMENTS_TRANSFORM -> OUTDATED_DOCUMENTS_SEARCH adding newly failed documents to state if documents failed the transform', () => {
-          const failedTransformDocumentIds = ([
-            Symbol('raw saved object doc ID'),
-          ] as unknown) as string[];
+          const corruptDocumentIds = ([Symbol('raw saved object doc ID')] as unknown) as string[];
           const res: ResponseType<'OUTDATED_DOCUMENTS_TRANSFORM'> = Either.left({
             type: 'documents_transform_failed',
-            corruptDocumentIds: failedTransformDocumentIds,
+            corruptDocumentIds,
+            transformErrors: [],
           });
           const newState = model(outdatedDocumentsTransformState, res) as OutdatedDocumentsSearch;
           expect(newState.controlState).toEqual('OUTDATED_DOCUMENTS_SEARCH');
-          expect(newState.corruptDocumentIds).toEqual(failedTransformDocumentIds);
+          expect(newState.corruptDocumentIds).toEqual(corruptDocumentIds);
         });
         test('OUTDATED_DOCUMENTS_TRANSFORM -> OUTDATED_DOCUMENTS_SEARCH combines newly failed documents with those already on state if documents failed the transform', () => {
-          const failedTransformDocumentIds = ([
-            Symbol('raw saved object doc ID'),
-          ] as unknown) as string[];
+          const corruptDocumentIds = ([Symbol('raw saved object doc ID')] as unknown) as string[];
+          const transformationErrors = ([
+            {
+              rawId: Symbol('transform error object') as unknown,
+              err: Symbol('transform error itself') as unknown,
+            },
+          ] as unknown) as TransformErrorObjects[];
           const newFailedTransformDocumentIds = ([
             Symbol('raw saved object doc ID 2'),
           ] as unknown) as string[];
           const outdatedDocumentsTransformStateWithFailedDocuments: OutdatedDocumentsTransform = {
             ...outdatedDocumentsTransformState,
-            corruptDocumentIds: [...failedTransformDocumentIds],
+            corruptDocumentIds: [...corruptDocumentIds],
+            transformErrors: [...transformationErrors],
           };
           const res: ResponseType<'OUTDATED_DOCUMENTS_TRANSFORM'> = Either.left({
             type: 'documents_transform_failed',
             corruptDocumentIds: newFailedTransformDocumentIds,
+            transformErrors: transformationErrors,
           });
           const newState = model(
             outdatedDocumentsTransformStateWithFailedDocuments,
@@ -1001,7 +1023,7 @@ describe('migrations v2 model', () => {
           ) as OutdatedDocumentsSearch;
           expect(newState.controlState).toEqual('OUTDATED_DOCUMENTS_SEARCH');
           expect(newState.corruptDocumentIds).toEqual([
-            ...failedTransformDocumentIds,
+            ...corruptDocumentIds,
             ...newFailedTransformDocumentIds,
           ]);
         });
