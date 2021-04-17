@@ -252,18 +252,9 @@ describe('migrateRawDocsNonThrowing', () => {
     expect(transform).toHaveBeenCalledWith(obj);
   });
 
-  // the issue here is that I'm not sure I'm generating the correct SO id.
   test('rejects when the transform function throws an error', async () => {
     let result: any;
     let transformError: any;
-    new Error('error during transform');
-    const obj = {
-      id: 'b',
-      type: 'a',
-      attributes: { name: 'AAA' },
-      migrationVersion: {},
-      references: [],
-    };
     const transform = jest.fn<any, any>((doc: any) => {
       throw new TransformSavedObjectDocumentError(
         `${doc.id}`,
