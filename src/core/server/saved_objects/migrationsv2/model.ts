@@ -496,15 +496,41 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
       if (res.right.outdatedDocuments.length > 0) {
         return {
           ...stateP,
-          controlState: 'REINDEX_SOURCE_TO_TEMP_INDEX',
+          controlState: 'REINDEX_SOURCE_TO_TEMP_INDEX', // should be renamed to REINDEX_SOURCE_TO_TEMP_TRANSFORM
           outdatedDocuments: res.right.outdatedDocuments,
           lastHitSortValue: res.right.lastHitSortValue,
         };
+      } else {
+        // we don't have any more outdated documents and need to either fail or move on to updating the target mappins.
+        if (stateP.corruptDocumentIds.length > 0 || stateP.transformErrors.length > 0) {
+          // If documents couldn't be transformed or there were transformation errors we fail the migration
+          const corruptDocumentIdReason =
+            stateP.corruptDocumentIds.length > 0
+              ? `The following corrupt saved object documents: ${stateP.corruptDocumentIds.join(
+                  ','
+                )}`
+              : '';
+          // we have both the saved object Id and the stack trace in each `transformErrors` item.
+          const transformErrorsReason =
+            stateP.transformErrors.length > 0
+              ? 'the following saved object documents could not be transformed:/n' +
+                stateP.transformErrors
+                  .map((errObj) => `${errObj.rawId}: ${errObj.err.message}`)
+                  .join('/n')
+              : '';
+          return {
+            ...stateP,
+            controlState: 'FATAL',
+            reason: `Migrations failed. Reason: ${corruptDocumentIdReason} ${transformErrorsReason}. To allow migrations to proceed, please delete these documents.`,
+          };
+        } else {
+          // we don't have any more outdated documents and we haven't encountered any document transformation issues, Close the PIT search and carry on with the happy path
+          return {
+            ...stateP,
+            controlState: 'REINDEX_SOURCE_TO_TEMP_CLOSE_PIT',
+          };
+        }
       }
-      return {
-        ...stateP,
-        controlState: 'REINDEX_SOURCE_TO_TEMP_CLOSE_PIT',
-      };
     } else {
       throwBadResponse(stateP, res);
     }
