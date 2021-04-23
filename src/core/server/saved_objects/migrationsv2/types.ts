@@ -12,6 +12,7 @@ import { ControlState } from './state_action_machine';
 import { AliasAction } from './actions';
 import { IndexMapping } from '../mappings';
 import { SavedObjectsRawDoc } from '..';
+import { TransformErrorObjects } from '../migrations/core';
 
 export interface BaseState extends ControlState {
   /** The first part of the index name such as `.kibana` or `.kibana_task_manager` */
@@ -212,12 +213,24 @@ export type UpdateTargetMappingsWaitForTaskState = PostInitState & {
 export type OutdatedDocumentsSearch = PostInitState & {
   /** Search for outdated documents in the target index */
   readonly controlState: 'OUTDATED_DOCUMENTS_SEARCH';
+  readonly corruptDocumentIds: string[];
+  readonly transformErrors: TransformErrorObjects[];
 };
 
 export type OutdatedDocumentsTransform = PostInitState & {
   /** Transform a batch of outdated documents to their latest version and write them to the target index */
   readonly controlState: 'OUTDATED_DOCUMENTS_TRANSFORM';
   readonly outdatedDocuments: SavedObjectsRawDoc[];
+  readonly corruptDocumentIds: string[];
+  readonly transformErrors: TransformErrorObjects[];
+};
+export type TransformedDocumentsBulkIndex = PostInitState & {
+  /**
+   * Write the up-to-date transformed documents to the index, overwriting any
+   * documents that are still on their outdated version.
+   */
+  readonly controlState: 'TRANSFORMED_DOCUMENTS_BULK_INDEX';
+  readonly transformedDocs: SavedObjectsRawDoc[];
 };
 
 export type MarkVersionIndexReady = PostInitState & {
@@ -322,6 +335,7 @@ export type State =
   | OutdatedDocumentsTransform
   | MarkVersionIndexReady
   | MarkVersionIndexReadyConflict
+  | TransformedDocumentsBulkIndex
   | LegacyCreateReindexTargetState
   | LegacySetWriteBlockState
   | LegacyReindexState

@@ -6,7 +6,9 @@
  * Side Public License, v 1.
  */
 
-import type { UnwrapPromise } from '@kbn/utility-types';
+import * as TaskEither from 'fp-ts/lib/TaskEither';
+import * as Option from 'fp-ts/lib/Option';
+import { UnwrapPromise } from '@kbn/utility-types';
 import type {
   AllActionStates,
   ReindexSourceToTempOpenPit,
@@ -32,10 +34,19 @@ import type {
   CloneTempToSource,
   SetTempWriteBlock,
   WaitForYellowSourceState,
-  TransformRawDocs,
+  TransformedDocumentsBulkIndex,
 } from './types';
 import * as Actions from './actions';
 import { ElasticsearchClient } from '../../elasticsearch';
+import { SavedObjectsRawDoc } from '../serialization';
+import {
+  DocumentsTransformFailed,
+  DocumentsTransformSuccess,
+} from '../migrations/core/migrate_raw_docs';
+
+export type TransformRawDocs = (
+  processedDocs: SavedObjectsRawDoc[]
+) => TaskEither.TaskEither<DocumentsTransformFailed, DocumentsTransformSuccess>;
 
 type ActionMap = ReturnType<typeof nextActionMap>;
 
@@ -117,6 +128,13 @@ export const nextActionMap = (client: ElasticsearchClient, transformRawDocs: Tra
         transformRawDocs,
         state.outdatedDocuments,
         state.targetIndex,
+        'wait_for'
+      ),
+    TRANSFORMED_DOCUMENTS_BULK_INDEX: (state: TransformedDocumentsBulkIndex) =>
+      Actions.bulkOverwriteTransformedDocuments(
+        client,
+        state.targetIndex,
+        state.transformedDocs,
         'wait_for'
       ),
     MARK_VERSION_INDEX_READY: (state: MarkVersionIndexReady) =>

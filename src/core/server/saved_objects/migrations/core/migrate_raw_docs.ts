@@ -9,13 +9,32 @@
 /*
  * This file provides logic for migrating raw documents.
  */
-
+import * as TaskEither from 'fp-ts/lib/TaskEither';
+import * as Either from 'fp-ts/lib/Either';
 import {
+  SavedObjectSanitizedDoc,
   SavedObjectsRawDoc,
   SavedObjectsSerializer,
   SavedObjectUnsanitizedDoc,
 } from '../../serialization';
 import { MigrateAndConvertFn } from './document_migrator';
+import { TransformSavedObjectDocumentError } from '.';
+
+export interface DocumentsTransformFailed {
+  type: string;
+  corruptDocumentIds: string[];
+  transformErrors: TransformErrorObjects[];
+}
+export interface DocumentsTransformSuccess {
+  processedDocs: SavedObjectsRawDoc[];
+}
+export interface TransformErrorObjects {
+  rawId: string;
+  err: TransformSavedObjectDocumentError | Error; // do we want the full error here or just the stack trace?
+}
+type MigrateMethod = (
+  doc: SavedObjectUnsanitizedDoc<unknown>
+) => Promise<Array<SavedObjectUnsanitizedDoc<unknown>>>;
 
 /**
  * Error thrown when saved object migrations encounter a corrupt saved object.
@@ -37,7 +56,6 @@ export class CorruptSavedObjectError extends Error {
 /**
  * Applies the specified migration function to every saved object document in the list
  * of raw docs. Any raw docs that are not valid saved objects will simply be passed through.
- *
  * @param {TransformFn} migrateDoc
  * @param {SavedObjectsRawDoc[]} rawDocs
  * @returns {SavedObjectsRawDoc[]}
@@ -52,21 +70,71 @@ export async function migrateRawDocs(
   for (const raw of rawDocs) {
     const options = { namespaceTreatment: 'lax' as const };
     if (serializer.isRawSavedObject(raw, options)) {
-      const savedObject = serializer.rawToSavedObject(raw, options);
-      savedObject.migrationVersion = savedObject.migrationVersion || {};
+      const savedObject = convertToRawAddMigrationVersion(raw, options, serializer);
       processedDocs.push(
-        ...(await migrateDocWithoutBlocking(savedObject)).map((attrs) =>
-          serializer.savedObjectToRaw({
-            references: [],
-            ...attrs,
-          })
-        )
+        ...(await migrateMapToRawDoc(migrateDocWithoutBlocking, savedObject, serializer))
       );
     } else {
       throw new CorruptSavedObjectError(raw._id);
     }
   }
   return processedDocs;
+}
+
+/**
+ * Applies the specified migration function to every saved object document provided
+ * and converts the saved object to a raw document.
+ * Captures the ids and errors from any documents that are not valid saved objects or
+ * for which the transformation function failed.
+ * @param {SavedObjectsSerializer} serializer
+ * @param {TransformFn} migrateDoc
+ * @param {SavedObjectsRawDoc[]} rawDocs
+ * @param {SavedObjectsMigrationLogger} log
+ * @returns {TaskEither.TaskEither<DocumentsTransformFailed, DocumentsTransformSuccess>}
+ */
+export function migrateRawDocsNonThrowing(
+  serializer: SavedObjectsSerializer,
+  migrateDoc: MigrateAndConvertFn,
+  rawDocs: SavedObjectsRawDoc[]
+): TaskEither.TaskEither<DocumentsTransformFailed, DocumentsTransformSuccess> {
+  return async () => {
+    const migrateDocWithoutBlocking = transformNonBlocking(migrateDoc);
+    const processedDocs: SavedObjectsRawDoc[] = [];
+    const transformErrors: TransformErrorObjects[] = [];
+    const corruptSavedObjectIds: string[] = [];
+    for (const raw of rawDocs) {
+      const options = { namespaceTreatment: 'lax' as const };
+      if (serializer.isRawSavedObject(raw, options)) {
+        const savedObject = convertToRawAddMigrationVersion(raw, options, serializer);
+        try {
+          processedDocs.push(
+            ...(await migrateMapToRawDoc(migrateDocWithoutBlocking, savedObject, serializer))
+          );
+        } catch (err) {
+          if (err instanceof TransformSavedObjectDocumentError) {
+            // the doc id we get from the error is only the uuid part of the saved object
+            // we want to transform the id to a raw saved object id.
+            transformErrors.push({
+              rawId: serializer.generateRawId(err.namespace, err.type, err.id),
+              err,
+            });
+          } else {
+            transformErrors.push({ rawId: 'unknown', err }); // cases we haven't accounted for yet
+          }
+        }
+      } else {
+        corruptSavedObjectIds.push(raw._id);
+      }
+    }
+    if (corruptSavedObjectIds.length > 0 || transformErrors.length > 0) {
+      return Either.left({
+        type: 'documents_transform_failed',
+        corruptDocumentIds: [...corruptSavedObjectIds],
+        transformErrors,
+      });
+    }
+    return Either.right({ processedDocs });
+  };
 }
 
 /**
@@ -91,4 +159,41 @@ function transformNonBlocking(
         }
       });
     });
+}
+
+/**
+ * Applies the specified migration function to every saved object document provided
+ * and converts the saved object to a raw document
+ * @param {MigrateMethod} transformNonBlocking
+ * @param {SavedObjectsRawDoc[]} rawDoc
+ * @returns {Promise<SavedObjectsRawDoc[]>}
+ */
+async function migrateMapToRawDoc(
+  migrateMethod: MigrateMethod,
+  savedObject: SavedObjectSanitizedDoc<unknown>,
+  serializer: SavedObjectsSerializer
+): Promise<SavedObjectsRawDoc[]> {
+  return [...(await migrateMethod(savedObject))].map((attrs) =>
+    serializer.savedObjectToRaw({
+      references: [],
+      ...attrs,
+    })
+  );
+}
+
+/**
+ * Sanitizes the raw saved object document and sets the migration version
+ * @param {SavedObjectRawDoc} rawDoc
+ * @param options
+ * @param {SavedObjectsSerializer} serializer
+ * @returns {SavedObjectSanitizedDoc<unknown>}
+ */
+function convertToRawAddMigrationVersion(
+  rawDoc: SavedObjectsRawDoc,
+  options: { namespaceTreatment: 'lax' },
+  serializer: SavedObjectsSerializer
+): SavedObjectSanitizedDoc<unknown> {
+  const savedObject = serializer.rawToSavedObject(rawDoc, options);
+  savedObject.migrationVersion = savedObject.migrationVersion || {};
+  return savedObject;
 }
