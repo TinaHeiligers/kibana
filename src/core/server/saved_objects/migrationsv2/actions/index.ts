@@ -22,7 +22,10 @@ import {
   catchRetryableEsClientErrors,
   RetryableEsClientError,
 } from './catch_retryable_es_client_errors';
-import { DocumentsTransformFailed } from '../../migrations/core/migrate_raw_docs';
+import {
+  DocumentsTransformFailed,
+  DocumentsTransformSuccess,
+} from '../../migrations/core/migrate_raw_docs';
 export type { RetryableEsClientError };
 
 /**
@@ -526,27 +529,24 @@ export const closePit = (
 };
 
 /*
- * Transform outdated docs and write them to the index.
+ * Transform outdated docs
  * */
 export const transformDocs = (
-  client: ElasticsearchClient,
+  // client: ElasticsearchClient,
   transformRawDocs: TransformRawDocs,
-  outdatedDocuments: SavedObjectsRawDoc[],
-  index: string,
-  refresh: estypes.Refresh
-): TaskEither.TaskEither<
-  RetryableEsClientError | IndexNotFound | TargetIndexHadWriteBlock,
-  'bulk_index_succeeded'
-> =>
-  pipe(
-    TaskEither.tryCatch(
-      () => transformRawDocs(outdatedDocuments),
-      (e) => {
-        throw e;
-      }
-    ),
-    TaskEither.chain((docs) => bulkOverwriteTransformedDocuments(client, index, docs, refresh))
-  );
+  outdatedDocuments: SavedObjectsRawDoc[]
+  // index: string,
+  // refresh: estypes.Refresh
+): TaskEither.TaskEither<DocumentsTransformFailed, DocumentsTransformSuccess> =>
+  // pipe(
+  //   TaskEither.tryCatch(
+  transformRawDocs(outdatedDocuments);
+//     (e) => {
+//       throw e;
+//     }
+//   ),
+//   TaskEither.chain((docs) => bulkOverwriteTransformedDocuments(client, index, docs, refresh))
+// );
 
 /** @internal */
 export interface ReindexResponse {

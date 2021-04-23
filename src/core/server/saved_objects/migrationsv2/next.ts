@@ -6,8 +6,6 @@
  * Side Public License, v 1.
  */
 
-import * as TaskEither from 'fp-ts/lib/TaskEither';
-import * as Option from 'fp-ts/lib/Option';
 import { UnwrapPromise } from '@kbn/utility-types';
 import type {
   AllActionStates,
@@ -35,18 +33,11 @@ import type {
   SetTempWriteBlock,
   WaitForYellowSourceState,
   TransformedDocumentsBulkIndex,
+  TransformRawDocs,
+  ReindexSourceToTempIndexBulk,
 } from './types';
 import * as Actions from './actions';
 import { ElasticsearchClient } from '../../elasticsearch';
-import { SavedObjectsRawDoc } from '../serialization';
-import {
-  DocumentsTransformFailed,
-  DocumentsTransformSuccess,
-} from '../migrations/core/migrate_raw_docs';
-
-export type TransformRawDocs = (
-  processedDocs: SavedObjectsRawDoc[]
-) => TaskEither.TaskEither<DocumentsTransformFailed, DocumentsTransformSuccess>;
 
 type ActionMap = ReturnType<typeof nextActionMap>;
 
@@ -85,11 +76,30 @@ export const nextActionMap = (client: ElasticsearchClient, transformRawDocs: Tra
     REINDEX_SOURCE_TO_TEMP_CLOSE_PIT: (state: ReindexSourceToTempClosePit) =>
       Actions.closePit(client, state.sourceIndexPitId),
     REINDEX_SOURCE_TO_TEMP_INDEX: (state: ReindexSourceToTempIndex) =>
+      // TINA: This needs an additional step because I've split `transformDocs` into two:
+      // one to do the transforms (this one), then another needed to do the indexing
+      // The model needs to be updated here
       Actions.transformDocs(
-        client,
+        // client,
         transformRawDocs,
-        state.outdatedDocuments,
+        state.outdatedDocuments
+        // state.tempIndex,
+        /**
+         * Since we don't run a search against the target index, we disable "refresh" to speed up
+         * the migration process.
+         * Although any further step must run "refresh" for the target index
+         * before we reach out to the OUTDATED_DOCUMENTS_SEARCH step.
+         * Right now, we rely on UPDATE_TARGET_MAPPINGS + UPDATE_TARGET_MAPPINGS_WAIT_FOR_TASK
+         * to perform refresh.
+         */
+        // false
+      ),
+    REINDEX_SOURCE_TO_TEMP_INDEX_BULK: (state: ReindexSourceToTempIndexBulk) =>
+      // TINA: TODO: add in the failed docs from corruptDocsIds and TransformErrors
+      Actions.bulkOverwriteTransformedDocuments(
+        client,
         state.tempIndex,
+        state.transformedDocs,
         /**
          * Since we don't run a search against the target index, we disable "refresh" to speed up
          * the migration process.
@@ -115,6 +125,7 @@ export const nextActionMap = (client: ElasticsearchClient, transformRawDocs: Tra
         outdatedDocumentsQuery: state.outdatedDocumentsQuery,
       }),
     OUTDATED_DOCUMENTS_TRANSFORM: (state: OutdatedDocumentsTransform) =>
+      /** TINA: moved to TRANSFORM_DOCUMENTS_BULK_INDEX
       // Wait for a refresh to happen before returning. This ensures that when
       // this Kibana instance searches for outdated documents, it won't find
       // documents that were already transformed by itself or another Kibana
@@ -123,14 +134,23 @@ export const nextActionMap = (client: ElasticsearchClient, transformRawDocs: Tra
       // small performance will become a lot worse.
       // The alternative is to use a search_after with either a tie_breaker
       // field or using a Point In Time as a cursor to go through all documents.
+       */
       Actions.transformDocs(
-        client,
+        // client,
         transformRawDocs,
-        state.outdatedDocuments,
-        state.targetIndex,
-        'wait_for'
+        state.outdatedDocuments
+        // state.targetIndex,
+        // 'wait_for'
       ),
     TRANSFORMED_DOCUMENTS_BULK_INDEX: (state: TransformedDocumentsBulkIndex) =>
+      // Wait for a refresh to happen before returning. This ensures that when
+      // this Kibana instance searches for outdated documents, it won't find
+      // documents that were already transformed by itself or another Kibana
+      // instance. However, this causes each OUTDATED_DOCUMENTS_SEARCH ->
+      // OUTDATED_DOCUMENTS_TRANSFORM cycle to take 1s so when batches are
+      // small performance will become a lot worse.
+      // The alternative is to use a search_after with either a tie_breaker
+      // field or using a Point In Time as a cursor to go through all documents.
       Actions.bulkOverwriteTransformedDocuments(
         client,
         state.targetIndex,

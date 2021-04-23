@@ -483,6 +483,9 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
         controlState: 'REINDEX_SOURCE_TO_TEMP_READ',
         sourceIndexPitId: res.right.pitId,
         lastHitSortValue: undefined,
+        // placeholders to collect document transformation problems
+        corruptDocumentIds: [],
+        transformErrors: [],
       };
     } else {
       throwBadResponse(stateP, res);
@@ -517,34 +520,79 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
       throwBadResponse(stateP, res);
     }
   } else if (stateP.controlState === 'REINDEX_SOURCE_TO_TEMP_INDEX') {
+    // TINA TODO: This needs to split into two: One for the transforms, the next for the bulk index
+    // Similar control flow as for outdated document search -> outdated document transform -> transformed documents bulk index
     const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
     if (Either.isRight(res)) {
-      return {
-        ...stateP,
-        controlState: 'REINDEX_SOURCE_TO_TEMP_READ',
-      };
-    } else {
-      const left = res.left;
-      if (
-        isLeftTypeof(left, 'target_index_had_write_block') ||
-        (isLeftTypeof(left, 'index_not_found_exception') && left.index === stateP.tempIndex)
-      ) {
-        // index_not_found_exception:
-        //   another instance completed the MARK_VERSION_INDEX_READY and
-        //   removed the temp index.
-        // target_index_had_write_block
-        //   another instance completed the SET_TEMP_WRITE_BLOCK step adding a
-        //   write block to the temp index.
-        //
-        // For simplicity we continue linearly through the next steps even if
-        // we know another instance already completed these.
+      if (stateP.corruptDocumentIds.length === 0 && stateP.transformErrors.length === 0) {
+        return {
+          ...stateP,
+          controlState: 'REINDEX_SOURCE_TO_TEMP_INDEX_BULK',
+          transformedDocs: [...res.right.processedDocs],
+          sourceIndexPitId: stateP.sourceIndexPitId,
+          lastHitSortValue: stateP.lastHitSortValue,
+        };
+      } else {
+        // we have seen corrupt documents and/or transformation errors and continue searching for more,
+        // state already has these errors on if
+        // in the current search, we didn't see any new issues (we have an Either.isRight(res) condition),
+        // but the migration will ultimately fail anyway, so we skip indexing (bulk) and
+        // just carry on searching
         return {
           ...stateP,
           controlState: 'REINDEX_SOURCE_TO_TEMP_READ',
         };
       }
-      // should never happen
-      throwBadResponse(stateP, res as never);
+      // return {
+      //   ...stateP,
+      //   controlState: 'REINDEX_SOURCE_TO_TEMP_READ',
+      // };
+    } else {
+      const left = res.left;
+      if (isLeftTypeof(left, 'documents_transform_failed')) {
+        return {
+          ...stateP,
+          controlState: 'REINDEX_SOURCE_TO_TEMP_READ',
+          corruptDocumentIds: [...stateP.corruptDocumentIds, ...left.corruptDocumentIds],
+          transformErrors: [...stateP.transformErrors, ...left.transformErrors],
+        };
+      } else {
+        // should never happen
+        throwBadResponse(stateP, res as never);
+      }
+      // if (
+      //   isLeftTypeof(left, 'target_index_had_write_block') ||
+      //   (isLeftTypeof(left, 'index_not_found_exception') && left.index === stateP.tempIndex)
+      // ) {
+      //   // index_not_found_exception:
+      //   //   another instance completed the MARK_VERSION_INDEX_READY and
+      //   //   removed the temp index.
+      //   // target_index_had_write_block
+      //   //   another instance completed the SET_TEMP_WRITE_BLOCK step adding a
+      //   //   write block to the temp index.
+      //   //
+      //   // For simplicity we continue linearly through the next steps even if
+      //   // we know another instance already completed these.
+      //   return {
+      //     ...stateP,
+      //     controlState: 'REINDEX_SOURCE_TO_TEMP_READ',
+      //   };
+    }
+    // should never happen
+    //   throwBadResponse(stateP, res as never);
+    // }
+  } else if (stateP.controlState === 'REINDEX_SOURCE_TO_TEMP_INDEX_BULK') {
+    const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
+    if (Either.isRight(res)) {
+      return {
+        ...stateP,
+        controlState: 'REINDEX_SOURCE_TO_TEMP_READ',
+        // we're still on the happy path with no transformation failures seen.
+        corruptDocumentIds: [],
+        transformErrors: [],
+      };
+    } else {
+      throwBadResponse(stateP, res);
     }
   } else if (stateP.controlState === 'SET_TEMP_WRITE_BLOCK') {
     const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;

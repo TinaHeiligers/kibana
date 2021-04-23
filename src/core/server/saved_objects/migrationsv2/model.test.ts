@@ -775,41 +775,41 @@ describe('migrations v2 model', () => {
       });
     });
 
-    describe('REINDEX_SOURCE_TO_TEMP_READ', () => {
-      const state: ReindexSourceToTempRead = {
-        ...baseState,
-        controlState: 'REINDEX_SOURCE_TO_TEMP_READ',
-        versionIndexReadyActions: Option.none,
-        sourceIndex: Option.some('.kibana') as Option.Some<string>,
-        sourceIndexPitId: 'pit_id',
-        targetIndex: '.kibana_7.11.0_001',
-        tempIndexMappings: { properties: {} },
-        lastHitSortValue: undefined,
-      };
+    // describe('REINDEX_SOURCE_TO_TEMP_READ', () => {
+    //   const state: ReindexSourceToTempRead = {
+    //     ...baseState,
+    //     controlState: 'REINDEX_SOURCE_TO_TEMP_READ',
+    //     versionIndexReadyActions: Option.none,
+    //     sourceIndex: Option.some('.kibana') as Option.Some<string>,
+    //     sourceIndexPitId: 'pit_id',
+    //     targetIndex: '.kibana_7.11.0_001',
+    //     tempIndexMappings: { properties: {} },
+    //     lastHitSortValue: undefined,
+    //   };
 
-      it('REINDEX_SOURCE_TO_TEMP_READ -> REINDEX_SOURCE_TO_TEMP_INDEX if the index has outdated documents to reindex', () => {
-        const outdatedDocuments = [{ _id: '1', _source: { type: 'vis' } }];
-        const lastHitSortValue = [123456];
-        const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_READ'> = Either.right({
-          outdatedDocuments,
-          lastHitSortValue,
-        });
-        const newState = model(state, res) as ReindexSourceToTempIndex;
-        expect(newState.controlState).toBe('REINDEX_SOURCE_TO_TEMP_INDEX');
-        expect(newState.outdatedDocuments).toBe(outdatedDocuments);
-        expect(newState.lastHitSortValue).toBe(lastHitSortValue);
-      });
+    //   it('REINDEX_SOURCE_TO_TEMP_READ -> REINDEX_SOURCE_TO_TEMP_INDEX if the index has outdated documents to reindex', () => {
+    //     const outdatedDocuments = [{ _id: '1', _source: { type: 'vis' } }];
+    //     const lastHitSortValue = [123456];
+    //     const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_READ'> = Either.right({
+    //       outdatedDocuments,
+    //       lastHitSortValue,
+    //     });
+    //     const newState = model(state, res) as ReindexSourceToTempIndex;
+    //     expect(newState.controlState).toBe('REINDEX_SOURCE_TO_TEMP_INDEX');
+    //     expect(newState.outdatedDocuments).toBe(outdatedDocuments);
+    //     expect(newState.lastHitSortValue).toBe(lastHitSortValue);
+    //   });
 
-      it('REINDEX_SOURCE_TO_TEMP_READ -> REINDEX_SOURCE_TO_TEMP_CLOSE_PIT if no outdated documents to reindex', () => {
-        const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_READ'> = Either.right({
-          outdatedDocuments: [],
-          lastHitSortValue: undefined,
-        });
-        const newState = model(state, res) as ReindexSourceToTempClosePit;
-        expect(newState.controlState).toBe('REINDEX_SOURCE_TO_TEMP_CLOSE_PIT');
-        expect(newState.sourceIndexPitId).toBe('pit_id');
-      });
-    });
+    //   it('REINDEX_SOURCE_TO_TEMP_READ -> REINDEX_SOURCE_TO_TEMP_CLOSE_PIT if no outdated documents to reindex', () => {
+    //     const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_READ'> = Either.right({
+    //       outdatedDocuments: [],
+    //       lastHitSortValue: undefined,
+    //     });
+    //     const newState = model(state, res) as ReindexSourceToTempClosePit;
+    //     expect(newState.controlState).toBe('REINDEX_SOURCE_TO_TEMP_CLOSE_PIT');
+    //     expect(newState.sourceIndexPitId).toBe('pit_id');
+    //   });
+    // });
 
     describe('REINDEX_SOURCE_TO_TEMP_CLOSE_PIT', () => {
       const state: ReindexSourceToTempClosePit = {
@@ -830,49 +830,49 @@ describe('migrations v2 model', () => {
       });
     });
 
-    describe('REINDEX_SOURCE_TO_TEMP_INDEX', () => {
-      const state: ReindexSourceToTempIndex = {
-        ...baseState,
-        controlState: 'REINDEX_SOURCE_TO_TEMP_INDEX',
-        outdatedDocuments: [],
-        versionIndexReadyActions: Option.none,
-        sourceIndex: Option.some('.kibana') as Option.Some<string>,
-        sourceIndexPitId: 'pit_id',
-        targetIndex: '.kibana_7.11.0_001',
-        lastHitSortValue: undefined,
-      };
+    // describe('REINDEX_SOURCE_TO_TEMP_INDEX', () => {
+    //   const state: ReindexSourceToTempIndex = {
+    //     ...baseState,
+    //     controlState: 'REINDEX_SOURCE_TO_TEMP_INDEX',
+    //     outdatedDocuments: [],
+    //     versionIndexReadyActions: Option.none,
+    //     sourceIndex: Option.some('.kibana') as Option.Some<string>,
+    //     sourceIndexPitId: 'pit_id',
+    //     targetIndex: '.kibana_7.11.0_001',
+    //     lastHitSortValue: undefined,
+    //   };
 
-      it('REINDEX_SOURCE_TO_TEMP_INDEX -> REINDEX_SOURCE_TO_TEMP_READ if action succeeded', () => {
-        const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_INDEX'> = Either.right(
-          'bulk_index_succeeded'
-        );
-        const newState = model(state, res);
-        expect(newState.controlState).toEqual('REINDEX_SOURCE_TO_TEMP_READ');
-        expect(newState.retryCount).toEqual(0);
-        expect(newState.retryDelay).toEqual(0);
-      });
+    //   it('REINDEX_SOURCE_TO_TEMP_INDEX -> REINDEX_SOURCE_TO_TEMP_READ if action succeeded', () => {
+    //     const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_INDEX'> = Either.right(
+    //       'bulk_index_succeeded'
+    //     );
+    //     const newState = model(state, res);
+    //     expect(newState.controlState).toEqual('REINDEX_SOURCE_TO_TEMP_READ');
+    //     expect(newState.retryCount).toEqual(0);
+    //     expect(newState.retryDelay).toEqual(0);
+    //   });
 
-      it('REINDEX_SOURCE_TO_TEMP_INDEX -> REINDEX_SOURCE_TO_TEMP_READ when response is left target_index_had_write_block', () => {
-        const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_INDEX'> = Either.left({
-          type: 'target_index_had_write_block',
-        });
-        const newState = model(state, res) as ReindexSourceToTempRead;
-        expect(newState.controlState).toEqual('REINDEX_SOURCE_TO_TEMP_READ');
-        expect(newState.retryCount).toEqual(0);
-        expect(newState.retryDelay).toEqual(0);
-      });
+    //   it('REINDEX_SOURCE_TO_TEMP_INDEX -> REINDEX_SOURCE_TO_TEMP_READ when response is left target_index_had_write_block', () => {
+    //     const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_INDEX'> = Either.left({
+    //       type: 'target_index_had_write_block',
+    //     });
+    //     const newState = model(state, res) as ReindexSourceToTempRead;
+    //     expect(newState.controlState).toEqual('REINDEX_SOURCE_TO_TEMP_READ');
+    //     expect(newState.retryCount).toEqual(0);
+    //     expect(newState.retryDelay).toEqual(0);
+    //   });
 
-      it('REINDEX_SOURCE_TO_TEMP_INDEX -> REINDEX_SOURCE_TO_TEMP_READ when response is left index_not_found_exception for temp index', () => {
-        const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_INDEX'> = Either.left({
-          type: 'index_not_found_exception',
-          index: state.tempIndex,
-        });
-        const newState = model(state, res) as ReindexSourceToTempRead;
-        expect(newState.controlState).toEqual('REINDEX_SOURCE_TO_TEMP_READ');
-        expect(newState.retryCount).toEqual(0);
-        expect(newState.retryDelay).toEqual(0);
-      });
-    });
+    //   it('REINDEX_SOURCE_TO_TEMP_INDEX -> REINDEX_SOURCE_TO_TEMP_READ when response is left index_not_found_exception for temp index', () => {
+    //     const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_INDEX'> = Either.left({
+    //       type: 'index_not_found_exception',
+    //       index: state.tempIndex,
+    //     });
+    //     const newState = model(state, res) as ReindexSourceToTempRead;
+    //     expect(newState.controlState).toEqual('REINDEX_SOURCE_TO_TEMP_READ');
+    //     expect(newState.retryCount).toEqual(0);
+    //     expect(newState.retryDelay).toEqual(0);
+    //   });
+    // });
 
     describe('SET_TEMP_WRITE_BLOCK', () => {
       const state: SetTempWriteBlock = {
