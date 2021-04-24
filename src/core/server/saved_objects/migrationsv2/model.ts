@@ -497,8 +497,8 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
         return {
           ...stateP,
           controlState: 'REINDEX_SOURCE_TO_TEMP_INDEX', // should be renamed to REINDEX_SOURCE_TO_TEMP_TRANSFORM
-          outdatedDocuments: res.right.outdatedDocuments,
-          lastHitSortValue: res.right.lastHitSortValue,
+          outdatedDocuments: res.right.outdatedDocuments, // we need this on state to carry it over to REINDEX_SOURCE_TO_TEMP_INDEX_BULK
+          lastHitSortValue: res.right.lastHitSortValue, // we need this on state to carry it over to REINDEX_SOURCE_TO_TEMP_INDEX_BULK
         };
       } else {
         // we don't have any more outdated documents and need to either fail or move on to updating the target mappins.

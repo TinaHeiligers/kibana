@@ -40,7 +40,7 @@ import { AliasAction, RetryableEsClientError } from './actions';
 import { createInitialState, model } from './model';
 import { ResponseType } from './next';
 import { SavedObjectsMigrationConfigType } from '../saved_objects_config';
-import { TransformErrorObjects } from '../migrations/core';
+import { TransformErrorObjects, TransformSavedObjectDocumentError } from '../migrations/core';
 
 describe('migrations v2 model', () => {
   const baseState: BaseState = {
@@ -775,41 +775,68 @@ describe('migrations v2 model', () => {
       });
     });
 
-    // describe('REINDEX_SOURCE_TO_TEMP_READ', () => {
-    //   const state: ReindexSourceToTempRead = {
-    //     ...baseState,
-    //     controlState: 'REINDEX_SOURCE_TO_TEMP_READ',
-    //     versionIndexReadyActions: Option.none,
-    //     sourceIndex: Option.some('.kibana') as Option.Some<string>,
-    //     sourceIndexPitId: 'pit_id',
-    //     targetIndex: '.kibana_7.11.0_001',
-    //     tempIndexMappings: { properties: {} },
-    //     lastHitSortValue: undefined,
-    //   };
+    describe('REINDEX_SOURCE_TO_TEMP_READ', () => {
+      // read docs from the source
+      const state: ReindexSourceToTempRead = {
+        ...baseState,
+        controlState: 'REINDEX_SOURCE_TO_TEMP_READ',
+        versionIndexReadyActions: Option.none,
+        sourceIndex: Option.some('.kibana') as Option.Some<string>,
+        sourceIndexPitId: 'pit_id',
+        targetIndex: '.kibana_7.11.0_001',
+        tempIndexMappings: { properties: {} },
+        lastHitSortValue: undefined,
+        corruptDocumentIds: [], // initial state, we haven't gone through transforms yet
+        transformErrors: [], // initial state, we haven't gone through transforms yet
+      };
 
-    //   it('REINDEX_SOURCE_TO_TEMP_READ -> REINDEX_SOURCE_TO_TEMP_INDEX if the index has outdated documents to reindex', () => {
-    //     const outdatedDocuments = [{ _id: '1', _source: { type: 'vis' } }];
-    //     const lastHitSortValue = [123456];
-    //     const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_READ'> = Either.right({
-    //       outdatedDocuments,
-    //       lastHitSortValue,
-    //     });
-    //     const newState = model(state, res) as ReindexSourceToTempIndex;
-    //     expect(newState.controlState).toBe('REINDEX_SOURCE_TO_TEMP_INDEX');
-    //     expect(newState.outdatedDocuments).toBe(outdatedDocuments);
-    //     expect(newState.lastHitSortValue).toBe(lastHitSortValue);
-    //   });
+      it('REINDEX_SOURCE_TO_TEMP_READ -> REINDEX_SOURCE_TO_TEMP_INDEX if the index has outdated documents to reindex (transform stage)', () => {
+        const outdatedDocuments = [{ _id: '1', _source: { type: 'vis' } }];
+        const lastHitSortValue = [123456];
+        const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_READ'> = Either.right({
+          outdatedDocuments,
+          lastHitSortValue,
+        });
+        const newState = model(state, res) as ReindexSourceToTempIndex;
+        expect(newState.controlState).toBe('REINDEX_SOURCE_TO_TEMP_INDEX');
+        expect(newState.outdatedDocuments).toBe(outdatedDocuments);
+        expect(newState.lastHitSortValue).toBe(lastHitSortValue);
+        expect(newState.corruptDocumentIds.length).toBe(0);
+        expect(newState.transformErrors.length).toBe(0);
+      });
 
-    //   it('REINDEX_SOURCE_TO_TEMP_READ -> REINDEX_SOURCE_TO_TEMP_CLOSE_PIT if no outdated documents to reindex', () => {
-    //     const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_READ'> = Either.right({
-    //       outdatedDocuments: [],
-    //       lastHitSortValue: undefined,
-    //     });
-    //     const newState = model(state, res) as ReindexSourceToTempClosePit;
-    //     expect(newState.controlState).toBe('REINDEX_SOURCE_TO_TEMP_CLOSE_PIT');
-    //     expect(newState.sourceIndexPitId).toBe('pit_id');
-    //   });
-    // });
+      it('REINDEX_SOURCE_TO_TEMP_READ -> REINDEX_SOURCE_TO_TEMP_CLOSE_PIT if no outdated documents to reindex and no transform errors found', () => {
+        const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_READ'> = Either.right({
+          outdatedDocuments: [],
+          lastHitSortValue: undefined,
+        });
+        const newState = model(state, res) as ReindexSourceToTempClosePit;
+        expect(newState.controlState).toBe('REINDEX_SOURCE_TO_TEMP_CLOSE_PIT');
+        expect(newState.sourceIndexPitId).toBe('pit_id');
+      });
+
+      it('REINDEX_SOURCE_TO_TEMP_READ -> FATAL if no outdated documents to reindex but we have carried over transform errors', () => {
+        const res: ResponseType<'REINDEX_SOURCE_TO_TEMP_READ'> = Either.right({
+          outdatedDocuments: [],
+          lastHitSortValue: undefined,
+        });
+        const transformFailuresState = {
+          ...state,
+          corruptDocumentIds: ['corruptSavedObjectId'],
+          transformErrors: ([
+            {
+              rawId: 'transform:errorRawDocId',
+              err: new Error('transform script error') as TransformSavedObjectDocumentError,
+            },
+          ] as unknown) as TransformErrorObjects[],
+        };
+        const newState = model(transformFailuresState, res) as FatalState;
+        expect(newState.controlState).toBe('FATAL');
+        expect(newState.reason).toMatchInlineSnapshot(
+          `"Migrations failed. Reason: The following corrupt saved object documents: corruptSavedObjectId the following saved object documents could not be transformed:/ntransform:errorRawDocId: transform script error. To allow migrations to proceed, please delete these documents."`
+        );
+      });
+    });
 
     describe('REINDEX_SOURCE_TO_TEMP_CLOSE_PIT', () => {
       const state: ReindexSourceToTempClosePit = {
