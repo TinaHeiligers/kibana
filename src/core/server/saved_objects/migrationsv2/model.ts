@@ -546,7 +546,7 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
       throwBadResponse(stateP, res);
     }
   } else if (stateP.controlState === 'REINDEX_SOURCE_TO_TEMP_INDEX') {
-    // TINA TODO: This needs to split into two: One for the transforms, the next for the bulk index
+    // TINA This was split into two: One for the transforms, the next for the bulk index
     // Similar control flow as for outdated document search -> outdated document transform -> transformed documents bulk index
     const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
     if (Either.isRight(res)) {
