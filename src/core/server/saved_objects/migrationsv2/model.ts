@@ -742,6 +742,7 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
     const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
     if (Either.isRight(res)) {
       // we haven't seen corrupt documents or any transformation errors thus far in the migration
+      // index the migrated docs
       if (stateP.corruptDocumentIds.length === 0 && stateP.transformErrors.length === 0) {
         return {
           ...stateP,
@@ -750,15 +751,17 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
           hasTransformedDocs: true,
         };
       } else {
-        // We have seen corrupt documents or any transformation errors and continue searching for more, state already has these on it
+        // We have seen corrupt documents and/or transformation errors
+        // skip indexing and go straight to reading and transforming more docs
         return {
           ...stateP,
           controlState: 'OUTDATED_DOCUMENTS_SEARCH_READ',
-          hasTransformedDocs: true,
+          // hasTransformedDocs: true,
         };
       }
     } else {
       if (isLeftTypeof(res.left, 'documents_transform_failed')) {
+        // continue to build up any more transformation errors before failing the migration.
         return {
           ...stateP,
           controlState: 'OUTDATED_DOCUMENTS_SEARCH_READ',
@@ -769,6 +772,19 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
       } else {
         throwBadResponse(stateP, res as never);
       }
+    }
+  } else if (stateP.controlState === 'TRANSFORMED_DOCUMENTS_BULK_INDEX') {
+    const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
+    if (Either.isRight(res)) {
+      return {
+        ...stateP,
+        controlState: 'OUTDATED_DOCUMENTS_SEARCH_READ',
+        corruptDocumentIds: [],
+        transformErrors: [],
+        hasTransformedDocs: true,
+      };
+    } else {
+      throwBadResponse(stateP, res);
     }
   } else if (stateP.controlState === 'UPDATE_TARGET_MAPPINGS') {
     const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
@@ -804,19 +820,6 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
       return {
         ...state,
         controlState: 'UPDATE_TARGET_MAPPINGS',
-      };
-    } else {
-      throwBadResponse(stateP, res);
-    }
-  } else if (stateP.controlState === 'TRANSFORMED_DOCUMENTS_BULK_INDEX') {
-    const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
-    if (Either.isRight(res)) {
-      return {
-        ...stateP,
-        controlState: 'OUTDATED_DOCUMENTS_SEARCH_READ',
-        corruptDocumentIds: [],
-        transformErrors: [],
-        hasTransformedDocs: true,
       };
     } else {
       throwBadResponse(stateP, res);
