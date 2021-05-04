@@ -247,7 +247,7 @@ export interface OutdatedDocumentsSearchOpenPit extends PostInitState {
 export interface OutdatedDocumentsSearchRead extends PostInitState {
   /** Search for outdated documents in the target index */
   readonly controlState: 'OUTDATED_DOCUMENTS_SEARCH_READ';
-  readonly pitId: string;
+  readonly pitId: string; // we need this but I'm losing it off of state somewhere
   readonly lastHitSortValue: number[] | undefined;
   readonly hasTransformedDocs: boolean;
   readonly corruptDocumentIds: string[];
@@ -272,13 +272,13 @@ export interface OutdatedDocumentsTransform extends PostInitState {
   readonly controlState: 'OUTDATED_DOCUMENTS_TRANSFORM';
   readonly pitId: string;
   readonly outdatedDocuments: SavedObjectsRawDoc[];
-  readonly corruptDocumentIds: string[];
-  readonly transformErrors: TransformErrorObjects[];
   readonly lastHitSortValue: number[] | undefined;
   readonly hasTransformedDocs: boolean;
+  readonly corruptDocumentIds: string[];
+  readonly transformErrors: TransformErrorObjects[];
 }
 
-export type TransformedDocumentsBulkIndex = PostInitState & {
+export interface TransformedDocumentsBulkIndex extends PostInitState {
   /**
    * Write the up-to-date transformed documents to the index, overwriting any
    * documents that are still on their outdated version.
@@ -287,7 +287,8 @@ export type TransformedDocumentsBulkIndex = PostInitState & {
   readonly transformedDocs: SavedObjectsRawDoc[];
   readonly lastHitSortValue: number[] | undefined;
   readonly hasTransformedDocs: boolean;
-};
+  readonly pitId: string;
+}
 
 export interface MarkVersionIndexReady extends PostInitState {
   /**

@@ -202,8 +202,6 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
             indices[aliases[stateP.currentAlias]].mappings
           ),
           versionIndexReadyActions: Option.none,
-          corruptDocumentIds: [],
-          transformErrors: [],
         };
       } else if (
         // `.kibana` is pointing to an index that belongs to a later
@@ -702,7 +700,7 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
           ...stateP,
           controlState: 'OUTDATED_DOCUMENTS_TRANSFORM',
           outdatedDocuments: res.right.outdatedDocuments,
-          lastHitSortValue: res.right.lastHitSortValue,
+          lastHitSortValue: res.right.lastHitSortValue, // Added with PIT, needed to pass back to read again
         };
       } else {
         // we don't have any more outdated documents and need to either fail or move on to updating the target mappins.
@@ -733,7 +731,7 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
           // and can proceed to the next step
           return {
             ...stateP,
-            controlState: 'OUTDATED_DOCUMENTS_SEARCH_CLOSE_PIT',
+            controlState: 'OUTDATED_DOCUMENTS_SEARCH_CLOSE_PIT', // was UPDATE_TARGET_MAPPINGS
           };
         }
       }
@@ -818,6 +816,7 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
         controlState: 'OUTDATED_DOCUMENTS_SEARCH_READ',
         corruptDocumentIds: [],
         transformErrors: [],
+        hasTransformedDocs: true,
       };
     } else {
       throwBadResponse(stateP, res);
