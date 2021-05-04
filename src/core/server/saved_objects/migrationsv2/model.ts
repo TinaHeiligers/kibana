@@ -189,10 +189,10 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
       ) {
         return {
           ...stateP,
-          // Skip to 'OUTDATED_DOCUMENTS_SEARCH' so that if a new plugin was
+          // Skip to 'OUTDATED_DOCUMENTS_SEARCH_OPEN_PIT' so that if a new plugin was
           // installed / enabled we can transform any old documents and update
           // the mappings for this plugin's types.
-          controlState: 'OUTDATED_DOCUMENTS_SEARCH',
+          controlState: 'OUTDATED_DOCUMENTS_SEARCH_OPEN_PIT',
           // Source is a none because we didn't do any migration from a source
           // index
           sourceIndex: Option.none,
@@ -651,38 +651,58 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
     if (Either.isRight(res)) {
       return {
         ...stateP,
-        controlState: 'OUTDATED_DOCUMENTS_SEARCH',
-        corruptDocumentIds: [],
-        transformErrors: [],
+        controlState: 'REFRESH_TARGET',
       };
     } else {
       const left = res.left;
       if (isLeftTypeof(left, 'index_not_found_exception')) {
-        // index_not_found_exception means another instance alread completed
+        // index_not_found_exception means another instance already completed
         // the MARK_VERSION_INDEX_READY step and removed the temp index
-        // We still perform the OUTDATED_DOCUMENTS_* and
+        // We still perform the REFRESH_TARGET, OUTDATED_DOCUMENTS_* and
         // UPDATE_TARGET_MAPPINGS steps since we might have plugins enabled
         // which the other instances don't.
         return {
           ...stateP,
-          controlState: 'OUTDATED_DOCUMENTS_SEARCH',
-          corruptDocumentIds: [],
-          transformErrors: [],
+          controlState: 'REFRESH_TARGET',
         };
       } else {
         throwBadResponse(stateP, left);
       }
     }
-    // TINA
-  } else if (stateP.controlState === 'OUTDATED_DOCUMENTS_SEARCH') {
+  } else if (stateP.controlState === 'REFRESH_TARGET') {
     const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
     if (Either.isRight(res)) {
-      // If outdated documents were found, transform them
+      return {
+        ...stateP,
+        controlState: 'OUTDATED_DOCUMENTS_SEARCH_OPEN_PIT',
+      };
+    } else {
+      throwBadResponse(stateP, res);
+    }
+  } else if (stateP.controlState === 'OUTDATED_DOCUMENTS_SEARCH_OPEN_PIT') {
+    const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
+    if (Either.isRight(res)) {
+      return {
+        ...stateP,
+        controlState: 'OUTDATED_DOCUMENTS_SEARCH_READ',
+        pitId: res.right.pitId,
+        lastHitSortValue: undefined,
+        hasTransformedDocs: false,
+        corruptDocumentIds: [],
+        transformErrors: [],
+      };
+    } else {
+      throwBadResponse(stateP, res);
+    }
+  } else if (stateP.controlState === 'OUTDATED_DOCUMENTS_SEARCH_READ') {
+    const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
+    if (Either.isRight(res)) {
       if (res.right.outdatedDocuments.length > 0) {
         return {
           ...stateP,
           controlState: 'OUTDATED_DOCUMENTS_TRANSFORM',
           outdatedDocuments: res.right.outdatedDocuments,
+          lastHitSortValue: res.right.lastHitSortValue,
         };
       } else {
         // we don't have any more outdated documents and need to either fail or move on to updating the target mappins.
@@ -713,7 +733,7 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
           // and can proceed to the next step
           return {
             ...stateP,
-            controlState: 'UPDATE_TARGET_MAPPINGS',
+            controlState: 'OUTDATED_DOCUMENTS_SEARCH_CLOSE_PIT',
           };
         }
       }
@@ -729,21 +749,24 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
           ...stateP,
           controlState: 'TRANSFORMED_DOCUMENTS_BULK_INDEX',
           transformedDocs: [...res.right.processedDocs],
+          hasTransformedDocs: true,
         };
       } else {
         // We have seen corrupt documents or any transformation errors and continue searching for more, state already has these on it
         return {
           ...stateP,
-          controlState: 'OUTDATED_DOCUMENTS_SEARCH',
+          controlState: 'OUTDATED_DOCUMENTS_SEARCH_READ',
+          hasTransformedDocs: true,
         };
       }
     } else {
       if (isLeftTypeof(res.left, 'documents_transform_failed')) {
         return {
           ...stateP,
-          controlState: 'OUTDATED_DOCUMENTS_SEARCH',
+          controlState: 'OUTDATED_DOCUMENTS_SEARCH_READ',
           corruptDocumentIds: [...stateP.corruptDocumentIds, ...res.left.corruptDocumentIds],
           transformErrors: [...stateP.transformErrors, ...res.left.transformErrors],
+          hasTransformedDocs: false,
         };
       } else {
         throwBadResponse(stateP, res as never);
@@ -758,14 +781,41 @@ export const model = (currentState: State, resW: ResponseType<AllActionStates>):
         updateTargetMappingsTaskId: res.right.taskId,
       };
     } else {
-      throwBadResponse(stateP, res as never);
+      throwBadResponse(stateP, res);
+    }
+  } else if (stateP.controlState === 'OUTDATED_DOCUMENTS_REFRESH') {
+    const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
+    if (Either.isRight(res)) {
+      return {
+        ...stateP,
+        controlState: 'UPDATE_TARGET_MAPPINGS',
+      };
+    } else {
+      throwBadResponse(stateP, res);
+    }
+  } else if (stateP.controlState === 'OUTDATED_DOCUMENTS_SEARCH_CLOSE_PIT') {
+    const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
+    if (Either.isRight(res)) {
+      const { pitId, hasTransformedDocs, ...state } = stateP;
+      if (hasTransformedDocs) {
+        return {
+          ...state,
+          controlState: 'OUTDATED_DOCUMENTS_REFRESH',
+        };
+      }
+      return {
+        ...state,
+        controlState: 'UPDATE_TARGET_MAPPINGS',
+      };
+    } else {
+      throwBadResponse(stateP, res);
     }
   } else if (stateP.controlState === 'TRANSFORMED_DOCUMENTS_BULK_INDEX') {
     const res = resW as ExcludeRetryableEsError<ResponseType<typeof stateP.controlState>>;
     if (Either.isRight(res)) {
       return {
         ...stateP,
-        controlState: 'OUTDATED_DOCUMENTS_SEARCH',
+        controlState: 'OUTDATED_DOCUMENTS_SEARCH_READ',
         corruptDocumentIds: [],
         transformErrors: [],
       };
@@ -951,7 +1001,7 @@ export const createInitialState = ({
     retryAttempts: migrationsConfig.retryAttempts,
     batchSize: migrationsConfig.batchSize,
     logs: [],
-    unusedTypesQuery: Option.of(excludeUnusedTypesQuery),
+    unusedTypesQuery: excludeUnusedTypesQuery,
   };
   return initialState;
 };
