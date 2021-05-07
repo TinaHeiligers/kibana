@@ -48,8 +48,17 @@ describe('migration v2 with corrupt saved object documents', () => {
       settings: {
         es: {
           license: 'basic',
-          // original SO:
+          // original uncorrupt SO:
           // {
+          //  type: 'foo', // 'bar', 'baz'
+          //  foo: {}, // bar: {}, baz: {}
+          //  migrationVersion: {
+          //    foo: '7.13.0',
+          //  },
+          // },
+          // original corrupt SO example:
+          // {
+          //  id: 'bar:123' //mismatched space
           //  type: 'foo',
           //  foo: {},
           //  migrationVersion: {
