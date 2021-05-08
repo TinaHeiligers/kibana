@@ -106,7 +106,7 @@ function extractTransformFailuresReason(
 ): { corruptDocsReason: string; transformErrsReason: string } {
   const corruptDocumentIdReason =
     corruptDocumentIds.length > 0
-      ? `Corrupt saved object documents: ${corruptDocumentIds.join(',')}.`
+      ? `Corrupt saved object documents: ${corruptDocumentIds.join(',')}`
       : ' ';
   // we have both the saved object Id and the stack trace in each `transformErrors` item.
   const transformErrorsReason =

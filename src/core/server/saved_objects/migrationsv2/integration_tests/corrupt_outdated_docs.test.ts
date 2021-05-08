@@ -9,9 +9,7 @@
 import Path from 'path';
 import Fs from 'fs';
 import Util from 'util';
-import { kibanaPackageJson as pkg } from '@kbn/utils';
 import * as kbnTestServer from '../../../../test_helpers/kbn_server';
-import type { ElasticsearchClient } from '../../../elasticsearch';
 import { Root } from '../../../root';
 
 const logFilePath = Path.join(__dirname, 'migration_test_corrupt_docs_kibana.log');
@@ -41,8 +39,7 @@ describe('migration v2 with corrupt saved object documents', () => {
     await new Promise((resolve) => setTimeout(resolve, 10000));
   });
 
-  it('migrates the documents to the highest version', async () => {
-    const migratedIndex = `.kibana_${pkg.version}_001`;
+  it('collects corrupt saved object documents accross batches', async () => {
     const { startES } = kbnTestServer.createTestServers({
       adjustTimeout: (t: number) => jest.setTimeout(t),
       settings: {
@@ -107,16 +104,19 @@ describe('migration v2 with corrupt saved object documents', () => {
         '7.14.0': (doc) => doc,
       },
     });
-
-    const coreStart = await root.start();
-    const esClient = coreStart.elasticsearch.client.asInternalUser;
-
-    const migratedDocs = await fetchDocs(esClient, migratedIndex);
-
-    expect(migratedDocs.length).toBe(1);
-    const [doc] = migratedDocs;
-    expect(doc._source.migrationVersion.foo).toBe('7.14.0');
-    expect(doc._source.coreMigrationVersion).toBe('8.0.0');
+    try {
+      await root.start();
+    } catch (err) {
+      expect(err.message).toMatch(
+        'Unable to complete saved object migrations for the [.kibana] index: Migrations failed. Reason:Corrupt saved object documents: "foo:my_name","123","456","789","foo:other_name","bar:123","baz:123","bar:345","bar:890","baz:456","baz:789","bar:other_name","baz:other_name","bar:my_name","baz:my_name","foo:123","foo:456","foo:789","foo:other". To allow migrations to proceed, please delete these documents.'
+      );
+      const corruptFooSOs = /foo:/g;
+      const corruptBarSOs = /bar:/g;
+      const corruptBazSOs = /baz:/g;
+      expect([...err.message.matchAll(corruptFooSOs)].length).toEqual(6);
+      expect([...err.message.matchAll(corruptBarSOs)].length).toEqual(5);
+      expect([...err.message.matchAll(corruptBazSOs)].length).toEqual(5);
+    }
   });
 });
 
@@ -150,23 +150,4 @@ function createRoot() {
       oss: true,
     }
   );
-}
-
-async function fetchDocs(esClient: ElasticsearchClient, index: string) {
-  const { body } = await esClient.search<any>({
-    index,
-    body: {
-      query: {
-        bool: {
-          should: [
-            {
-              term: { type: 'foo' },
-            },
-          ],
-        },
-      },
-    },
-  });
-
-  return body.hits.hits;
 }
