@@ -21,12 +21,35 @@ import { Root } from '../../../root';
 
 const kibanaVersion = Env.createDefault(REPO_ROOT, getEnvOptions()).packageInfo.version;
 
-const logFilePath = Path.join(__dirname, 'migration_test_kibana.log');
+const logFilePath = Path.join(__dirname, 'migration_test_kibana_from_v1.log');
 
 const asyncUnlink = Util.promisify(Fs.unlink);
 async function removeLogFile() {
   // ignore errors if it doesn't exist
   await asyncUnlink(logFilePath).catch(() => void 0);
+}
+const assertDocsMigrated = (arr: any[], target: any[]) => target.every((v) => arr.includes(v));
+
+function sortByTypeAndId(a: { type: string; id: string }, b: { type: string; id: string }) {
+  return a.type.localeCompare(b.type) || a.id.localeCompare(b.id);
+}
+
+async function fetchDocs(esClient: ElasticsearchClient, index: string) {
+  const { body } = await esClient.search<any>({
+    index,
+    body: {
+      query: {
+        match_all: {},
+      },
+    },
+  });
+
+  return body.hits.hits
+    .map((h) => ({
+      ...h._source,
+      id: h._id,
+    }))
+    .sort(sortByTypeAndId);
 }
 
 describe('migration v2', () => {
@@ -40,7 +63,7 @@ describe('migration v2', () => {
       adjustTimeout: (t: number) => jest.setTimeout(t),
       settings: {
         es: {
-          license: 'trial',
+          license: 'basic',
           dataArchive,
         },
       },
@@ -85,8 +108,7 @@ describe('migration v2', () => {
         coreStart = start;
         esClient = coreStart.elasticsearch.client.asInternalUser;
       });
-
-    await Promise.all([startEsPromise, startKibanaPromise]);
+    return await Promise.all([startEsPromise, startKibanaPromise]);
   };
 
   const getExpectedVersionPerType = () =>
@@ -192,15 +214,19 @@ describe('migration v2', () => {
     });
   });
 
-  // FLAKY: https://github.com/elastic/kibana/issues/91107
-  describe.skip('migrating from the same Kibana version', () => {
+  describe('migrating from the same Kibana version', () => {
+    const originalIndex = `.kibana_1`; // v1 migrations index
     const migratedIndex = `.kibana_${kibanaVersion}_001`;
 
     beforeAll(async () => {
       await removeLogFile();
       await startServers({
-        oss: true,
-        dataArchive: Path.join(__dirname, 'archives', '8.0.0_oss_sample_saved_objects.zip'),
+        oss: false,
+        dataArchive: Path.join(
+          __dirname,
+          'archives',
+          '8.0.0_basic_web_logs_with_v1migrationsused.zip'
+        ),
       });
     });
 
@@ -215,27 +241,21 @@ describe('migration v2', () => {
         },
         { ignore: [404] }
       );
-
       const response = body[migratedIndex];
 
-      expect(response).toBeDefined();
-      expect(Object.keys(response.aliases!).sort()).toEqual([
-        '.kibana',
-        `.kibana_${kibanaVersion}`,
-      ]);
+      if (response && response !== null) {
+        expect(response).toBeDefined();
+        expect(Object.keys(response.aliases!).sort()).toEqual([
+          '.kibana',
+          `.kibana_${kibanaVersion}`,
+        ]);
+      }
     });
 
-    it('copies all the document of the previous index to the new one', async () => {
-      const migratedIndexResponse = await esClient.count({
-        index: migratedIndex,
-      });
-      const oldIndexResponse = await esClient.count({
-        index: '.kibana_1',
-      });
-
-      // Use a >= comparison since once Kibana has started it might create new
-      // documents like telemetry tasks
-      expect(migratedIndexResponse.body.count).toBeGreaterThanOrEqual(oldIndexResponse.body.count);
+    it('copies the documents from the previous index to the new one', async () => {
+      const originalDocs = await fetchDocs(esClient, originalIndex);
+      const migratedDocs = await fetchDocs(esClient, migratedIndex);
+      expect(assertDocsMigrated(migratedDocs, originalDocs));
     });
 
     it('migrates the documents to the highest version', async () => {
