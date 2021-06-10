@@ -192,8 +192,7 @@ describe('migration v2', () => {
     });
   });
 
-  // FLAKY: https://github.com/elastic/kibana/issues/91107
-  describe.skip('migrating from the same Kibana version', () => {
+  describe('migrating from the same Kibana version', () => {
     const migratedIndex = `.kibana_${kibanaVersion}_001`;
 
     beforeAll(async () => {
