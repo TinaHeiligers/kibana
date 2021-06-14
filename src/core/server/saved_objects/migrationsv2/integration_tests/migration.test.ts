@@ -28,19 +28,20 @@ async function removeLogFile() {
   // ignore errors if it doesn't exist
   await asyncUnlink(logFilePath).catch(() => void 0);
 }
-const assertDocsMigrated = (arr: any[], target: any[]) => target.every((v) => arr.includes(v));
+const assertMigratedDocuments = (arr: any[], target: any[]) => target.every((v) => arr.includes(v));
 
 function sortByTypeAndId(a: { type: string; id: string }, b: { type: string; id: string }) {
   return a.type.localeCompare(b.type) || a.id.localeCompare(b.id);
 }
 
-async function fetchDocs(esClient: ElasticsearchClient, index: string) {
+async function fetchDocuments(esClient: ElasticsearchClient, index: string) {
   const { body } = await esClient.search<any>({
     index,
     body: {
       query: {
         match_all: {},
       },
+      _source: ['type', 'id'],
     },
   });
 
@@ -74,8 +75,8 @@ describe('migration v2', () => {
         migrations: {
           skip: false,
           enableV2: true,
-          // There are 53 docs in fixtures. Batch size configured to enforce 3 migration steps.
-          batchSize: 20,
+          // There are 10 docs in fixtures. Batch size configured to enforce 2 migration steps.
+          batchSize: 5,
         },
         logging: {
           appenders: {
@@ -214,7 +215,7 @@ describe('migration v2', () => {
     });
   });
 
-  describe('migrating from the same Kibana version', () => {
+  describe('migrating from the same Kibana version that used v1 migrations', () => {
     const originalIndex = `.kibana_1`; // v1 migrations index
     const migratedIndex = `.kibana_${kibanaVersion}_001`;
 
@@ -222,11 +223,7 @@ describe('migration v2', () => {
       await removeLogFile();
       await startServers({
         oss: false,
-        dataArchive: Path.join(
-          __dirname,
-          'archives',
-          '8.0.0_basic_web_logs_with_v1migrationsused.zip'
-        ),
+        dataArchive: Path.join(__dirname, 'archives', '8.0.0_migrated_from_v1.zip'),
       });
     });
 
@@ -253,9 +250,9 @@ describe('migration v2', () => {
     });
 
     it('copies the documents from the previous index to the new one', async () => {
-      const originalDocs = await fetchDocs(esClient, originalIndex);
-      const migratedDocs = await fetchDocs(esClient, migratedIndex);
-      expect(assertDocsMigrated(migratedDocs, originalDocs));
+      const originalDocs = await fetchDocuments(esClient, originalIndex);
+      const migratedDocs = await fetchDocuments(esClient, migratedIndex);
+      expect(assertMigratedDocuments(migratedDocs, originalDocs));
     });
 
     it('migrates the documents to the highest version', async () => {
