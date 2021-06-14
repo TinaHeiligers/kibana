@@ -75,7 +75,7 @@ describe('migration v2', () => {
         migrations: {
           skip: false,
           enableV2: true,
-          // There are 10 docs in fixtures. Batch size configured to enforce 2 migration steps.
+          // There are 12 docs in fixtures. Batch size configured to enforce 2 migration steps.
           batchSize: 5,
         },
         logging: {
@@ -250,9 +250,16 @@ describe('migration v2', () => {
     });
 
     it('copies the documents from the previous index to the new one', async () => {
-      const originalDocs = await fetchDocuments(esClient, originalIndex);
-      const migratedDocs = await fetchDocuments(esClient, migratedIndex);
-      expect(assertMigratedDocuments(migratedDocs, originalDocs));
+      const migratedIndexResponse = await esClient.count({
+        index: migratedIndex,
+      });
+      const oldIndexResponse = await esClient.count({
+        index: originalIndex,
+      });
+
+      // Use a >= comparison since once Kibana has started it might create new
+      // documents like telemetry tasks
+      expect(migratedIndexResponse.body.count).toBeGreaterThanOrEqual(oldIndexResponse.body.count);
     });
 
     it('migrates the documents to the highest version', async () => {
