@@ -229,10 +229,11 @@ export class SavedObjectsErrorHelpers {
       id?: string;
     }
   ) {
+    const methodCalled = method ? `could not ${method}` : '';
     const decoratedErrorMessage =
       options?.type && options?.id
-        ? `could not ${method} saved object [${options.type}/${options.id}]`
-        : `could not ${method}`;
+        ? `${methodCalled} saved object [${options.type}/${options.id}]`
+        : `${methodCalled}`;
 
     return this.decorateEsUnavailableError(
       new Error(decoratedErrorMessage),

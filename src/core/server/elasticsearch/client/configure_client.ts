@@ -104,10 +104,13 @@ function getResponseMessage(event: RequestEvent): string {
 const addLogging = (client: Client, logger: Logger) => {
   client.on('response', (error, event) => {
     if (event) {
+      const eventHeaders = event.headers;
       const opaqueId = event.meta.request.options.opaqueId;
       const meta = opaqueId
         ? {
-            http: { request: { id: event.meta.request.options.opaqueId } },
+            http: {
+              request: { id: event.meta.request.options.opaqueId, headers: eventHeaders },
+            },
           }
         : undefined; // do not clutter logs if opaqueId is not present
       if (error) {

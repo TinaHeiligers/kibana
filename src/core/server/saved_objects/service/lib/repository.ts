@@ -600,6 +600,10 @@ export class SavedObjectsRepository {
         )
       : undefined;
 
+    // Initial check on the response to verify it comes from ES in the case of a 404
+    if (bulkGetResponse?.statusCode === 404 && !isSupportedEsServer(bulkGetResponse?.headers)) {
+      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
+    }
     const errors: SavedObjectsCheckConflictsResponse['errors'] = [];
     expectedBulkGetResults.forEach((expectedResult) => {
       if (isLeft(expectedResult)) {
@@ -714,7 +718,7 @@ export class SavedObjectsRepository {
     const allTypes = Object.keys(getRootPropertiesObjects(this._mappings));
     const typesToUpdate = allTypes.filter((type) => !this._registry.isNamespaceAgnostic(type));
 
-    const { body } = await this.client.updateByQuery(
+    const { body, statusCode, headers } = await this.client.updateByQuery(
       {
         index: this.getIndicesForTypes(typesToUpdate),
         refresh: options.refresh,
@@ -742,7 +746,14 @@ export class SavedObjectsRepository {
       },
       { ignore: [404] }
     );
-
+    const notFound = statusCode === 404;
+    if (!isSupportedEsServer(headers)) {
+      if (notFound) {
+        throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
+      } else {
+        throw SavedObjectsErrorHelpers.createGenericProductNotSupportedError();
+      }
+    }
     return body;
   }
 
@@ -886,10 +897,17 @@ export class SavedObjectsRepository {
       },
     };
 
-    const { body, statusCode } = await this.client.search<SavedObjectsRawDocSource>(esOptions, {
-      ignore: [404],
-    });
+    const { body, statusCode, headers } = await this.client.search<SavedObjectsRawDocSource>(
+      esOptions,
+      {
+        ignore: [404],
+      }
+    );
     if (statusCode === 404) {
+      if (!isSupportedEsServer(headers)) {
+        // we don't want to leak that the index is missing: see comment below
+        throw SavedObjectsErrorHelpers.createGenericProductNotSupportedError();
+      }
       // 404 is only possible here if the index is missing, which
       // we don't want to leak, see "404s from missing index" above
       return {
@@ -993,10 +1011,17 @@ export class SavedObjectsRepository {
         }
 
         const { type, id, esRequestIndex } = expectedResult.value;
+
+        // check the bulk response first to verify that any notFound docs are in fact, not found.
+        if (bulkGetResponse && !isSupportedEsServer(bulkGetResponse?.headers)) {
+          throw SavedObjectsErrorHelpers.createGenericProductNotSupportedError();
+        }
+
         const doc = bulkGetResponse?.body.docs[esRequestIndex];
 
         // @ts-expect-error MultiGetHit._source is optional
         if (!doc?.found || !this.rawDocExistsInNamespace(doc, namespace)) {
+          // condition for which to check the actual response is from an ES server
           return ({
             id,
             type,

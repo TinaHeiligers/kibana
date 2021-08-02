@@ -929,7 +929,11 @@ describe('SavedObjectsRepository', () => {
     const bulkGetSuccess = async (objects, options) => {
       const response = getMockMgetResponse(objects, options?.namespace);
       client.mget.mockResolvedValueOnce(
-        elasticsearchClientMock.createSuccessTransportRequestPromise(response)
+        elasticsearchClientMock.createSuccessTransportRequestPromise(
+          { ...response },
+          {},
+          { 'x-elastic-product': 'Elasticsearch' }
+        )
       );
       const result = await bulkGet(objects, options);
       expect(client.mget).toHaveBeenCalledTimes(1);
@@ -991,7 +995,11 @@ describe('SavedObjectsRepository', () => {
       const bulkGetErrorInvalidType = async ([obj1, obj, obj2]) => {
         const response = getMockMgetResponse([obj1, obj2]);
         client.mget.mockResolvedValueOnce(
-          elasticsearchClientMock.createSuccessTransportRequestPromise(response)
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            { ...response },
+            {},
+            { 'x-elastic-product': 'Elasticsearch' }
+          )
         );
         const result = await bulkGet([obj1, obj, obj2]);
         expect(client.mget).toHaveBeenCalled();
@@ -1002,7 +1010,11 @@ describe('SavedObjectsRepository', () => {
 
       const bulkGetErrorNotFound = async ([obj1, obj, obj2], options, response) => {
         client.mget.mockResolvedValueOnce(
-          elasticsearchClientMock.createSuccessTransportRequestPromise(response)
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            { ...response },
+            {},
+            { 'x-elastic-product': 'Elasticsearch' }
+          )
         );
         const result = await bulkGet([obj1, obj, obj2], options);
         expect(client.mget).toHaveBeenCalled();
@@ -1046,6 +1058,8 @@ describe('SavedObjectsRepository', () => {
         response.docs[1].namespaces = ['bar-namespace'];
         await bulkGetErrorNotFound([obj1, obj, obj2], { namespace }, response);
       });
+
+      it.todo(`throws when the when the Elasticsearch header is missing`);
     });
 
     describe('returns', () => {
@@ -1587,7 +1601,11 @@ describe('SavedObjectsRepository', () => {
     const checkConflictsSuccess = async (objects, options) => {
       const response = getMockMgetResponse(objects, options?.namespace);
       client.mget.mockResolvedValue(
-        elasticsearchClientMock.createSuccessTransportRequestPromise(response)
+        elasticsearchClientMock.createSuccessTransportRequestPromise(
+          { ...response },
+          {},
+          { 'x-elastic-product': 'Elasticsearch' }
+        )
       );
       const result = await checkConflicts(objects, options);
       expect(client.mget).toHaveBeenCalledTimes(1);
@@ -1650,6 +1668,22 @@ describe('SavedObjectsRepository', () => {
         await expect(
           savedObjectsRepository.checkConflicts([obj1], { namespace: ALL_NAMESPACES_STRING })
         ).rejects.toThrowError(createBadRequestError('"options.namespace" cannot be "*"'));
+      });
+
+      it(`throws when the server responding isn't supported`, async () => {
+        const objects = [obj1];
+        const options = { namespace: 'default' };
+        const response = getMockMgetResponse(objects, options?.namespace);
+        client.mget.mockResolvedValue(
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            { ...response },
+            { statusCode: 404 },
+            {}
+          )
+        );
+        await expect(
+          savedObjectsRepository.checkConflicts(objects, { ...options })
+        ).rejects.toThrowError(createGenericNotFoundEsUnavailableError());
       });
     });
 
@@ -2418,10 +2452,15 @@ describe('SavedObjectsRepository', () => {
       throttled_until_millis: 0,
       failures: [],
     };
+    const productHeader = { 'x-elastic-product': 'Elasticsearch' };
 
     const deleteByNamespaceSuccess = async (namespace, options) => {
       client.updateByQuery.mockResolvedValueOnce(
-        elasticsearchClientMock.createSuccessTransportRequestPromise(mockUpdateResults)
+        elasticsearchClientMock.createSuccessTransportRequestPromise(
+          { ...mockUpdateResults },
+          {},
+          { ...productHeader }
+        )
       );
       const result = await savedObjectsRepository.deleteByNamespace(namespace, options);
       expect(getSearchDslNS.getSearchDsl).toHaveBeenCalledTimes(1);
@@ -2457,6 +2496,32 @@ describe('SavedObjectsRepository', () => {
         await test(123);
         await test(true);
         await test(ALL_NAMESPACES_STRING);
+      });
+
+      it(`throws on not found responses when the server isn't supported`, async () => {
+        client.updateByQuery.mockResolvedValueOnce(
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            { ...mockUpdateResults },
+            { statusCode: 404 },
+            {}
+          )
+        );
+        await expect(savedObjectsRepository.deleteByNamespace(namespace)).rejects.toThrowError(
+          SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError()
+        );
+      });
+
+      it(`throws on when the response cannot be verified to have come from a supported server`, async () => {
+        client.updateByQuery.mockResolvedValueOnce(
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            { ...mockUpdateResults },
+            {},
+            {}
+          )
+        );
+        await expect(savedObjectsRepository.deleteByNamespace(namespace)).rejects.toThrowError(
+          SavedObjectsErrorHelpers.createGenericProductNotSupportedError()
+        );
       });
     });
 
@@ -2886,6 +2951,19 @@ describe('SavedObjectsRepository', () => {
                       `);
         expect(getSearchDslNS.getSearchDsl).not.toHaveBeenCalled();
         expect(client.search).not.toHaveBeenCalled();
+      });
+
+      it(`throws when ES does not return the correct header`, async () => {
+        client.search.mockResolvedValueOnce(
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            { ...generateSearchResults(namespace) },
+            { statusCode: 404 },
+            {}
+          )
+        );
+        await expect(savedObjectsRepository.find({ type })).rejects.toThrowError(
+          SavedObjectsErrorHelpers.createGenericProductNotSupportedError()
+        );
       });
     });
 
