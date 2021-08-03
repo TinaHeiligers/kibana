@@ -1023,6 +1023,19 @@ describe('SavedObjectsRepository', () => {
         });
       };
 
+      const bulkGetErrorProductNotSupported = async ([obj], options, response) => {
+        client.mget.mockResolvedValueOnce(
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            { ...response },
+            { statusCode: 404 },
+            {}
+          )
+        );
+        await expect(bulkGet([obj1, obj, obj2], options)).rejects.toThrowError(
+          SavedObjectsErrorHelpers.createGenericProductNotSupportedError()
+        );
+      };
+
       it(`throws when options.namespace is '*'`, async () => {
         const obj = { type: 'dashboard', id: 'three' };
         await expect(
@@ -1059,7 +1072,10 @@ describe('SavedObjectsRepository', () => {
         await bulkGetErrorNotFound([obj1, obj, obj2], { namespace }, response);
       });
 
-      it.todo(`throws when the when the Elasticsearch header is missing`);
+      it(`throws when the when the Elasticsearch header is missing`, async () => {
+        const response = getMockMgetResponse([obj1]);
+        await bulkGetErrorProductNotSupported([obj1], { namespace }, response);
+      });
     });
 
     describe('returns', () => {
@@ -1084,7 +1100,11 @@ describe('SavedObjectsRepository', () => {
       it(`formats the ES response`, async () => {
         const response = getMockMgetResponse([obj1, obj2]);
         client.mget.mockResolvedValueOnce(
-          elasticsearchClientMock.createSuccessTransportRequestPromise(response)
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            { ...response },
+            {},
+            { 'x-elastic-product': 'Elasticsearch' }
+          )
         );
         const result = await bulkGet([obj1, obj2]);
         expect(client.mget).toHaveBeenCalledTimes(1);
@@ -1099,7 +1119,11 @@ describe('SavedObjectsRepository', () => {
       it(`handles a mix of successful gets and errors`, async () => {
         const response = getMockMgetResponse([obj1, obj2]);
         client.mget.mockResolvedValueOnce(
-          elasticsearchClientMock.createSuccessTransportRequestPromise(response)
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            { ...response },
+            {},
+            { 'x-elastic-product': 'Elasticsearch' }
+          )
         );
         const obj = { type: 'unknownType', id: 'three' };
         const result = await bulkGet([obj1, obj, obj2]);
