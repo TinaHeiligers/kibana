@@ -1495,9 +1495,26 @@ export class SavedObjectsRepository {
         let namespaces;
         let versionProperties;
         if (esRequestIndex !== undefined) {
+          const esServerSupported =
+            bulkGetResponse?.headers && isSupportedEsServer(bulkGetResponse?.headers);
           const indexFound = bulkGetResponse?.statusCode !== 404;
           const actualResult = indexFound ? bulkGetResponse?.body.docs[esRequestIndex] : undefined;
           const docFound = indexFound && actualResult?.found === true;
+
+          if (!indexFound && !esServerSupported) {
+            // the bulkGetResponse does not contain the required header to verify that the server is supported
+            // differentiates between an actual document that's not found from a document that isn't found because of a network issue
+            return {
+              tag: 'Left' as 'Left',
+              error: {
+                id,
+                type,
+                error: errorContent(
+                  SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError(type, id)
+                ),
+              },
+            };
+          }
           if (
             !docFound ||
             // @ts-expect-error MultiGetHit is incorrectly missing _id, _source

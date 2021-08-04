@@ -1465,9 +1465,13 @@ describe('SavedObjectsRepository', () => {
 
       const bulkUpdateMultiError = async ([obj1, _obj, obj2], options, mgetResponse) => {
         client.mget.mockResolvedValueOnce(
-          elasticsearchClientMock.createSuccessTransportRequestPromise(mgetResponse, {
-            statusCode: mgetResponse.statusCode,
-          })
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            mgetResponse,
+            {
+              statusCode: mgetResponse.statusCode,
+            },
+            { 'x-elastic-product': 'Elasticsearch' }
+          )
         );
 
         const bulkResponse = getMockBulkUpdateResponse([obj1, obj2], namespace);
