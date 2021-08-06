@@ -19,6 +19,7 @@ export declare class SavedObjectsErrorHelpers
 |  [createConflictError(type, id, reason)](./kibana-plugin-core-server.savedobjectserrorhelpers.createconflicterror.md) | <code>static</code> |  |
 |  [createGenericNotFoundError(type, id)](./kibana-plugin-core-server.savedobjectserrorhelpers.creategenericnotfounderror.md) | <code>static</code> |  |
 |  [createGenericNotFoundEsUnavailableError(type, id)](./kibana-plugin-core-server.savedobjectserrorhelpers.creategenericnotfoundesunavailableerror.md) | <code>static</code> |  |
+|  [createGenericProductNotSupportedError(method, options)](./kibana-plugin-core-server.savedobjectserrorhelpers.creategenericproductnotsupportederror.md) | <code>static</code> |  |
 |  [createIndexAliasNotFoundError(alias)](./kibana-plugin-core-server.savedobjectserrorhelpers.createindexaliasnotfounderror.md) | <code>static</code> |  |
 |  [createInvalidVersionError(versionInput)](./kibana-plugin-core-server.savedobjectserrorhelpers.createinvalidversionerror.md) | <code>static</code> |  |
 |  [createTooManyRequestsError(type, id)](./kibana-plugin-core-server.savedobjectserrorhelpers.createtoomanyrequestserror.md) | <code>static</code> |  |
@@ -39,6 +40,7 @@ export declare class SavedObjectsErrorHelpers
 |  [isEsUnavailableError(error)](./kibana-plugin-core-server.savedobjectserrorhelpers.isesunavailableerror.md) | <code>static</code> |  |
 |  [isForbiddenError(error)](./kibana-plugin-core-server.savedobjectserrorhelpers.isforbiddenerror.md) | <code>static</code> |  |
 |  [isGeneralError(error)](./kibana-plugin-core-server.savedobjectserrorhelpers.isgeneralerror.md) | <code>static</code> |  |
+|  [isGenericProductNotSupportedError(error)](./kibana-plugin-core-server.savedobjectserrorhelpers.isgenericproductnotsupportederror.md) | <code>static</code> |  |
 |  [isInvalidVersionError(error)](./kibana-plugin-core-server.savedobjectserrorhelpers.isinvalidversionerror.md) | <code>static</code> |  |
 |  [isNotAuthorizedError(error)](./kibana-plugin-core-server.savedobjectserrorhelpers.isnotauthorizederror.md) | <code>static</code> |  |
 |  [isNotFoundError(error)](./kibana-plugin-core-server.savedobjectserrorhelpers.isnotfounderror.md) | <code>static</code> |  |

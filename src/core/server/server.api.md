@@ -2525,6 +2525,11 @@ export class SavedObjectsErrorHelpers {
     // (undocumented)
     static createGenericNotFoundEsUnavailableError(type?: string | null, id?: string | null): DecoratedError;
     // (undocumented)
+    static createGenericProductNotSupportedError(method?: string | null, options?: {
+        type?: string;
+        id?: string;
+    }): DecoratedError;
+    // (undocumented)
     static createIndexAliasNotFoundError(alias: string): DecoratedError;
     // (undocumented)
     static createInvalidVersionError(versionInput?: string): DecoratedError;
@@ -2564,6 +2569,8 @@ export class SavedObjectsErrorHelpers {
     static isForbiddenError(error: Error | DecoratedError): boolean;
     // (undocumented)
     static isGeneralError(error: Error | DecoratedError): boolean;
+    // (undocumented)
+    static isGenericProductNotSupportedError(error: Error | DecoratedError): boolean;
     // (undocumented)
     static isInvalidVersionError(error: Error | DecoratedError): boolean;
     // (undocumented)
