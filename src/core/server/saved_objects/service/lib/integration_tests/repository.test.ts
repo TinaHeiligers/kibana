@@ -48,9 +48,10 @@ describe('SavedObjectsRepository', () => {
 
   describe('#incrementCounter', () => {
     describe('initialize=false', () => {
-      it('creates a new document if none exists and sets all counter fields set to 1', async () => {
+      it.only('creates a new document if none exists and sets all counter fields set to 1', async () => {
         const now = new Date().getTime();
         const repository = start.savedObjects.createInternalRepository();
+        console.log('repository:', repository);
         await repository.incrementCounter('test_counter_type', 'counter_1', [
           'stats.api.count',
           'stats.api.count2',
