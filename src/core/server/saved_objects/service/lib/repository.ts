@@ -1098,7 +1098,13 @@ export class SavedObjectsRepository {
       },
       { ignore: [404] }
     );
-
+    if (aliasResponse.statusCode === 404 && !isSupportedEsServer(aliasResponse.headers)) {
+      // throw if we cannot verify the response is from Elasticsearch
+      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError(
+        LEGACY_URL_ALIAS_TYPE,
+        rawAliasId
+      );
+    }
     if (
       aliasResponse.statusCode === 404 ||
       aliasResponse.body.get?.found === false ||
@@ -1175,6 +1181,10 @@ export class SavedObjectsRepository {
 
     if (result !== null) {
       return result;
+    }
+    // throw if we can't verify that the response is from Elasticsearch
+    if (!isSupportedEsServer(bulkGetResponse.headers)) {
+      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError(type, id);
     }
     throw SavedObjectsErrorHelpers.createGenericNotFoundError(type, id);
   }

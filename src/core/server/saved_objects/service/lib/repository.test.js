@@ -3412,10 +3412,20 @@ describe('SavedObjectsRepository', () => {
         describe('because alias is not used', () => {
           const expectExactMatchResult = async (aliasResult) => {
             const options = { namespace };
-            client.update.mockResolvedValueOnce(aliasResult); // for alias object
+            if (!aliasResult.body) {
+              client.update.mockResolvedValueOnce(
+                elasticsearchClientMock.createSuccessTransportRequestPromise({}, { ...aliasResult })
+              );
+            } else {
+              client.update.mockResolvedValueOnce(aliasResult); // for alias object
+            }
             const response = getMockGetResponse({ type, id }, options.namespace);
             client.get.mockResolvedValueOnce(
-              elasticsearchClientMock.createSuccessTransportRequestPromise(response) // for actual target
+              elasticsearchClientMock.createSuccessTransportRequestPromise(
+                { ...response },
+                {},
+                { 'x-elastic-product': 'Elasticsearch' }
+              ) // for actual target
             );
 
             const result = await savedObjectsRepository.resolve(type, id, options);
