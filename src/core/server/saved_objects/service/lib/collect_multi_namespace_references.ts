@@ -7,11 +7,13 @@
  */
 
 import * as esKuery from '@kbn/es-query';
+import { isSupportedEsServer } from 'src/core/server/elasticsearch';
 
 import { LegacyUrlAlias, LEGACY_URL_ALIAS_TYPE } from '../../object_types';
 import type { ISavedObjectTypeRegistry } from '../../saved_objects_type_registry';
 import type { SavedObjectsSerializer } from '../../serialization';
 import type { SavedObject, SavedObjectsBaseOptions } from '../../types';
+import { SavedObjectsErrorHelpers } from './errors';
 import { getRootFields } from './included_fields';
 import { getSavedObjectFromSource, rawDocExistsInNamespace } from './internal_utils';
 import type {
@@ -198,6 +200,13 @@ async function getObjectsAndReferences({
       { body: { docs: makeBulkGetDocs(bulkGetObjects) } },
       { ignore: [404] }
     );
+    // throw if we can't verify the response is from Elasticsearch
+    if (bulkGetResponse.statusCode === 404 && !isSupportedEsServer(bulkGetResponse.headers)) {
+      throw SavedObjectsErrorHelpers.decorateEsUnavailableError(
+        SavedObjectsErrorHelpers.createGenericNotFoundError(),
+        'x-elastic-product not present or not recognized'
+      );
+    }
     const newObjectsToGet = new Set<string>();
     for (let i = 0; i < bulkGetObjects.length; i++) {
       // For every element in bulkGetObjects, there should be a matching element in bulkGetResponse.body.docs
