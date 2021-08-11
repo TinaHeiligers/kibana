@@ -1152,7 +1152,7 @@ export class SavedObjectsRepository {
         // @ts-expect-error MultiGetHit._source is optional
         saved_object: getSavedObjectFromSource(this._registry, type, id, exactMatchDoc),
         outcome: 'conflict',
-        aliasTargetId: legacyUrlAlias.targetId,
+        alias_target_id: legacyUrlAlias.targetId,
       };
       outcomeStatString = REPOSITORY_RESOLVE_OUTCOME_STATS.CONFLICT;
     } else if (foundExactMatch) {
@@ -1172,7 +1172,7 @@ export class SavedObjectsRepository {
           aliasMatchDoc
         ),
         outcome: 'aliasMatch',
-        aliasTargetId: legacyUrlAlias.targetId,
+        alias_target_id: legacyUrlAlias.targetId,
       };
       outcomeStatString = REPOSITORY_RESOLVE_OUTCOME_STATS.ALIAS_MATCH;
     }
