@@ -591,7 +591,10 @@ export class SavedObjectsRepository {
           { ignore: [404] }
         )
       : undefined;
-
+    // verify 404 is from Elasticsearch and exit early if it's not
+    if (isNotFoundFromUnsupportedServer(bulkGetResponse)) {
+      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
+    }
     const errors: SavedObjectsCheckConflictsResponse['errors'] = [];
     expectedBulkGetResults.forEach((expectedResult) => {
       if (isLeft(expectedResult)) {
@@ -2259,3 +2262,14 @@ type GetResponseFound<TDocument = unknown> = estypes.GetResponse<TDocument> &
 const isFoundGetResponse = <TDocument = unknown>(
   doc: estypes.GetResponse<TDocument>
 ): doc is GetResponseFound<TDocument> => doc.found;
+
+/**
+ * Helper method to check bulk responses from es client calls
+ * @param bulkResponse
+ * @returns boolean
+ */
+const isNotFoundFromUnsupportedServer = (bulkResponse?: any) => {
+  return (
+    bulkResponse && bulkResponse.statusCode === 404 && !isSupportedEsServer(bulkResponse.headers)
+  );
+};

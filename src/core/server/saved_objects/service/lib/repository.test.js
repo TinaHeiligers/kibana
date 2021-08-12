@@ -1695,6 +1695,24 @@ describe('SavedObjectsRepository', () => {
           savedObjectsRepository.checkConflicts([obj1], { namespace: ALL_NAMESPACES_STRING })
         ).rejects.toThrowError(createBadRequestError('"options.namespace" cannot be "*"'));
       });
+
+      it(`throws when not found responses aren't from Elasticsearch`, async () => {
+        const checkConflictsNotFound = async (objects, options) => {
+          const response = getMockMgetResponse(objects, options?.namespace);
+          client.mget.mockResolvedValue(
+            elasticsearchClientMock.createSuccessTransportRequestPromise(
+              { ...response },
+              { statusCode: 404 },
+              {}
+            )
+          );
+          await expect(checkConflicts(objects, options)).rejects.toThrowError(
+            createGenericNotFoundEsUnavailableError()
+          );
+          expect(client.mget).toHaveBeenCalledTimes(1);
+        };
+        await checkConflictsNotFound([obj1, obj2], { namespace: 'default' });
+      });
     });
 
     describe('returns', () => {
