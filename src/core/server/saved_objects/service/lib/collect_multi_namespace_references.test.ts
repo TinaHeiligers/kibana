@@ -337,7 +337,7 @@ describe('collectMultiNamespaceReferences', () => {
         {}
       )
     );
-    await expect(collectMultiNamespaceReferences(params)).rejects.toThrowError(
+    await expect(() => collectMultiNamespaceReferences(params)).rejects.toThrowError(
       createDecoratedEsUnavailableError()
     );
   });
