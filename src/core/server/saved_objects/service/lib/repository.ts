@@ -335,11 +335,13 @@ export class SavedObjectsRepository {
       require_alias: true,
     };
 
-    const { body } =
+    const { body, statusCode, headers } =
       id && overwrite
         ? await this.client.index(requestParams)
         : await this.client.create(requestParams);
-
+    if (statusCode === 404 && !isSupportedEsServer(headers)) {
+      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError(id, type);
+    }
     return this._rawToSavedObject<T>({
       ...raw,
       ...body,

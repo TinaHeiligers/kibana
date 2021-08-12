@@ -2244,7 +2244,11 @@ describe('SavedObjectsRepository', () => {
 
       it(`throws when ES is unable to find the document during get with missing Elasticsearch header`, async () => {
         client.get.mockResolvedValueOnce(
-          elasticsearchClientMock.createSuccessTransportRequestPromise({ found: false }, {}, {})
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            { found: false },
+            undefined,
+            {}
+          )
         );
         await expectNotFoundEsUnavailableError(MULTI_NAMESPACE_ISOLATED_TYPE, id);
       });
@@ -3249,7 +3253,11 @@ describe('SavedObjectsRepository', () => {
 
       it(`throws when ES does not return the correct header when finding the document during get`, async () => {
         client.get.mockResolvedValueOnce(
-          elasticsearchClientMock.createSuccessTransportRequestPromise({ found: false }, {}, {})
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            { found: false },
+            undefined,
+            {}
+          )
         );
         await expectNotFoundEsUnavailableError(type, id);
 
@@ -4159,7 +4167,11 @@ describe('SavedObjectsRepository', () => {
 
       it(`throws when ES is unable to find the document during get with missing Elasticsearch header`, async () => {
         client.get.mockResolvedValueOnce(
-          elasticsearchClientMock.createSuccessTransportRequestPromise({ found: false }, {}, {})
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            { found: false },
+            undefined,
+            {}
+          )
         );
         await expectNotFoundEsUnavailableError(MULTI_NAMESPACE_ISOLATED_TYPE, id);
         expect(client.get).toHaveBeenCalledTimes(1);

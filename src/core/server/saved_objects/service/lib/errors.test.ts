@@ -476,6 +476,7 @@ describe('savedObjectsClient/errorTypes', () => {
           'foo',
           'bar'
         );
+        // console.log('error:', error);
         expect(error.output).toHaveProperty('statusCode', 503);
       });
     });

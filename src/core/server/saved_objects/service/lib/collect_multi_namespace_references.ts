@@ -200,10 +200,11 @@ async function getObjectsAndReferences({
       { body: { docs: makeBulkGetDocs(bulkGetObjects) } },
       { ignore: [404] }
     );
-    // throw if we can't verify the response is from Elasticsearch
+    // exet early by throwing an error if we can't verify the mget response is from Elasticsearch
     if (bulkGetResponse.statusCode === 404 && !isSupportedEsServer(bulkGetResponse.headers)) {
+      // we can't use `createGenericNotFoundEsUnavailableError here because we have more than one type and id
       throw SavedObjectsErrorHelpers.decorateEsUnavailableError(
-        SavedObjectsErrorHelpers.createGenericNotFoundError(),
+        new Error(`${SavedObjectsErrorHelpers.createGenericNotFoundError().message}`),
         'x-elastic-product not present or not recognized'
       );
     }
