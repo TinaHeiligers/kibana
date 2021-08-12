@@ -364,7 +364,6 @@ export class SavedObjectsRepository {
     const { overwrite = false, refresh = DEFAULT_REFRESH_SETTING } = options;
     const namespace = normalizeNamespace(options.namespace);
     const time = this._getCurrentTime();
-
     let bulkGetRequestIndexCounter = 0;
     const expectedResults: Either[] = objects.map((object) => {
       const { type, id, initialNamespaces } = object;
@@ -402,7 +401,6 @@ export class SavedObjectsRepository {
         },
       };
     });
-
     const bulkGetDocs = expectedResults
       .filter(isRight)
       .filter(({ value }) => value.esRequestIndex !== undefined)
@@ -421,7 +419,14 @@ export class SavedObjectsRepository {
           { ignore: [404] }
         )
       : undefined;
-
+    // fail fast if we can't be sure a 404 response is from Elasticsearch
+    if (
+      bulkGetResponse &&
+      bulkGetResponse.statusCode === 404 &&
+      !isSupportedEsServer(bulkGetResponse?.headers)
+    ) {
+      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
+    }
     let bulkRequestIndexCounter = 0;
     const bulkCreateParams: object[] = [];
     const expectedBulkResults: Either[] = expectedResults.map((expectedBulkGetResult) => {
@@ -502,18 +507,14 @@ export class SavedObjectsRepository {
 
       return { tag: 'Right' as 'Right', value: expectedResult };
     });
-
     const bulkResponse = bulkCreateParams.length
-      ? await this.client.bulk({
-          refresh,
-          require_alias: true,
-          body: bulkCreateParams,
-        })
+      ? await this._handleBulkCreateResponse(bulkCreateParams, refresh)
       : undefined;
 
     return {
       saved_objects: expectedBulkResults.map((expectedResult) => {
         if (isLeft(expectedResult)) {
+          // allow an error for each document to pass through
           return expectedResult.error as any;
         }
 
@@ -2146,6 +2147,7 @@ export class SavedObjectsRepository {
       return { saved_object: object, outcome: 'exactMatch' };
     } catch (err) {
       if (SavedObjectsErrorHelpers.isNotFoundError(err)) {
+        // 404 responses that aren't from ES are converted to 503 in the `get` call and don't need to validate them here
         await this.incrementResolveOutcomeStats(REPOSITORY_RESOLVE_OUTCOME_STATS.NOT_FOUND);
       }
       throw err;
@@ -2182,6 +2184,28 @@ export class SavedObjectsRepository {
         '"initialNamespaces" can only specify a single space when used with space-isolated types'
       );
     }
+  }
+
+  private async _handleBulkCreateResponse(
+    params: object[] = [],
+    refresh: MutatingOperationRefreshSetting
+  ) {
+    const bulkResponse = await this.client.bulk(
+      {
+        refresh,
+        require_alias: true,
+        body: params,
+      },
+      { ignore: [404] }
+    );
+    if (bulkResponse.statusCode === 404) {
+      if (!isSupportedEsServer(bulkResponse.headers)) {
+        throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
+      } else {
+        throw SavedObjectsErrorHelpers.createGenericNotFoundError();
+      }
+    }
+    return bulkResponse;
   }
 }
 

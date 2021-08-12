@@ -7,7 +7,7 @@
  */
 
 import * as esKuery from '@kbn/es-query';
-import { isSupportedEsServer } from 'src/core/server/elasticsearch';
+import { isSupportedEsServer } from '../../../elasticsearch';
 
 import { LegacyUrlAlias, LEGACY_URL_ALIAS_TYPE } from '../../object_types';
 import type { ISavedObjectTypeRegistry } from '../../saved_objects_type_registry';
