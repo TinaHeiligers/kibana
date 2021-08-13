@@ -883,10 +883,17 @@ export class SavedObjectsRepository {
       },
     };
 
-    const { body, statusCode } = await this.client.search<SavedObjectsRawDocSource>(esOptions, {
-      ignore: [404],
-    });
+    const { body, statusCode, headers } = await this.client.search<SavedObjectsRawDocSource>(
+      esOptions,
+      {
+        ignore: [404],
+      }
+    );
     if (statusCode === 404) {
+      // first need to ensure the 404 is a valid Elasticsearch response
+      if (!isSupportedEsServer(headers)) {
+        throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
+      }
       // 404 is only possible here if the index is missing, which
       // we don't want to leak, see "404s from missing index" above
       return {

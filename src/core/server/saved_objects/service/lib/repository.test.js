@@ -2850,6 +2850,21 @@ describe('SavedObjectsRepository', () => {
     });
 
     describe('errors', () => {
+      const findNotSupportedServerError = async (options, namespace) => {
+        const expectedSearchResults = generateSearchResults(namespace);
+        client.search.mockResolvedValueOnce(
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            { ...expectedSearchResults },
+            { statusCode: 404 },
+            {}
+          )
+        );
+        await expect(savedObjectsRepository.find(options)).rejects.toThrowError(
+          createGenericNotFoundEsUnavailableError()
+        );
+        expect(getSearchDslNS.getSearchDsl).toHaveBeenCalledTimes(1);
+        expect(client.search).toHaveBeenCalledTimes(1);
+      };
       it(`throws when type is not defined`, async () => {
         await expect(savedObjectsRepository.find({})).rejects.toThrowError(
           'options.type must be a string or an array of strings'
@@ -2929,6 +2944,11 @@ describe('SavedObjectsRepository', () => {
                       `);
         expect(getSearchDslNS.getSearchDsl).not.toHaveBeenCalled();
         expect(client.search).not.toHaveBeenCalled();
+      });
+
+      it(`throws when ES is unable to find with missing Elasticsearch`, async () => {
+        await findNotSupportedServerError({ type });
+        expect(client.search).toHaveBeenCalledTimes(1);
       });
     });
 
