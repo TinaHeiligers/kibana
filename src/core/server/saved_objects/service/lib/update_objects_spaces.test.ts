@@ -106,6 +106,33 @@ describe('#updateObjectsSpaces', () => {
     );
   }
 
+  /** Mocks the saved objects client so as to test unsupported server responding with 404 */
+  // function mockMgetResultsNotFound(...results: Array<{ found: boolean }>) {
+  //   client.mget.mockReturnValueOnce(
+  //     elasticsearchClientMock.createSuccessTransportRequestPromise(
+  //       {
+  //         docs: results.map((x) =>
+  //           x.found
+  //             ? {
+  //                 _id: 'doesnt-matter',
+  //                 _index: 'doesnt-matter',
+  //                 _source: { namespaces: [EXISTING_SPACE] },
+  //                 ...VERSION_PROPS,
+  //                 found: true,
+  //               }
+  //             : {
+  //                 _id: 'doesnt-matter',
+  //                 _index: 'doesnt-matter',
+  //                 found: false,
+  //               }
+  //         ),
+  //       },
+  //       { statusCode: 404 },
+  //       {}
+  //     )
+  //   );
+  // }
+
   /** Asserts that mget is called for the given objects */
   function expectMgetArgs(...objects: SavedObjectsUpdateObjectsSpacesObject[]) {
     const docs = objects.map(({ type, id }) => expect.objectContaining({ _id: `${type}:${id}` }));
