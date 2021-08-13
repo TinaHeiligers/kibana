@@ -420,11 +420,7 @@ export class SavedObjectsRepository {
         )
       : undefined;
     // fail fast if we can't be sure a 404 response is from Elasticsearch
-    if (
-      bulkGetResponse &&
-      bulkGetResponse.statusCode === 404 &&
-      !isSupportedEsServer(bulkGetResponse?.headers)
-    ) {
+    if (isNotFoundFromUnsupportedServer(bulkGetResponse)) {
       throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
     }
     let bulkRequestIndexCounter = 0;
@@ -596,13 +592,7 @@ export class SavedObjectsRepository {
         )
       : undefined;
     // verify 404 is from Elasticsearch and exit early if it's not, this needs to move to when we check if the doc is found or not.
-    if (
-      bulkGetResponse &&
-      isNotFoundFromUnsupportedServer({
-        statusCode: bulkGetResponse.statusCode,
-        headers: bulkGetResponse.headers,
-      })
-    ) {
+    if (isNotFoundFromUnsupportedServer(bulkGetResponse)) {
       throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
     }
     const errors: SavedObjectsCheckConflictsResponse['errors'] = [];
@@ -992,7 +982,9 @@ export class SavedObjectsRepository {
           { ignore: [404] }
         )
       : undefined;
-
+    if (isNotFoundFromUnsupportedServer(bulkGetResponse)) {
+      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
+    }
     return {
       saved_objects: expectedBulkGetResults.map((expectedResult) => {
         if (isLeft(expectedResult)) {
@@ -1153,6 +1145,10 @@ export class SavedObjectsRepository {
       },
       { ignore: [404] }
     );
+    // exit early if a 404 isn't from elasticsearch
+    if (isNotFoundFromUnsupportedServer(bulkGetResponse)) {
+      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError(type, id);
+    }
 
     const exactMatchDoc = bulkGetResponse?.body.docs[0];
     const aliasMatchDoc = bulkGetResponse?.body.docs[1];
@@ -1199,10 +1195,6 @@ export class SavedObjectsRepository {
 
     if (result !== null) {
       return result;
-    }
-    // throw if we can't verify that the response is from Elasticsearch
-    if (!isSupportedEsServer(bulkGetResponse.headers)) {
-      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError(type, id);
     }
     throw SavedObjectsErrorHelpers.createGenericNotFoundError(type, id);
   }
@@ -1466,7 +1458,9 @@ export class SavedObjectsRepository {
           }
         )
       : undefined;
-
+    if (isNotFoundFromUnsupportedServer(bulkGetResponse)) {
+      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
+    }
     let bulkUpdateRequestIndexCounter = 0;
     const bulkUpdateParams: object[] = [];
     const expectedBulkUpdateResults: Either[] = expectedBulkGetResults.map(
