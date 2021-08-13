@@ -7,7 +7,7 @@
  */
 
 import { omit, isObject } from 'lodash';
-import { ApiResponse, estypes } from '@elastic/elasticsearch';
+import { estypes } from '@elastic/elasticsearch';
 import {
   CORE_USAGE_STATS_TYPE,
   CORE_USAGE_STATS_ID,
@@ -74,6 +74,7 @@ import {
   getExpectedVersionProperties,
   getSavedObjectFromSource,
   rawDocExistsInNamespace,
+  isNotFoundFromUnsupportedServer,
 } from './internal_utils';
 import {
   ALL_NAMESPACES_STRING,
@@ -2260,13 +2261,3 @@ type GetResponseFound<TDocument = unknown> = estypes.GetResponse<TDocument> &
 const isFoundGetResponse = <TDocument = unknown>(
   doc: estypes.GetResponse<TDocument>
 ): doc is GetResponseFound<TDocument> => doc.found;
-
-type NotFoundServerCheckResponse = Partial<Pick<ApiResponse, 'statusCode' | 'headers' | 'body'>>;
-/**
- * Helper method to verify 404 responses are not from es client calls
- * @param response
- * @returns boolean
- */
-const isNotFoundFromUnsupportedServer = (response?: NotFoundServerCheckResponse | undefined) => {
-  return response && response.statusCode === 404 && !isSupportedEsServer(response.headers!);
-};

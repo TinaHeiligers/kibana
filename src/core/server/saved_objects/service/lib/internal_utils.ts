@@ -13,6 +13,7 @@ import type { SavedObject } from '../../types';
 import { decodeRequestVersion, encodeHitVersion } from '../../version';
 import { SavedObjectsErrorHelpers } from './errors';
 import { ALL_NAMESPACES_STRING, SavedObjectsUtils } from './utils';
+import { isSupportedEsServer } from '../../../elasticsearch';
 
 /**
  * Checks the raw response of a bulk operation and returns an error if necessary.
@@ -141,3 +142,17 @@ export function rawDocExistsInNamespace(
     namespaces?.includes(ALL_NAMESPACES_STRING);
   return existsInNamespace ?? false;
 }
+
+type NotFoundServerCheckResponse = Partial<Pick<ApiResponse, 'statusCode' | 'headers' | 'body'>>;
+/**
+ * Check to ensure that a 404 response does not come from Elasticsearch
+ *
+ * WARNING: This is a hack to work around for 404 responses returned from a proxy.
+ * We're aiming to minimise the risk of data loss when consumers act on Not Found errors
+ *
+ */
+export const isNotFoundFromUnsupportedServer = (
+  response?: NotFoundServerCheckResponse | undefined
+) => {
+  return response && response.statusCode === 404 && !isSupportedEsServer(response.headers!);
+};
