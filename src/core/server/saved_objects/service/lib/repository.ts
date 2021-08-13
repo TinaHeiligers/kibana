@@ -2262,8 +2262,8 @@ const isFoundGetResponse = <TDocument = unknown>(
 ): doc is GetResponseFound<TDocument> => doc.found;
 
 /**
- * Helper method to check bulk responses from es client calls
- * @param bulkResponse
+ * Helper method to verify 404 responses are not from es client calls
+ * @param response
  * @returns boolean
  */
 const isNotFoundFromUnsupportedServer = (response?: Partial<ApiResponse> | undefined) => {

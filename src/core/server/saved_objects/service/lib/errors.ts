@@ -202,7 +202,7 @@ export class SavedObjectsErrorHelpers {
   public static isGeneralError(error: Error | DecoratedError) {
     return isSavedObjectsClientError(error) && error[code] === CODE_GENERAL_ERROR;
   }
-  // type and id may not be available for bulk operations
+  // type and id may not be available for some operations
   public static createGenericNotFoundEsUnavailableError(
     type: string | null = null,
     id: string | null = null

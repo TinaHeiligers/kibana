@@ -2344,7 +2344,7 @@ describe('SavedObjectsRepository', () => {
         client.get.mockResolvedValueOnce(
           elasticsearchClientMock.createSuccessTransportRequestPromise(
             { found: false },
-            undefined,
+            { statusCode: 404 },
             {}
           )
         );
@@ -4303,7 +4303,7 @@ describe('SavedObjectsRepository', () => {
         client.get.mockResolvedValueOnce(
           elasticsearchClientMock.createSuccessTransportRequestPromise(
             { found: false },
-            undefined,
+            { statusCode: 404 },
             {}
           )
         );
@@ -4311,7 +4311,7 @@ describe('SavedObjectsRepository', () => {
         expect(client.get).toHaveBeenCalledTimes(1);
       });
 
-      it(`throws when ES is unable to find the index during get with missing Elasticsearch`, async () => {
+      it(`throws when ES is unable to find the index during get with missing Elasticsearch header`, async () => {
         client.get.mockResolvedValueOnce(
           elasticsearchClientMock.createSuccessTransportRequestPromise({}, { statusCode: 404 }, {})
         );
