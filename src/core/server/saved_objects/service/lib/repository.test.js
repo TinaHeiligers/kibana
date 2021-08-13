@@ -652,50 +652,6 @@ describe('SavedObjectsRepository', () => {
         });
       };
 
-      const bulkCreateResponseError = async (objects, options, isEsResponse) => {
-        const multiNamespaceObjects = objects.filter(
-          ({ type, id }) => registry.isMultiNamespace(type) && id
-        );
-        if (multiNamespaceObjects?.length) {
-          const response = getMockMgetResponse(multiNamespaceObjects, options?.namespace);
-          client.mget.mockResolvedValue(
-            elasticsearchClientMock.createSuccessTransportRequestPromise(response)
-          );
-        }
-        const response = getMockBulkCreateResponse(objects, options?.namespace);
-        if (!isEsResponse) {
-          client.bulk.mockResolvedValue(
-            elasticsearchClientMock.createSuccessTransportRequestPromise(
-              { ...response },
-              { statusCode: 404 },
-              {}
-            )
-          );
-          await expect(savedObjectsRepository.bulkCreate(objects, options)).rejects.toThrowError(
-            createGenericNotFoundEsUnavailableError(null, null)
-          );
-          expect(client.bulk).toHaveBeenCalledTimes(1);
-        } else {
-          client.bulk.mockResolvedValue(
-            elasticsearchClientMock.createSuccessTransportRequestPromise(
-              { ...response },
-              { statusCode: 404 }
-            )
-          );
-          await expect(savedObjectsRepository.bulkCreate(objects, options)).rejects.toThrowError(
-            createGenericNotFoundError()
-          );
-          expect(client.bulk).toHaveBeenCalledTimes(1);
-        }
-      };
-
-      it(`throws an EsUnavailableError when a 404 response is not from Elasticsearch`, async () => {
-        await bulkCreateResponseError([obj1, obj2], undefined, false);
-      });
-      it(`re-throws a 404 when the bulk response is from Elasticsearch`, async () => {
-        await bulkCreateResponseError([obj1, obj2], undefined, true);
-      });
-
       it(`throws when options.namespace is '*'`, async () => {
         await expect(
           savedObjectsRepository.bulkCreate([obj3], { namespace: ALL_NAMESPACES_STRING })

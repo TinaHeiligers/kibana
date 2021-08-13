@@ -508,7 +508,11 @@ export class SavedObjectsRepository {
       return { tag: 'Right' as 'Right', value: expectedResult };
     });
     const bulkResponse = bulkCreateParams.length
-      ? await this._handleBulkCreateResponse(bulkCreateParams, refresh)
+      ? await this.client.bulk({
+          refresh,
+          require_alias: true,
+          body: bulkCreateParams,
+        })
       : undefined;
 
     return {
