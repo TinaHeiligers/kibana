@@ -7,7 +7,7 @@
  */
 
 import { omit, isObject } from 'lodash';
-import type { estypes } from '@elastic/elasticsearch';
+import { ApiResponse, estypes } from '@elastic/elasticsearch';
 import {
   CORE_USAGE_STATS_TYPE,
   CORE_USAGE_STATS_ID,
@@ -592,7 +592,13 @@ export class SavedObjectsRepository {
         )
       : undefined;
     // verify 404 is from Elasticsearch and exit early if it's not
-    if (isNotFoundFromUnsupportedServer(bulkGetResponse)) {
+    if (
+      bulkGetResponse &&
+      isNotFoundFromUnsupportedServer({
+        statusCode: bulkGetResponse.statusCode,
+        headers: bulkGetResponse.headers,
+      })
+    ) {
       throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
     }
     const errors: SavedObjectsCheckConflictsResponse['errors'] = [];
@@ -709,7 +715,7 @@ export class SavedObjectsRepository {
     const allTypes = Object.keys(getRootPropertiesObjects(this._mappings));
     const typesToUpdate = allTypes.filter((type) => !this._registry.isNamespaceAgnostic(type));
 
-    const { body } = await this.client.updateByQuery(
+    const { body, statusCode, headers } = await this.client.updateByQuery(
       {
         index: this.getIndicesForTypes(typesToUpdate),
         refresh: options.refresh,
@@ -737,7 +743,9 @@ export class SavedObjectsRepository {
       },
       { ignore: [404] }
     );
-
+    if (isNotFoundFromUnsupportedServer({ statusCode, headers } as Partial<ApiResponse>)) {
+      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
+    }
     return body;
   }
 
@@ -2268,8 +2276,6 @@ const isFoundGetResponse = <TDocument = unknown>(
  * @param bulkResponse
  * @returns boolean
  */
-const isNotFoundFromUnsupportedServer = (bulkResponse?: any) => {
-  return (
-    bulkResponse && bulkResponse.statusCode === 404 && !isSupportedEsServer(bulkResponse.headers)
-  );
+const isNotFoundFromUnsupportedServer = (response?: Partial<ApiResponse> | undefined) => {
+  return response && response.statusCode === 404 && !isSupportedEsServer(response.headers!);
 };
