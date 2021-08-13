@@ -591,7 +591,7 @@ export class SavedObjectsRepository {
           { ignore: [404] }
         )
       : undefined;
-    // verify 404 is from Elasticsearch and exit early if it's not
+    // verify 404 is from Elasticsearch and exit early if it's not, this needs to move to when we check if the doc is found or not.
     if (
       bulkGetResponse &&
       isNotFoundFromUnsupportedServer({
