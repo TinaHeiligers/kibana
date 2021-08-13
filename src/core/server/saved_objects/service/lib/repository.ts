@@ -1914,8 +1914,9 @@ export class SavedObjectsRepository {
     if (statusCode === 404) {
       if (!isSupportedEsServer(headers)) {
         throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
+      } else {
+        throw SavedObjectsErrorHelpers.createGenericNotFoundError();
       }
-      throw SavedObjectsErrorHelpers.createGenericNotFoundError();
     }
 
     return {
@@ -2169,7 +2170,7 @@ export class SavedObjectsRepository {
       return { saved_object: object, outcome: 'exactMatch' };
     } catch (err) {
       if (SavedObjectsErrorHelpers.isNotFoundError(err)) {
-        // 404 responses that aren't from ES are converted to 503 in the `get` call and don't need to validate them here
+        // 404 responses that aren't from ES are converted to 503 in the `get` call and don't need to re-check their origin here
         await this.incrementResolveOutcomeStats(REPOSITORY_RESOLVE_OUTCOME_STATS.NOT_FOUND);
       }
       throw err;

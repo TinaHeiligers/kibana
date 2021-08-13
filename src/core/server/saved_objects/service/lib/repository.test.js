@@ -4383,7 +4383,7 @@ describe('SavedObjectsRepository', () => {
     });
   });
 
-  describe.only('#openPointInTimeForType', () => {
+  describe('#openPointInTimeForType', () => {
     const type = 'index-pattern';
 
     const generateResults = (id) => ({ id: id || null });
@@ -4439,6 +4439,20 @@ describe('SavedObjectsRepository', () => {
           createGenericNotFoundError()
         );
       };
+      const expectNotFoundUnsupportedProductError = async (type, options) => {
+        const results = generateResults();
+        client.openPointInTime.mockResolvedValueOnce(
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            { ...results },
+            { statusCode: 404 },
+            {}
+          )
+        );
+        await expect(
+          savedObjectsRepository.openPointInTimeForType(type, options)
+        ).rejects.toThrowError(createGenericNotFoundEsUnavailableError());
+        expect(client.openPointInTime).toHaveBeenCalledTimes(1);
+      };
 
       it(`throws when ES is unable to find the index`, async () => {
         client.openPointInTime.mockResolvedValueOnce(
@@ -4457,6 +4471,11 @@ describe('SavedObjectsRepository', () => {
         await test('unknownType');
         await test(HIDDEN_TYPE);
         await test(['unknownType', HIDDEN_TYPE]);
+      });
+
+      it(`throws on 404 with missing Elasticsearch product header`, async () => {
+        await expectNotFoundUnsupportedProductError(type);
+        expect(client.openPointInTime).toHaveBeenCalledTimes(1);
       });
     });
 
