@@ -737,7 +737,7 @@ export class SavedObjectsRepository {
       },
       { ignore: [404] }
     );
-    if (isNotFoundFromUnsupportedServer({ statusCode, headers } as Partial<ApiResponse>)) {
+    if (isNotFoundFromUnsupportedServer({ statusCode, headers })) {
       throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
     }
     return body;
@@ -2261,11 +2261,12 @@ const isFoundGetResponse = <TDocument = unknown>(
   doc: estypes.GetResponse<TDocument>
 ): doc is GetResponseFound<TDocument> => doc.found;
 
+type NotFoundServerCheckResponse = Partial<Pick<ApiResponse, 'statusCode' | 'headers' | 'body'>>;
 /**
  * Helper method to verify 404 responses are not from es client calls
  * @param response
  * @returns boolean
  */
-const isNotFoundFromUnsupportedServer = (response?: Partial<ApiResponse> | undefined) => {
+const isNotFoundFromUnsupportedServer = (response?: NotFoundServerCheckResponse | undefined) => {
   return response && response.statusCode === 404 && !isSupportedEsServer(response.headers!);
 };
