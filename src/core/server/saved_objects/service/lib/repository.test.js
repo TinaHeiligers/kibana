@@ -2674,6 +2674,22 @@ describe('SavedObjectsRepository', () => {
           savedObjectsRepository.removeReferencesTo(type, id, defaultOptions)
         ).rejects.toThrowError(createConflictError(type, id));
       });
+
+      it(`throws on 404 with missing Elasticsearch header`, async () => {
+        client.updateByQuery.mockResolvedValueOnce(
+          elasticsearchClientMock.createSuccessTransportRequestPromise(
+            {
+              updated: updatedCount,
+            },
+            { statusCode: 404 },
+            {}
+          )
+        );
+        await expect(
+          savedObjectsRepository.removeReferencesTo(type, id, defaultOptions)
+        ).rejects.toThrowError(createGenericNotFoundEsUnavailableError(type, id));
+        expect(client.updateByQuery).toHaveBeenCalledTimes(1);
+      });
     });
   });
 
@@ -4367,7 +4383,7 @@ describe('SavedObjectsRepository', () => {
     });
   });
 
-  describe('#openPointInTimeForType', () => {
+  describe.only('#openPointInTimeForType', () => {
     const type = 'index-pattern';
 
     const generateResults = (id) => ({ id: id || null });
