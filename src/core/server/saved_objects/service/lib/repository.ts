@@ -7,7 +7,7 @@
  */
 
 import { omit, isObject } from 'lodash';
-import { estypes } from '@elastic/elasticsearch';
+import type { estypes } from '@elastic/elasticsearch';
 import {
   CORE_USAGE_STATS_TYPE,
   CORE_USAGE_STATS_ID,
@@ -340,7 +340,8 @@ export class SavedObjectsRepository {
       id && overwrite
         ? await this.client.index(requestParams)
         : await this.client.create(requestParams);
-    if (statusCode === 404 && !isSupportedEsServer(headers)) {
+    // fail fast if we can't be sure a 404 response is from Elasticsearch
+    if (isNotFoundFromUnsupportedServer({ statusCode, headers })) {
       throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError(id, type);
     }
     return this._rawToSavedObject<T>({
@@ -515,7 +516,6 @@ export class SavedObjectsRepository {
     return {
       saved_objects: expectedBulkResults.map((expectedResult) => {
         if (isLeft(expectedResult)) {
-          // allow an error for each document to pass through
           return expectedResult.error as any;
         }
 
@@ -1116,7 +1116,7 @@ export class SavedObjectsRepository {
       },
       { ignore: [404] }
     );
-    if (isNotFoundFromUnsupportedServer(aliasResponse)) {
+    if (isNotFoundFromUnsupportedServer({ aliasResponse.statusCode, aliasResponse.headers })) {
       // throw if we cannot verify the response is from Elasticsearch
       throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError(
         LEGACY_URL_ALIAS_TYPE,
@@ -1154,7 +1154,7 @@ export class SavedObjectsRepository {
       { ignore: [404] }
     );
     // exit early if a 404 isn't from elasticsearch
-    if (isNotFoundFromUnsupportedServer(bulkGetResponse)) {
+    if (isNotFoundFromUnsupportedServer({ bulkGetResponse.statusCode, bulkGetResponse.headers })) {
       throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError(type, id);
     }
 
