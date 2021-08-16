@@ -288,7 +288,6 @@ export class SavedObjectsRepository {
       version,
     } = options;
     const namespace = normalizeNamespace(options.namespace);
-
     this.validateInitialNamespaces(type, initialNamespaces);
 
     if (!this._allowedTypes.includes(type)) {
@@ -334,15 +333,13 @@ export class SavedObjectsRepository {
       ...(overwrite && version ? decodeRequestVersion(version) : {}),
       require_alias: true,
     };
-
-    const { body } =
+    const response =
       id && overwrite
         ? await this.client.index(requestParams)
         : await this.client.create(requestParams);
-
     return this._rawToSavedObject<T>({
       ...raw,
-      ...body,
+      ...response.body,
     });
   }
 
