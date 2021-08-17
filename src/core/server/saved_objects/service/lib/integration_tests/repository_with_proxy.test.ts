@@ -46,70 +46,70 @@ describe('404s from proxies', () => {
     });
     await server.start();
 
-    // TODO: Use this for the proxy tests
-    const hostsSettings = [
-      `http://${esUrl.username}:${esUrl.password}@${esUrl.hostname}:${proxyPort}`,
-    ];
+    // // TODO: Use this for the proxy tests
+    // const hostsSettings = [
+    //   `http://${esUrl.username}:${esUrl.password}@${esUrl.hostname}:${proxyPort}`,
+    // ];
 
-    const testServerSettings = {
-      elasticsearch: {
-        // hosts: [`http://elastic:changeme@localhost:9220/`], // test what it should be, hard-coded
-        // hosts: [`http://${esUrl.host}:${proxyPort}`], // original from Josh's suggestion-> here host includes the port so we're duplicating the port part and we get an error.
-        // hosts: [`http://${esUrl.hostname}:${proxyPort}`], // modified to only specify the port once.
-        hosts: hostsSettings, // my hack
-      },
-    };
+    // const testServerSettings = {
+    //   elasticsearch: {
+    //     // hosts: [`http://elastic:changeme@localhost:9220/`], // test what it should be, hard-coded
+    //     // hosts: [`http://${esUrl.host}:${proxyPort}`], // original from Josh's suggestion-> here host includes the port so we're duplicating the port part and we get an error.
+    //     // hosts: [`http://${esUrl.hostname}:${proxyPort}`], // modified to only specify the port once.
+    //     hosts: hostsSettings, // my hack
+    //   },
+    // };
 
-    console.log('testServerSettings', testServerSettings);
-    // Setup kibana configured to use proxy as ES backend
+    // console.log('testServerSettings', testServerSettings);
+    // // Setup kibana configured to use proxy as ES backend
 
-    // What it should be from Josh's comment:
-    const root = kbnTestServer.createRoot({
-      ...testServerSettings,
-    });
-    await root.preboot();
-    const setup = await root.setup();
-    // register a saved object type to check
-    setup.savedObjects.registerType({
-      name: 'MyType',
-      hidden: false,
-      namespaceType: 'single',
-      mappings: {
-        dynamic: false,
-        properties: {
-          textField: {
-            type: 'text',
-          },
-          boolField: {
-            type: 'boolean',
-          },
-        },
-      },
-    });
+    // // What it should be from Josh's comment:
+    // const root = kbnTestServer.createRoot({
+    //   ...testServerSettings,
+    // });
+    // await root.preboot();
+    // const setup = await root.setup();
+    // // register a saved object type to check
+    // setup.savedObjects.registerType({
+    //   name: 'MyType',
+    //   hidden: false,
+    //   namespaceType: 'single',
+    //   mappings: {
+    //     dynamic: false,
+    //     properties: {
+    //       textField: {
+    //         type: 'text',
+    //       },
+    //       boolField: {
+    //         type: 'boolean',
+    //       },
+    //     },
+    //   },
+    // });
 
-    const { savedObjects } = await root.start();
+    // const { savedObjects } = await root.start();
 
-    // Get a saved object repository
-    const repository = savedObjects.createInternalRepository();
-    try {
-      const response = await repository.get('MyType', '123');
-      // console.log('response:', response);
-    } catch (err) {
-      expect(err.output.statusCode).toBe(404);
-      expect(err.output.payload.error).toBe('Not Found');
+    // // Get a saved object repository
+    // const repository = savedObjects.createInternalRepository();
+    // try {
+    //   const response = await repository.get('MyType', '123');
+    //   // console.log('response:', response);
+    // } catch (err) {
+    //   expect(err.output.statusCode).toBe(404);
+    //   expect(err.output.payload.error).toBe('Not Found');
 
-      // expect(err).toBeInstanceOf(SavedObjectsErrorHelpers.createGenericNotFoundError);
-    }
-    // const response = await repository.get('MyType', '123');
-    // console.log('do we get a response?', response);
-    // expect(!!response).toBeTruthy();
-    // // expect(response).toEqual(...);
+    //   // expect(err).toBeInstanceOf(SavedObjectsErrorHelpers.createGenericNotFoundError);
+    // }
+    // // const response = await repository.get('MyType', '123');
+    // // console.log('do we get a response?', response);
+    // // expect(!!response).toBeTruthy();
+    // // // expect(response).toEqual(...);
 
-    // unset custom response (should fallback to ES now again)
-    // customResponse = undefined;
+    // // unset custom response (should fallback to ES now again)
+    // // customResponse = undefined;
 
-    await root.shutdown();
-    await server.stop();
-    await stopES();
+    // await root.shutdown();
+    // await server.stop();
+    // await stopES();
   });
 });
