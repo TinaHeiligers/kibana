@@ -24,18 +24,15 @@ describe('404s from proxies', () => {
     // For the proxy, use a port number that is 100 higher than the one that the actual ES instance is using
     const proxyPort = parseInt(esUrl.port, 10) + 100;
 
-    // Set this variable when you want the proxy to return this instead of proxying to ES
-    let customResponse: undefined | { body: any; statusCode: number };
-
     // Setup custom hapi server with h2o2 plugin for proxying
     const server = Hapi.server({
       port: proxyPort,
     });
     await server.register(h2o2);
-
+    // register 2 routes, both with the same proxy
     server.route({
-      method: '*',
-      path: '/*',
+      method: 'GET',
+      path: '/.kibana/123',
       handler: (req, h) => {
         if (customResponse) {
           return h.response(customResponse.body).code(customResponse.statusCode);
