@@ -6,12 +6,27 @@
  * Side Public License, v 1.
  */
 
+/* eslint-disable @typescript-eslint/no-shadow */
+import Path from 'path';
+import Fs from 'fs';
+import Util from 'util';
 import Hapi from '@hapi/hapi';
 import h2o2 from '@hapi/h2o2';
 import { URL } from 'url';
 import * as kbnTestServer from '../../../../../test_helpers/kbn_server';
 
+const logFilePath = Path.join(__dirname, 'repo_with_proxy.log');
+
+const asyncUnlink = Util.promisify(Fs.unlink);
+async function removeLogFile() {
+  // ignore errors if it doesn't exist
+  await asyncUnlink(logFilePath).catch(() => void 0);
+}
+
 describe('404s from proxies', () => {
+  beforeAll(async () => {
+    await removeLogFile();
+  });
   it('returns unavailable errors', async () => {
     // Create an ES instance
     const { startES } = kbnTestServer.createTestServers({
@@ -32,81 +47,166 @@ describe('404s from proxies', () => {
     // register 2 routes, both with the same proxy
     server.route({
       method: 'GET',
-      path: '/.kibana/123',
-      handler: (req, h) => {
-        if (customResponse) {
-          return h.response(customResponse.body).code(customResponse.statusCode);
-        }
-        // options: https://hapi.dev/module/h2o2/api/?v=9.1.0#hproxyoptions
-        return h.proxy({ host: esUrl.hostname, port: esUrl.port, protocol: 'http' });
+      path: '/.kibana_8.0.0/_doc/{type*}', // I only want to match on part of a param
+      options: {
+        handler: (req, h) => {
+          // options: https://hapi.dev/module/req.params.typeh2o2/api/?v=9.1.0#hproxyoptions
+          if (req.params.type.startsWith('mytype:')) {
+            // mocks an 'unexpected' response from the proxy
+            return h.proxy({
+              host: esUrl.hostname,
+              port: esUrl.port,
+              protocol: 'http',
+              passThrough: true,
+              onResponse: async (err, res, request, h, settings, ttl) => {
+                const response = h
+                  .response(res)
+                  .header('x-elastic-product', 'somethingitshouldnotbe', { override: true }) // changes the product header
+                  .code(404); // specifically return not found
+                return response;
+              },
+            });
+          } else {
+            return h.proxy({
+              host: esUrl.hostname,
+              port: esUrl.port,
+              protocol: 'http',
+              passThrough: true,
+            });
+          }
+        },
       },
     });
-    await server.start();
 
-    // // TODO: Use this for the proxy tests
-    // const hostsSettings = [
-    //   `http://${esUrl.username}:${esUrl.password}@${esUrl.hostname}:${proxyPort}`,
-    // ];
+    server.route({
+      method: '*',
+      path: '/{any*}',
+      options: {
+        payload: {
+          parse: false,
+        },
+        handler: (req, h) => {
+          return h.proxy({
+            host: esUrl.hostname,
+            port: esUrl.port,
+            protocol: 'http',
+            passThrough: true,
+          });
+        },
+      },
+    });
 
-    // const testServerSettings = {
-    //   elasticsearch: {
-    //     // hosts: [`http://elastic:changeme@localhost:9220/`], // test what it should be, hard-coded
-    //     // hosts: [`http://${esUrl.host}:${proxyPort}`], // original from Josh's suggestion-> here host includes the port so we're duplicating the port part and we get an error.
-    //     // hosts: [`http://${esUrl.hostname}:${proxyPort}`], // modified to only specify the port once.
-    //     hosts: hostsSettings, // my hack
-    //   },
-    // };
+    await server.start(); // start ES with proxy
 
-    // console.log('testServerSettings', testServerSettings);
-    // // Setup kibana configured to use proxy as ES backend
+    // Setup kibana configured to use proxy as ES backend
+    const root = kbnTestServer.createRootWithCorePlugins({
+      elasticsearch: { hosts: [`http://${esUrl.hostname}:${proxyPort}`] },
+      migrations: {
+        skip: false,
+        // enableV2: true,
+      },
+      logging: {
+        appenders: {
+          file: {
+            type: 'file',
+            fileName: logFilePath,
+            layout: {
+              type: 'json',
+            },
+          },
+          console: {
+            type: 'console',
+            layout: {
+              type: 'pattern',
+              highlight: true,
+              pattern: '[%logger][%level]---%message',
+            },
+          },
+        },
+        loggers: [
+          {
+            name: 'root',
+            appenders: ['console'],
+          },
+          {
+            name: 'elasticsearch.query.data',
+            level: 'debug',
+            appenders: ['file'],
+          },
+          {
+            name: 'http.server.Kibana',
+            appenders: ['console'],
+            level: 'info',
+          },
+        ],
+      },
+    });
+    await root.preboot();
 
-    // // What it should be from Josh's comment:
-    // const root = kbnTestServer.createRoot({
-    //   ...testServerSettings,
-    // });
-    // await root.preboot();
-    // const setup = await root.setup();
-    // // register a saved object type to check
-    // setup.savedObjects.registerType({
-    //   name: 'MyType',
-    //   hidden: false,
-    //   namespaceType: 'single',
-    //   mappings: {
-    //     dynamic: false,
-    //     properties: {
-    //       textField: {
-    //         type: 'text',
-    //       },
-    //       boolField: {
-    //         type: 'boolean',
-    //       },
-    //     },
-    //   },
-    // });
+    const setup = await root.setup();
 
-    // const { savedObjects } = await root.start();
+    setup.savedObjects.registerType({
+      hidden: false,
+      mappings: {
+        dynamic: false,
+        properties: {
+          title: { type: 'text' },
+        },
+      },
+      name: 'mytype',
+      namespaceType: 'single',
+    });
+    setup.savedObjects.registerType({
+      hidden: false,
+      mappings: {
+        dynamic: false,
+        properties: {
+          title: { type: 'text' },
+        },
+      },
+      name: 'myothertype',
+      namespaceType: 'single',
+    });
 
-    // // Get a saved object repository
-    // const repository = savedObjects.createInternalRepository();
-    // try {
-    //   const response = await repository.get('MyType', '123');
-    //   // console.log('response:', response);
-    // } catch (err) {
-    //   expect(err.output.statusCode).toBe(404);
-    //   expect(err.output.payload.error).toBe('Not Found');
+    const { savedObjects } = await root.start();
 
-    //   // expect(err).toBeInstanceOf(SavedObjectsErrorHelpers.createGenericNotFoundError);
-    // }
-    // // const response = await repository.get('MyType', '123');
-    // // console.log('do we get a response?', response);
-    // // expect(!!response).toBeTruthy();
-    // // // expect(response).toEqual(...);
+    // Get a saved object repository
+    const repository = savedObjects.createInternalRepository();
 
-    // // unset custom response (should fallback to ES now again)
-    // // customResponse = undefined;
+    try {
+      const thesomething = await repository.create('mytype', {
+        _id: '123',
+        namespace: 'default',
+        references: [],
+        attributes: {
+          title: 'mytype1',
+        },
+      });
+      const thesomethingelse = await repository.create('myothertype', {
+        _id: '456',
+        namespace: 'default',
+        references: [],
+        attributes: {
+          title: 'myothertype1',
+        },
+      });
+      if (thesomething && thesomethingelse) {
+        expect(thesomethingelse.type).toBe('myothertype');
+        // const indexedDoc = await repository.get('mytype', `${thesomething.id}`); // the document exists
+        // expect(indexedDoc.type).toBe('mytype');
+        const docMyothertype = await repository.get('myothertype', `${thesomethingelse.id}`); // document does not exist and the product header is modified
+        expect(docMyothertype.type).toBe('myothertype');
 
-    // await root.shutdown();
-    // await server.stop();
-    // await stopES();
+        const docMyType = await repository.get('mytype', '123');
+      }
+    } catch (err) {
+      expect(err.output.statusCode).toBe(503);
+      expect(err.output.payload.message).toBe(
+        'x-elastic-product not present or not recognized: Saved object [mytype/123] not found'
+      );
+    }
+    await root.shutdown();
+    await server.stop();
+    await stopES();
   });
 });
