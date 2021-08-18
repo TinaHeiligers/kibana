@@ -37,7 +37,7 @@ describe('404s from proxies', () => {
         handler: (req, h) => {
           // options: https://hapi.dev/module/req.params.typeh2o2/api/?v=9.1.0#hproxyoptions
           if (req.params.type.startsWith('my_type:')) {
-            // mocks an 'unexpected' response from the proxy
+            // mimics a 404 'unexpected' response from the proxy
             return h.proxy({
               host: esUrl.hostname,
               port: esUrl.port,
@@ -142,10 +142,10 @@ describe('404s from proxies', () => {
       });
       if (myType && myOtherType) {
         expect(myOtherType.type).toBe('my_other_type');
-        const docMyothertype = await repository.get('my_other_type', `${myOtherType.id}`); // document does not exist and the product header is modified
+        const docMyothertype = await repository.get('my_other_type', `${myOtherType.id}`); // document exists and proxy passes the response through unmodified
         expect(docMyothertype.type).toBe('my_other_type');
 
-        const docMyType = await repository.get('my_type', '123');
+        const docMyType = await repository.get('my_type', '123'); // document doesn't exist and the proxy modifies the response header
       }
     } catch (err) {
       expect(err.output.statusCode).toBe(503);
