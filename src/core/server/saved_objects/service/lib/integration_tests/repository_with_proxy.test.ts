@@ -157,4 +157,12 @@ describe('404s from proxies', () => {
     await server.stop();
     await stopES();
   });
+  // my_other_type test
+  it.todo(
+    'does not alter a Not Found response if the document does not exist and the proxy returns the correct product header'
+  );
+  // my_type test
+  it.todo(
+    'returns an EsUnavailable error if the document does not exist and the proxy modifies the product header'
+  );
 });
