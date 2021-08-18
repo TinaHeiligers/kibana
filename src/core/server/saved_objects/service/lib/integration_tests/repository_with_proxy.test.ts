@@ -15,18 +15,7 @@ import h2o2 from '@hapi/h2o2';
 import { URL } from 'url';
 import * as kbnTestServer from '../../../../../test_helpers/kbn_server';
 
-const logFilePath = Path.join(__dirname, 'repo_with_proxy.log');
-
-const asyncUnlink = Util.promisify(Fs.unlink);
-async function removeLogFile() {
-  // ignore errors if it doesn't exist
-  await asyncUnlink(logFilePath).catch(() => void 0);
-}
-
 describe('404s from proxies', () => {
-  beforeAll(async () => {
-    await removeLogFile();
-  });
   it('returns unavailable errors', async () => {
     // Create an ES instance
     const { startES } = kbnTestServer.createTestServers({
@@ -103,42 +92,6 @@ describe('404s from proxies', () => {
       elasticsearch: { hosts: [`http://${esUrl.hostname}:${proxyPort}`] },
       migrations: {
         skip: false,
-        // enableV2: true,
-      },
-      logging: {
-        appenders: {
-          file: {
-            type: 'file',
-            fileName: logFilePath,
-            layout: {
-              type: 'json',
-            },
-          },
-          console: {
-            type: 'console',
-            layout: {
-              type: 'pattern',
-              highlight: true,
-              pattern: '[%logger][%level]---%message',
-            },
-          },
-        },
-        loggers: [
-          {
-            name: 'root',
-            appenders: ['console'],
-          },
-          {
-            name: 'elasticsearch.query.data',
-            level: 'debug',
-            appenders: ['file'],
-          },
-          {
-            name: 'http.server.Kibana',
-            appenders: ['console'],
-            level: 'info',
-          },
-        ],
       },
     });
     await root.preboot();
