@@ -36,7 +36,7 @@ describe('404s from proxies', () => {
       options: {
         handler: (req, h) => {
           // options: https://hapi.dev/module/req.params.typeh2o2/api/?v=9.1.0#hproxyoptions
-          if (req.params.type.startsWith('mytype:')) {
+          if (req.params.type.startsWith('my_type:')) {
             // mocks an 'unexpected' response from the proxy
             return h.proxy({
               host: esUrl.hostname,
@@ -103,7 +103,7 @@ describe('404s from proxies', () => {
           title: { type: 'text' },
         },
       },
-      name: 'mytype',
+      name: 'my_type',
       namespaceType: 'single',
     });
     setup.savedObjects.registerType({
@@ -114,7 +114,7 @@ describe('404s from proxies', () => {
           title: { type: 'text' },
         },
       },
-      name: 'myothertype',
+      name: 'my_other_type',
       namespaceType: 'single',
     });
 
@@ -124,35 +124,33 @@ describe('404s from proxies', () => {
     const repository = savedObjects.createInternalRepository();
 
     try {
-      const thesomething = await repository.create('mytype', {
+      const myType = await repository.create('my_type', {
         _id: '123',
         namespace: 'default',
         references: [],
         attributes: {
-          title: 'mytype1',
+          title: 'my_type1',
         },
       });
-      const thesomethingelse = await repository.create('myothertype', {
+      const myOtherType = await repository.create('my_other_type', {
         _id: '456',
         namespace: 'default',
         references: [],
         attributes: {
-          title: 'myothertype1',
+          title: 'my_other_type1',
         },
       });
-      if (thesomething && thesomethingelse) {
-        expect(thesomethingelse.type).toBe('myothertype');
-        // const indexedDoc = await repository.get('mytype', `${thesomething.id}`); // the document exists
-        // expect(indexedDoc.type).toBe('mytype');
-        const docMyothertype = await repository.get('myothertype', `${thesomethingelse.id}`); // document does not exist and the product header is modified
-        expect(docMyothertype.type).toBe('myothertype');
+      if (myType && myOtherType) {
+        expect(myOtherType.type).toBe('my_other_type');
+        const docMyothertype = await repository.get('my_other_type', `${myOtherType.id}`); // document does not exist and the product header is modified
+        expect(docMyothertype.type).toBe('my_other_type');
 
-        const docMyType = await repository.get('mytype', '123');
+        const docMyType = await repository.get('my_type', '123');
       }
     } catch (err) {
       expect(err.output.statusCode).toBe(503);
       expect(err.output.payload.message).toBe(
-        'x-elastic-product not present or not recognized: Saved object [mytype/123] not found'
+        'x-elastic-product not present or not recognized: Saved object [my_type/123] not found'
       );
     }
     await root.shutdown();
