@@ -6,10 +6,6 @@
  * Side Public License, v 1.
  */
 
-/* eslint-disable @typescript-eslint/no-shadow */
-import Path from 'path';
-import Fs from 'fs';
-import Util from 'util';
 import Hapi from '@hapi/hapi';
 import h2o2 from '@hapi/h2o2';
 import { URL } from 'url';
@@ -47,6 +43,7 @@ describe('404s from proxies', () => {
               port: esUrl.port,
               protocol: 'http',
               passThrough: true,
+              // eslint-disable-next-line @typescript-eslint/no-shadow
               onResponse: async (err, res, request, h, settings, ttl) => {
                 const response = h
                   .response(res)
