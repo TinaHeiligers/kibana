@@ -9,11 +9,46 @@
 import Hapi from '@hapi/hapi';
 import h2o2 from '@hapi/h2o2';
 import { URL } from 'url';
-import { InternalCoreStart } from '../../../../internal_types';
+import { InternalCoreSetup, InternalCoreStart } from '../../../../internal_types';
 import { Root } from '../../../../root';
 import * as kbnTestServer from '../../../../../test_helpers/kbn_server';
 
 let esServer: kbnTestServer.TestElasticsearchUtils;
+
+const defaultProxyOptions = (hostname: string, port: number | string) => ({
+  host: hostname,
+  port,
+  protocol: 'http' as 'http',
+  passThrough: true,
+});
+const relayHandler = (h: Hapi.ResponseToolkit, hostname: string, port: number | string) => {
+  return h.proxy({ ...defaultProxyOptions(hostname, port) });
+};
+
+const registerSOTypes = (setup: InternalCoreSetup) => {
+  setup.savedObjects.registerType({
+    hidden: false,
+    mappings: {
+      dynamic: false,
+      properties: {
+        title: { type: 'text' },
+      },
+    },
+    name: 'my_type',
+    namespaceType: 'single',
+  });
+  setup.savedObjects.registerType({
+    hidden: false,
+    mappings: {
+      dynamic: false,
+      properties: {
+        title: { type: 'text' },
+      },
+    },
+    name: 'my_other_type',
+    namespaceType: 'single',
+  });
+};
 
 describe('404s from proxies', () => {
   let root: Root;
@@ -27,10 +62,8 @@ describe('404s from proxies', () => {
     esServer = await startES();
     // const { hosts, stop: stopES } = await startES();
     const esUrl = new URL(esServer.hosts[0]);
-
     // For the proxy, use a port number that is 100 higher than the one that the actual ES instance is using
     const proxyPort = parseInt(esUrl.port, 10) + 100;
-
     // Setup custom hapi hapiServer with h2o2 plugin for proxying
     hapiServer = Hapi.server({
       port: proxyPort,
@@ -46,10 +79,7 @@ describe('404s from proxies', () => {
           if (req.params.type.startsWith('my_type:')) {
             // mimics a 404 'unexpected' response from the proxy
             return h.proxy({
-              host: esUrl.hostname,
-              port: esUrl.port,
-              protocol: 'http',
-              passThrough: true,
+              ...defaultProxyOptions(esUrl.hostname, esUrl.port),
               // eslint-disable-next-line @typescript-eslint/no-shadow
               onResponse: async (err, res, request, h, settings, ttl) => {
                 const response = h
@@ -60,12 +90,7 @@ describe('404s from proxies', () => {
               },
             });
           } else {
-            return h.proxy({
-              host: esUrl.hostname,
-              port: esUrl.port,
-              protocol: 'http',
-              passThrough: true,
-            });
+            return relayHandler(h, esUrl.hostname, esUrl.port);
           }
         },
       },
@@ -79,12 +104,7 @@ describe('404s from proxies', () => {
           parse: false,
         },
         handler: (req, h) => {
-          return h.proxy({
-            host: esUrl.hostname,
-            port: esUrl.port,
-            protocol: 'http',
-            passThrough: true,
-          });
+          return relayHandler(h, esUrl.hostname, esUrl.port);
         },
       },
     });
@@ -99,31 +119,8 @@ describe('404s from proxies', () => {
       },
     });
     await root.preboot();
-
     const setup = await root.setup();
-
-    setup.savedObjects.registerType({
-      hidden: false,
-      mappings: {
-        dynamic: false,
-        properties: {
-          title: { type: 'text' },
-        },
-      },
-      name: 'my_type',
-      namespaceType: 'single',
-    });
-    setup.savedObjects.registerType({
-      hidden: false,
-      mappings: {
-        dynamic: false,
-        properties: {
-          title: { type: 'text' },
-        },
-      },
-      name: 'my_other_type',
-      namespaceType: 'single',
-    });
+    registerSOTypes(setup);
 
     start = await root.start();
   });
