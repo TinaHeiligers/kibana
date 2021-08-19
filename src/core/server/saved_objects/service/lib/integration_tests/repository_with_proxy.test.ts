@@ -9,28 +9,35 @@
 import Hapi from '@hapi/hapi';
 import h2o2 from '@hapi/h2o2';
 import { URL } from 'url';
+import { InternalCoreStart } from '../../../../internal_types';
+import { Root } from '../../../../root';
 import * as kbnTestServer from '../../../../../test_helpers/kbn_server';
 
+let esServer: kbnTestServer.TestElasticsearchUtils;
+
 describe('404s from proxies', () => {
-  it('returns unavailable errors', async () => {
-    // Create an ES instance
+  let root: Root;
+  let start: InternalCoreStart;
+  let hapiServer: Hapi.Server;
+
+  beforeAll(async () => {
     const { startES } = kbnTestServer.createTestServers({
       adjustTimeout: (t: number) => jest.setTimeout(t),
     });
-
-    const { hosts, stop: stopES } = await startES();
-    const esUrl = new URL(hosts[0]);
+    esServer = await startES();
+    // const { hosts, stop: stopES } = await startES();
+    const esUrl = new URL(esServer.hosts[0]);
 
     // For the proxy, use a port number that is 100 higher than the one that the actual ES instance is using
     const proxyPort = parseInt(esUrl.port, 10) + 100;
 
-    // Setup custom hapi server with h2o2 plugin for proxying
-    const server = Hapi.server({
+    // Setup custom hapi hapiServer with h2o2 plugin for proxying
+    hapiServer = Hapi.server({
       port: proxyPort,
     });
-    await server.register(h2o2);
+    await hapiServer.register(h2o2);
     // register 2 routes, both with the same proxy
-    server.route({
+    hapiServer.route({
       method: 'GET',
       path: '/.kibana_8.0.0/_doc/{type*}', // I only want to match on part of a param
       options: {
@@ -64,7 +71,7 @@ describe('404s from proxies', () => {
       },
     });
 
-    server.route({
+    hapiServer.route({
       method: '*',
       path: '/{any*}',
       options: {
@@ -82,10 +89,10 @@ describe('404s from proxies', () => {
       },
     });
 
-    await server.start(); // start ES with proxy
+    await hapiServer.start(); // start ES with proxy
 
     // Setup kibana configured to use proxy as ES backend
-    const root = kbnTestServer.createRootWithCorePlugins({
+    root = kbnTestServer.createRootWithCorePlugins({
       elasticsearch: { hosts: [`http://${esUrl.hostname}:${proxyPort}`] },
       migrations: {
         skip: false,
@@ -118,11 +125,17 @@ describe('404s from proxies', () => {
       namespaceType: 'single',
     });
 
-    const { savedObjects } = await root.start();
+    start = await root.start();
+  });
 
+  afterAll(async () => {
+    await root.shutdown();
+    await hapiServer.stop();
+    await esServer.stop();
+  });
+  it('returns unavailable errors', async () => {
     // Get a saved object repository
-    const repository = savedObjects.createInternalRepository();
-
+    const repository = start.savedObjects.createInternalRepository();
     try {
       const myType = await repository.create('my_type', {
         _id: '123',
@@ -145,7 +158,7 @@ describe('404s from proxies', () => {
         const docMyothertype = await repository.get('my_other_type', `${myOtherType.id}`); // document exists and proxy passes the response through unmodified
         expect(docMyothertype.type).toBe('my_other_type');
 
-        const docMyType = await repository.get('my_type', '123'); // document doesn't exist and the proxy modifies the response header
+        await repository.get('my_type', '123'); // document doesn't exist and the proxy modifies the response header
       }
     } catch (err) {
       expect(err.output.statusCode).toBe(503);
@@ -153,9 +166,6 @@ describe('404s from proxies', () => {
         'x-elastic-product not present or not recognized: Saved object [my_type/123] not found'
       );
     }
-    await root.shutdown();
-    await server.stop();
-    await stopES();
   });
   // my_other_type test
   it.todo(
