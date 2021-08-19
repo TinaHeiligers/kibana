@@ -82,6 +82,8 @@ describe('404s from proxies', () => {
               ...defaultProxyOptions(esUrl.hostname, esUrl.port),
               // eslint-disable-next-line @typescript-eslint/no-shadow
               onResponse: async (err, res, request, h, settings, ttl) => {
+                // TODO: create a mocked Stream response using Readable.from(JSON.stringify({...SO doc}))
+                // See src/core/server/elasticsearch/client/configure_client.test.ts
                 const response = h
                   .response(res)
                   .header('x-elastic-product', 'somethingitshouldnotbe', { override: true }) // changes the product header
@@ -101,6 +103,7 @@ describe('404s from proxies', () => {
       path: '/{any*}',
       options: {
         payload: {
+          output: 'data',
           parse: false,
         },
         handler: (req, h) => {
@@ -126,12 +129,50 @@ describe('404s from proxies', () => {
   });
 
   afterAll(async () => {
-    await root.shutdown();
-    await hapiServer.stop();
-    await esServer.stop();
+    if (root) {
+      await root.shutdown();
+    }
+    if (hapiServer) {
+      await hapiServer.stop();
+    }
+    if (esServer) {
+      await esServer.stop();
+    }
   });
-  it('returns unavailable errors', async () => {
-    // Get a saved object repository
+  // my_other_type test
+  it('does not alter a Not Found response if the document does not exist and the proxy returns the correct product header', async () => {
+    const repository = start.savedObjects.createInternalRepository();
+    const myOtherType = await repository.create('my_other_type', {
+      _id: '123',
+      namespace: 'default',
+      references: [],
+      attributes: {
+        title: 'my_other_type1',
+      },
+    });
+    if (myOtherType) {
+      try {
+        await repository.get('my_other_type', '123');
+      } catch (err) {
+        expect(err.output.statusCode).toBe(404);
+        expect(err.output.payload.message).toBe('Saved object [my_other_type/123] not found');
+      }
+    }
+  });
+  it('returns a document if it exists and if the proxy passes through the product header', async () => {
+    const repository = start.savedObjects.createInternalRepository();
+    const myOtherType = await repository.create('my_other_type', {
+      namespace: 'default',
+      references: [],
+      attributes: {
+        title: 'my_other_type1',
+      },
+    });
+    const myOtherTypeDoc = await repository.get('my_other_type', `${myOtherType.id}`); // document exists and proxy passes the response through unmodified
+    expect(myOtherTypeDoc.type).toBe('my_other_type');
+  });
+  // my_type test
+  it.only('returns an EsUnavailable error if the document exists but the proxy cannot find the es node (mimics allocator changes)', async () => {
     const repository = start.savedObjects.createInternalRepository();
     try {
       const myType = await repository.create('my_type', {
@@ -142,20 +183,8 @@ describe('404s from proxies', () => {
           title: 'my_type1',
         },
       });
-      const myOtherType = await repository.create('my_other_type', {
-        _id: '456',
-        namespace: 'default',
-        references: [],
-        attributes: {
-          title: 'my_other_type1',
-        },
-      });
-      if (myType && myOtherType) {
-        expect(myOtherType.type).toBe('my_other_type');
-        const docMyothertype = await repository.get('my_other_type', `${myOtherType.id}`); // document exists and proxy passes the response through unmodified
-        expect(docMyothertype.type).toBe('my_other_type');
-
-        await repository.get('my_type', '123'); // document doesn't exist and the proxy modifies the response header
+      if (myType) {
+        await repository.get('my_type', '123'); // document doesn't exist and the proxy modifies the response header -> TODO the doc should exist but the proxy cannot find the es node
       }
     } catch (err) {
       expect(err.output.statusCode).toBe(503);
@@ -164,12 +193,4 @@ describe('404s from proxies', () => {
       );
     }
   });
-  // my_other_type test
-  it.todo(
-    'does not alter a Not Found response if the document does not exist and the proxy returns the correct product header'
-  );
-  // my_type test
-  it.todo(
-    'returns an EsUnavailable error if the document does not exist and the proxy modifies the product header'
-  );
 });

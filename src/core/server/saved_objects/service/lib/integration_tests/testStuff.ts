@@ -20,7 +20,6 @@ const Hapi = require('@hapi/hapi');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const h2o2 = require('@hapi/h2o2');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const Wreck = require('@hapi/wreck');
 
 const start = async function () {
   const server = Hapi.server({
