@@ -12,6 +12,7 @@ import { URL } from 'url';
 import { InternalCoreSetup, InternalCoreStart } from '../../../../internal_types';
 import { Root } from '../../../../root';
 import * as kbnTestServer from '../../../../../test_helpers/kbn_server';
+import { SavedObjectsErrorHelpers } from '../errors';
 
 let esServer: kbnTestServer.TestElasticsearchUtils;
 
@@ -256,12 +257,12 @@ describe('404s from proxies', () => {
     });
 
     try {
-      const doc = await repository.update('my_type', `${docToUpdate.id}`, {
+      await repository.update('my_type', `${docToUpdate.id}`, {
         title: 'updated title',
       });
-      // force an error
-      expect(false).toBe(true); // Should not get here
+      expect(false).toBe(true); // Should not get here (we expect the call to throw)
     } catch (err) {
+      expect(err).toBeInstanceOf(SavedObjectsErrorHelpers.decorateEsUnavailableError);
       expect(err.output.statusCode).toBe(503);
       expect(err.output.payload.message).toBe(
         'x-elastic-product not present or not recognized: Not Found'
