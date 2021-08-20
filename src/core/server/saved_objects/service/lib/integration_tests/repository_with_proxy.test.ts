@@ -255,12 +255,11 @@ describe('404s from proxies', () => {
     });
 
     try {
-      // const actualDoc = await repository.get('my_type', `${docToUpdate.id}`);
-      // console.log('actualDoc');
       const doc = await repository.update('my_type', `${docToUpdate.id}`, {
         title: 'updated title',
       });
-      expect(false).toBe(true); // Should not et here
+      // force an error
+      expect(false).toBe(true); // Should not get here
     } catch (err) {
       expect(err.output.statusCode).toBe(503);
       expect(err.output.payload.message).toBe(
