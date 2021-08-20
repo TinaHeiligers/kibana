@@ -218,12 +218,12 @@ describe('404s from proxies', () => {
         },
       });
       if (myType) {
-        await repository.get('my_type', '123'); // document doesn't exist and the proxy modifies the response header -> TODO the doc should exist but the proxy cannot find the es node
+        const doc = await repository.get('my_type', `${myType.id}`); // document doesn't exist and the proxy modifies the response header -> TODO the doc should exist but the proxy cannot find the es node
       }
     } catch (err) {
       expect(err.output.statusCode).toBe(503);
       expect(err.output.payload.message).toBe(
-        'x-elastic-product not present or not recognized: Saved object [my_type/123] not found'
+        'x-elastic-product not present or not recognized: Not Found'
       );
     }
   });
@@ -244,7 +244,7 @@ describe('404s from proxies', () => {
     expect(updatedDoc.attributes.title).toBe('updated title');
   });
 
-  it.only('handles update requests that are interrupted', async () => {
+  it('handles update requests that are interrupted', async () => {
     const repository = start.savedObjects.createInternalRepository();
     const docToUpdate = await repository.create('my_type', {
       namespace: 'default',
@@ -262,7 +262,6 @@ describe('404s from proxies', () => {
       });
       expect(false).toBe(true); // Should not et here
     } catch (err) {
-      console.log('TEST RESULT', err);
       expect(err.output.statusCode).toBe(503);
       expect(err.output.payload.message).toBe(
         'x-elastic-product not present or not recognized: Not Found'

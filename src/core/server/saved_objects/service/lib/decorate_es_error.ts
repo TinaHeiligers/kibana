@@ -64,13 +64,14 @@ export function decorateEsError(error: EsErrors) {
   }
 
   if (responseErrors.isNotFound(error.statusCode)) {
-    console.log('------------->>>>> error', error);
+    // console.log('------------->>>>> error', error);
     const match = error?.meta?.body?.error?.reason?.match(
       /no such index \[(.+)\] and \[require_alias\] request flag is \[true\] and \[.+\] is not an alias/
     );
     if (match?.length > 0) {
       return SavedObjectsErrorHelpers.decorateIndexAliasNotFoundError(error, match[1]);
     }
+    // Product support for non-ignored 404's
     // check if we have the elasticsearch header when index is not found and if we do, ensure it is Elasticsearch
     if (!isSupportedEsServer(error?.meta?.headers)) {
       throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
