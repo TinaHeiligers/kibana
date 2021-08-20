@@ -3389,7 +3389,7 @@ describe('SavedObjectsRepository', () => {
         client.get.mockResolvedValueOnce(
           elasticsearchClientMock.createSuccessTransportRequestPromise(
             { found: false },
-            undefined,
+            { statusCode: 404 },
             {}
           )
         );

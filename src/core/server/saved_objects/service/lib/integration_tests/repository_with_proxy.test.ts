@@ -69,7 +69,7 @@ describe('404s from proxies', () => {
       port: proxyPort,
     });
     await hapiServer.register(h2o2);
-    // register 2 routes, both with the same proxy
+    // register routes, specific ones to modify the response and a catch-all to relay the request/response
     hapiServer.route({
       method: 'GET',
       path: '/.kibana_8.0.0/_doc/{type*}', // I only want to match on part of a param
@@ -165,7 +165,7 @@ describe('404s from proxies', () => {
       await root.shutdown();
     }
     if (hapiServer) {
-      await hapiServer.stop();
+      await hapiServer.stop({ timeout: 1000 });
     }
     if (esServer) {
       await esServer.stop();
@@ -208,8 +208,9 @@ describe('404s from proxies', () => {
   // See src/core/server/elasticsearch/client/configure_client.test.ts
   it('returns an EsUnavailable error if the document exists but the proxy cannot find the es node (mimics allocator changes)', async () => {
     const repository = start.savedObjects.createInternalRepository();
+    let myType: any;
     try {
-      const myType = await repository.create('my_type', {
+      myType = await repository.create('my_type', {
         _id: '123',
         namespace: 'default',
         references: [],
@@ -218,12 +219,12 @@ describe('404s from proxies', () => {
         },
       });
       if (myType) {
-        const doc = await repository.get('my_type', `${myType.id}`); // document doesn't exist and the proxy modifies the response header -> TODO the doc should exist but the proxy cannot find the es node
+        await repository.get('my_type', `${myType.id}`); // document doesn't exist and the proxy modifies the response header -> TODO the doc should exist but the proxy cannot find the es node
       }
     } catch (err) {
       expect(err.output.statusCode).toBe(503);
       expect(err.output.payload.message).toBe(
-        'x-elastic-product not present or not recognized: Not Found'
+        `x-elastic-product not present or not recognized: Saved object [my_type/${myType.id}] not found`
       );
     }
   });
