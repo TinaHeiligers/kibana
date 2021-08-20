@@ -39,6 +39,7 @@ export function createRepositoryEsClient(client: ElasticsearchClient): Repositor
             (client[key] as Function)(params, { maxRetries: 0, ...options })
           );
         } catch (e) {
+          console.log('------------->e', e)
           throw decorateEsError(e);
         }
       },

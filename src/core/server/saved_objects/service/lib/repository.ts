@@ -1314,15 +1314,6 @@ export class SavedObjectsRepository {
         _source_includes: ['namespace', 'namespaces', 'originId'],
         require_alias: true,
       })
-      .then((res) => {
-        const indexNotFound = res.statusCode === 404;
-        const esServerSupported = isSupportedEsServer(res.headers);
-        // check if we have the elasticsearch header when index is not found and if we do, ensure it is Elasticsearch
-        if (indexNotFound && !esServerSupported) {
-          throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError(type, id);
-        }
-        return res;
-      })
       .catch((err) => {
         if (SavedObjectsErrorHelpers.isEsUnavailableError(err)) {
           throw err;

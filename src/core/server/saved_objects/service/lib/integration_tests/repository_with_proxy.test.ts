@@ -27,6 +27,7 @@ const relayHandler = (h: Hapi.ResponseToolkit, hostname: string, port: number | 
 
 const registerSOTypes = (setup: InternalCoreSetup) => {
   setup.savedObjects.registerType({
+    name: 'my_type',
     hidden: false,
     mappings: {
       dynamic: false,
@@ -34,10 +35,10 @@ const registerSOTypes = (setup: InternalCoreSetup) => {
         title: { type: 'text' },
       },
     },
-    name: 'my_type',
     namespaceType: 'single',
   });
   setup.savedObjects.registerType({
+    name: 'my_other_type',
     hidden: false,
     mappings: {
       dynamic: false,
@@ -45,7 +46,6 @@ const registerSOTypes = (setup: InternalCoreSetup) => {
         title: { type: 'text' },
       },
     },
-    name: 'my_other_type',
     namespaceType: 'single',
   });
 };
@@ -82,12 +82,44 @@ describe('404s from proxies', () => {
               ...defaultProxyOptions(esUrl.hostname, esUrl.port),
               // eslint-disable-next-line @typescript-eslint/no-shadow
               onResponse: async (err, res, request, h, settings, ttl) => {
-                // TODO: create a mocked Stream response using Readable.from(JSON.stringify({...SO doc}))
-                // See src/core/server/elasticsearch/client/configure_client.test.ts
                 const response = h
                   .response(res)
                   .header('x-elastic-product', 'somethingitshouldnotbe', { override: true }) // changes the product header
                   .code(404); // specifically return not found
+                return response;
+              },
+            });
+          } else {
+            return relayHandler(h, esUrl.hostname, esUrl.port);
+          }
+        },
+      },
+    });
+
+    hapiServer.route({
+      method: 'POST',
+      path: '/.kibana_8.0.0/_update/{_id*}', // I only want to match on part of a param
+      options: {
+        payload: {
+          output: 'data',
+          parse: false,
+        },
+        handler: (req, h) => {
+          // options: https://hapi.dev/module/req.params.typeh2o2/api/?v=9.1.0#hproxyoptions
+          if (req.params._id.startsWith('my_type:')) {
+            // mimics a 404 'unexpected' response from the proxy
+            return h.proxy({
+              ...defaultProxyOptions(esUrl.hostname, esUrl.port),
+              // eslint-disable-next-line @typescript-eslint/no-shadow
+              onResponse: async (err, res, request, h, settings, ttl) => {
+                // console.log('handling response', res);
+                const response = h
+                  .response(res)
+                  .header('x-elastic-product', 'somethingitshouldnotbe', { override: true }) // changes the product header
+                  // .code(418); // returning teapot code causes repository to throw 500
+                  .code(404); // returning 404 throws the 404 from the repository call
+                // .code(200); // returning 200 catches the issue and the repository throws a 503 as expected (when the 404 status code check is removed)
+                // console.log('the response from the proxy is:', response);
                 return response;
               },
             });
@@ -172,7 +204,9 @@ describe('404s from proxies', () => {
     expect(myOtherTypeDoc.type).toBe('my_other_type');
   });
   // my_type test
-  it.only('returns an EsUnavailable error if the document exists but the proxy cannot find the es node (mimics allocator changes)', async () => {
+  // TODO: create a mocked Stream response using Readable.from(JSON.stringify({...SO doc}))
+  // See src/core/server/elasticsearch/client/configure_client.test.ts
+  it('returns an EsUnavailable error if the document exists but the proxy cannot find the es node (mimics allocator changes)', async () => {
     const repository = start.savedObjects.createInternalRepository();
     try {
       const myType = await repository.create('my_type', {
@@ -190,6 +224,48 @@ describe('404s from proxies', () => {
       expect(err.output.statusCode).toBe(503);
       expect(err.output.payload.message).toBe(
         'x-elastic-product not present or not recognized: Saved object [my_type/123] not found'
+      );
+    }
+  });
+
+  it('handles update requests that are successful', async () => {
+    const repository = start.savedObjects.createInternalRepository();
+    const docToUpdate = await repository.create('my_other_type', {
+      namespace: 'default',
+      references: [],
+      attributes: {
+        title: 'original title',
+      },
+    });
+    const updatedDoc = await repository.update('my_other_type', `${docToUpdate.id}`, {
+      title: 'updated title',
+    });
+    expect(updatedDoc.type).toBe('my_other_type');
+    expect(updatedDoc.attributes.title).toBe('updated title');
+  });
+
+  it.only('handles update requests that are interrupted', async () => {
+    const repository = start.savedObjects.createInternalRepository();
+    const docToUpdate = await repository.create('my_type', {
+      namespace: 'default',
+      references: [],
+      attributes: {
+        title: 'original title',
+      },
+    });
+
+    try {
+      // const actualDoc = await repository.get('my_type', `${docToUpdate.id}`);
+      // console.log('actualDoc');
+      const doc = await repository.update('my_type', `${docToUpdate.id}`, {
+        title: 'updated title',
+      });
+      expect(false).toBe(true); // Should not et here
+    } catch (err) {
+      console.log('TEST RESULT', err);
+      expect(err.output.statusCode).toBe(503);
+      expect(err.output.payload.message).toBe(
+        'x-elastic-product not present or not recognized: Not Found'
       );
     }
   });
