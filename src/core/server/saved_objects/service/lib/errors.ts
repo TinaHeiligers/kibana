@@ -205,6 +205,9 @@ export class SavedObjectsErrorHelpers {
 
   public static createGenericNotFoundEsUnavailableError(
     // type and id not available in all operations (e.g. mget)
+    // the resulting error is going to be confusing to the end user because we're saying that SO with type & id is not found.
+    // However, the object or objects might actually exist and the proxy returned a 404.
+    // In this case, we should only respond with Not Found and product unsupported.
     type: string | null = null,
     id: string | null = null
   ) {

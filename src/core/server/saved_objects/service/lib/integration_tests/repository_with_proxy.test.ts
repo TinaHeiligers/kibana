@@ -76,6 +76,7 @@ describe('404s from proxies', () => {
 
     // register routes, specific ones to modify the response and a catch-all to relay the request/response
 
+    // GET /.kibana_8.0.0/_doc/{type*} route (repository.get calls)
     hapiServer.route({
       method: 'GET',
       path: '/.kibana_8.0.0/_doc/{type*}',
@@ -84,6 +85,36 @@ describe('404s from proxies', () => {
           // options: https://hapi.dev/module/req.params.typeh2o2/api/?v=9.1.0#hproxyoptions
           if (req.params.type.startsWith('my_type:')) {
             // mimics a 404 'unexpected' response from the proxy
+            return h.proxy({
+              ...defaultProxyOptions(esUrl.hostname, esUrl.port),
+              // eslint-disable-next-line @typescript-eslint/no-shadow
+              onResponse: async (err, res, request, h, settings, ttl) => {
+                const response = h
+                  .response(res)
+                  .header('x-elastic-product', 'somethingitshouldnotbe', { override: true }) // changes the product header
+                  .code(404); // specifically return not found
+                return response;
+              },
+            });
+          } else {
+            return relayHandler(h, esUrl.hostname, esUrl.port);
+          }
+        },
+      },
+    });
+
+    // DELETE /.kibana_8.0.0/_doc/{type*} route (repository.delete calls)
+    hapiServer.route({
+      method: 'DELETE',
+      path: '/.kibana_8.0.0/_doc/{type*}',
+      options: {
+        payload: {
+          output: 'data',
+          parse: false,
+        },
+        handler: (req, h) => {
+          // options: https://hapi.dev/module/req.params.typeh2o2/api/?v=9.1.0#hproxyoptions
+          if (req.params.type.startsWith('my_type:')) {
             return h.proxy({
               ...defaultProxyOptions(esUrl.hostname, esUrl.port),
               // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -228,8 +259,10 @@ describe('404s from proxies', () => {
           parse: false,
         },
         handler: (req, h) => {
-          // console.log('---------------------->>catch_all path:', req.path);
-          // console.log('---------------------->>catch_all method:', req.method);
+          // if ((req.method === 'post') | (req.method === 'put')) {
+          //   console.log('---------------------->>catch_all path:', req.path);
+          //   console.log('---------------------->>catch_all method:', req.method);
+          // }
           return relayHandler(h, esUrl.hostname, esUrl.port);
         },
       },
@@ -298,7 +331,7 @@ describe('404s from proxies', () => {
       expect(myOtherTypeDoc.type).toBe('my_other_type');
     });
 
-    it('handles update requests that are successful', async () => {
+    it('handles `update` requests that are successful', async () => {
       const docToUpdate = await repository.create('my_other_type', {
         namespace: 'default',
         references: [],
@@ -313,8 +346,7 @@ describe('404s from proxies', () => {
       expect(updatedDoc.attributes.title).toBe('updated title');
     });
 
-    it('handles bulkCreate requests when the proxy relays request/responses correctly', async () => {
-      proxyInterrupt = null;
+    it('handles `bulkCreate` requests when the proxy relays request/responses correctly', async () => {
       const bulkObjects = [
         {
           type: 'my_other_type',
@@ -341,10 +373,33 @@ describe('404s from proxies', () => {
     });
 
     it('returns matches from `find` when the proxy passes through the response and product header', async () => {
-      proxyInterrupt = null;
       const type = 'my_other_type';
       const result = await repository.find({ type });
       expect(result.saved_objects.length).toBeGreaterThan(0);
+    });
+
+    it('handles `delete` requests that are successful', async () => {
+      let deleteErr: any;
+      const docToDelete = await repository.create('my_other_type', {
+        namespace: 'default',
+        references: [],
+        attributes: {
+          title: 'delete me please',
+        },
+      });
+      const deleteResult = await repository.delete('my_other_type', `${docToDelete.id}`, {
+        namespace: 'default',
+      });
+      expect(deleteResult).toStrictEqual({});
+      try {
+        await repository.get('my_other_type', `${docToDelete.id}`);
+      } catch (err) {
+        deleteErr = err;
+      }
+      expect(deleteErr?.output?.statusCode).toBe(404);
+      expect(deleteErr?.output?.payload?.message).toBe(
+        `Saved object [my_other_type/${docToDelete.id}] not found`
+      );
     });
   });
 
@@ -406,7 +461,7 @@ describe('404s from proxies', () => {
       );
     });
 
-    it('returns an EsUnavailable error on `bulkCreate` requests when the proxy response with 404 and the incorrect product header', async () => {
+    it('returns an EsUnavailable error on `bulkCreate` requests with a 404 proxy response and wrong product header', async () => {
       proxyInterrupt = 'bulkCreate';
       let bulkCreateError: any;
       const bulkObjects = [
@@ -435,7 +490,7 @@ describe('404s from proxies', () => {
       expect(bulkCreateError?.output?.statusCode).toEqual(503);
     });
 
-    it('returns an EsUnavailable error on `find` requests when the proxy response with 404 and the incorrect product header', async () => {
+    it('returns an EsUnavailable error on `find` requests with a 404 proxy response and wrong product header', async () => {
       const type = 'my_other_type';
       let findErr: any;
       try {
@@ -450,13 +505,32 @@ describe('404s from proxies', () => {
       );
       expect(findErr?.output?.payload?.error).toBe('Service Unavailable');
     });
+
+    it('returns an EsUnavailable error on `delete` requests with a 404 proxy response and wrong product header', async () => {
+      let deleteErr: any;
+      const docToDelete = await repository.create('my_type', {
+        namespace: 'default',
+        references: [],
+        attributes: {
+          title: 'delete me please',
+        },
+      });
+      try {
+        await repository.delete('my_type', `${docToDelete.id}`, { namespace: 'default' });
+      } catch (err) {
+        deleteErr = err;
+      }
+      expect(deleteErr?.output?.statusCode).toBe(503);
+      expect(deleteErr?.output?.payload?.message).toBe(
+        `x-elastic-product not present or not recognized: Saved object [my_type/${docToDelete.id}] not found`
+      );
+    });
   });
 });
 
 // TODO: paths with '/.kibana_8.0.0..... Won't work for backports!
 /**
  * Methods TODO:
- *  find
  *  delete
  *  resolve
  *  bulkGet
@@ -471,4 +545,5 @@ describe('404s from proxies', () => {
  *  create,
  *  update,
  *  bulkCreate
+ *  find
  */

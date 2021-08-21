@@ -679,8 +679,9 @@ export class SavedObjectsRepository {
       },
       { ignore: [404] }
     );
+
     if (isNotFoundFromUnsupportedServer({ statusCode, headers })) {
-      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
+      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError(type, id);
     }
 
     const deleted = body.result === 'deleted';
