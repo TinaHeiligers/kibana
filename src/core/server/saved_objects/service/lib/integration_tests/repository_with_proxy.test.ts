@@ -12,7 +12,6 @@ import { URL } from 'url';
 import { InternalCoreSetup, InternalCoreStart } from '../../../../internal_types';
 import { Root } from '../../../../root';
 import * as kbnTestServer from '../../../../../test_helpers/kbn_server';
-import { SavedObjectsErrorHelpers } from '../errors';
 import { ISavedObjectsRepository } from '../repository';
 import { SavedObject } from '../../../types';
 
@@ -52,7 +51,7 @@ const registerSOTypes = (setup: InternalCoreSetup) => {
     namespaceType: 'single',
   });
 };
-let triggerTest: string | undefined;
+let proxyInterrupt: string | null | undefined = null;
 
 describe('404s from proxies', () => {
   let root: Root;
@@ -60,6 +59,7 @@ describe('404s from proxies', () => {
   let hapiServer: Hapi.Server;
 
   beforeAll(async () => {
+    proxyInterrupt = null;
     const { startES } = kbnTestServer.createTestServers({
       adjustTimeout: (t: number) => jest.setTimeout(t),
     });
@@ -75,9 +75,10 @@ describe('404s from proxies', () => {
     await hapiServer.register(h2o2);
 
     // register routes, specific ones to modify the response and a catch-all to relay the request/response
+
     hapiServer.route({
       method: 'GET',
-      path: '/.kibana_8.0.0/_doc/{type*}', // I only want to match on part of a param
+      path: '/.kibana_8.0.0/_doc/{type*}',
       options: {
         handler: (req, h) => {
           // options: https://hapi.dev/module/req.params.typeh2o2/api/?v=9.1.0#hproxyoptions
@@ -111,7 +112,7 @@ describe('404s from proxies', () => {
           parse: false,
         },
         handler: (req, h) => {
-          if (triggerTest === 'bulkCreate') {
+          if (proxyInterrupt === 'bulkCreate') {
             return h.proxy({
               ...defaultProxyOptions(esUrl.hostname, esUrl.port),
               // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -156,6 +157,34 @@ describe('404s from proxies', () => {
       },
     });
 
+    // POST _search route (`find` calls)
+    hapiServer.route({
+      method: 'POST',
+      path: '/.kibana_8.0.0/_search',
+      options: {
+        payload: {
+          output: 'data',
+          parse: false,
+        },
+        handler: (req, h) => {
+          if (proxyInterrupt === 'find') {
+            return h.proxy({
+              ...defaultProxyOptions(esUrl.hostname, esUrl.port),
+              // eslint-disable-next-line @typescript-eslint/no-shadow
+              onResponse: async (err, res, request, h, settings, ttl) => {
+                const response = h
+                  .response(res)
+                  .header('x-elastic-product', 'somethingitshouldnotbe', { override: true })
+                  .code(404);
+                return response;
+              },
+            });
+          } else {
+            return relayHandler(h, esUrl.hostname, esUrl.port);
+          }
+        },
+      },
+    });
     // POST _update
     hapiServer.route({
       method: 'POST',
@@ -199,6 +228,8 @@ describe('404s from proxies', () => {
           parse: false,
         },
         handler: (req, h) => {
+          // console.log('---------------------->>catch_all path:', req.path);
+          // console.log('---------------------->>catch_all method:', req.method);
           return relayHandler(h, esUrl.hostname, esUrl.port);
         },
       },
@@ -247,6 +278,9 @@ describe('404s from proxies', () => {
         },
       });
     });
+    beforeEach(() => {
+      proxyInterrupt = null;
+    });
 
     it('does not alter a Not Found response if the document does not exist and the proxy returns the correct product header', async () => {
       let customErr: any;
@@ -280,7 +314,7 @@ describe('404s from proxies', () => {
     });
 
     it('handles bulkCreate requests when the proxy relays request/responses correctly', async () => {
-      triggerTest = null;
+      proxyInterrupt = null;
       const bulkObjects = [
         {
           type: 'my_other_type',
@@ -299,11 +333,18 @@ describe('404s from proxies', () => {
           references: [],
         },
       ];
-      if (triggerTest === null) {
+      if (proxyInterrupt === null) {
         const bulkResponse = await repository.bulkCreate(bulkObjects, { namespace: 'default' });
         expect(bulkResponse.saved_objects.length).toEqual(2);
       }
       expect(true); // force test exit.
+    });
+
+    it('returns matches from `find` when the proxy passes through the response and product header', async () => {
+      proxyInterrupt = null;
+      const type = 'my_other_type';
+      const result = await repository.find({ type });
+      expect(result.saved_objects.length).toBeGreaterThan(0);
     });
   });
 
@@ -313,6 +354,12 @@ describe('404s from proxies', () => {
 
     beforeAll(async () => {
       repository = start.savedObjects.createInternalRepository();
+    });
+    beforeEach(() => {
+      proxyInterrupt = null;
+    });
+    afterEach(() => {
+      proxyInterrupt = null;
     });
 
     it('returns an EsUnavailable error if the document exists but the proxy cannot find the es node (mimics allocator changes)', async () => {
@@ -336,7 +383,7 @@ describe('404s from proxies', () => {
       );
     });
 
-    it('returns an EsUnavailable error on update requests that are interrupted', async () => {
+    it('returns an EsUnavailable error on `update` requests that are interrupted', async () => {
       let myError;
       const docToUpdate = await repository.create('my_type', {
         namespace: 'default',
@@ -359,8 +406,8 @@ describe('404s from proxies', () => {
       );
     });
 
-    it('returns an EsUnavailable error on bulkCreate requests when the proxy response with 404 and the incorrect product header', async () => {
-      triggerTest = 'bulkCreate';
+    it('returns an EsUnavailable error on `bulkCreate` requests when the proxy response with 404 and the incorrect product header', async () => {
+      proxyInterrupt = 'bulkCreate';
       let bulkCreateError: any;
       const bulkObjects = [
         {
@@ -386,8 +433,42 @@ describe('404s from proxies', () => {
         bulkCreateError = err;
       }
       expect(bulkCreateError?.output?.statusCode).toEqual(503);
-      triggerTest = null;
-      expect(triggerTest).toBe(null); // ensure a reset
+    });
+
+    it('returns an EsUnavailable error on `find` requests when the proxy response with 404 and the incorrect product header', async () => {
+      const type = 'my_other_type';
+      let findErr: any;
+      try {
+        proxyInterrupt = 'find';
+        await repository.find({ type });
+      } catch (err) {
+        findErr = err;
+      }
+      expect(findErr?.output?.statusCode).toEqual(503);
+      expect(findErr?.output?.payload?.message).toBe(
+        'x-elastic-product not present or not recognized: Not Found'
+      );
+      expect(findErr?.output?.payload?.error).toBe('Service Unavailable');
     });
   });
 });
+
+// TODO: paths with '/.kibana_8.0.0..... Won't work for backports!
+/**
+ * Methods TODO:
+ *  find
+ *  delete
+ *  resolve
+ *  bulkGet
+ *  openPointInTime
+ *  checkConflicts
+ *  deleteByNamespace
+ *  optional:
+ *    collectMultiNamespaceReferences
+ *
+ * Methods tested:
+ *  get,
+ *  create,
+ *  update,
+ *  bulkCreate
+ */
