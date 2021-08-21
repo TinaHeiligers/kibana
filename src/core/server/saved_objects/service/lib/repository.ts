@@ -679,6 +679,9 @@ export class SavedObjectsRepository {
       },
       { ignore: [404] }
     );
+    if (isNotFoundFromUnsupportedServer({ statusCode, headers })) {
+      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
+    }
 
     const deleted = body.result === 'deleted';
     if (deleted) {
@@ -688,15 +691,8 @@ export class SavedObjectsRepository {
     const deleteDocNotFound = body.result === 'not_found';
     // @ts-expect-error @elastic/elasticsearch doesn't declare error on DeleteResponse
     const deleteIndexNotFound = body.error && body.error.type === 'index_not_found_exception';
-    const esServerSupported = isSupportedEsServer(headers);
     if (deleteDocNotFound || deleteIndexNotFound) {
-      if (esServerSupported) {
-        // see "404s from missing index" above
-        throw SavedObjectsErrorHelpers.createGenericNotFoundError(type, id);
-      } else {
-        // throw if we can't verify the response is from Elasticsearch
-        throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError(type, id);
-      }
+      throw SavedObjectsErrorHelpers.createGenericNotFoundError(type, id);
     }
 
     throw new Error(

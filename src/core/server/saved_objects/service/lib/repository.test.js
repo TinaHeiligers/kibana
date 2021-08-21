@@ -2398,27 +2398,19 @@ describe('SavedObjectsRepository', () => {
 
       it(`throws when ES is unable to find the document during delete`, async () => {
         client.delete.mockResolvedValueOnce(
-          elasticsearchClientMock.createSuccessTransportRequestPromise(
-            { result: 'not_found' },
-            {},
-            {}
-          )
+          elasticsearchClientMock.createSuccessTransportRequestPromise({ result: 'not_found' })
         );
-        await expectNotFoundEsUnavailableError(type, id);
+        await expectNotFoundError(type, id);
         expect(client.delete).toHaveBeenCalledTimes(1);
       });
 
       it(`throws when ES is unable to find the index during delete`, async () => {
         client.delete.mockResolvedValueOnce(
-          elasticsearchClientMock.createSuccessTransportRequestPromise(
-            {
-              error: { type: 'index_not_found_exception' },
-            },
-            {},
-            {}
-          )
+          elasticsearchClientMock.createSuccessTransportRequestPromise({
+            error: { type: 'index_not_found_exception' },
+          })
         );
-        await expectNotFoundEsUnavailableError(type, id);
+        await expectNotFoundError(type, id);
         expect(client.delete).toHaveBeenCalledTimes(1);
       });
 
