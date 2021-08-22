@@ -3634,12 +3634,13 @@ describe('SavedObjectsRepository', () => {
           client.mget.mockResolvedValueOnce(
             elasticsearchClientMock.createSuccessTransportRequestPromise(response) // for actual target and alias target
           );
-
+          console.log(`args for test: type:${type}, id: ${id}, options: ${options}`, options);
           const result = await savedObjectsRepository.resolve(type, id, options);
           expect(client.update).toHaveBeenCalledTimes(2); // retrieved alias object, then incremented stats
           expect(client.get).not.toHaveBeenCalled();
           expect(client.mget).toHaveBeenCalledTimes(1); // retrieved actual target and alias target
           expectIncrementCounter(2, REPOSITORY_RESOLVE_OUTCOME_STATS.ALIAS_MATCH);
+          console.log('result:', result);
           expect(result).toEqual({
             saved_object: expect.objectContaining({ type, id: aliasTargetId }),
             outcome: 'aliasMatch',

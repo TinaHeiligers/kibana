@@ -82,9 +82,11 @@ describe('404s from proxies', () => {
       path: '/.kibana_8.0.0/_doc/{type*}',
       options: {
         handler: (req, h) => {
-          // options: https://hapi.dev/module/req.params.typeh2o2/api/?v=9.1.0#hproxyoptions
-          if (req.params.type.startsWith('my_type:')) {
-            // mimics a 404 'unexpected' response from the proxy
+          // mimics a 404 'unexpected' response from the proxy for specific docs
+          if (
+            req.params.type === 'my_type:my_type123' ||
+            req.params.type === 'my_type:myType_123'
+          ) {
             return h.proxy({
               ...defaultProxyOptions(esUrl.hostname, esUrl.port),
               // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -148,7 +150,6 @@ describe('404s from proxies', () => {
               ...defaultProxyOptions(esUrl.hostname, esUrl.port),
               // eslint-disable-next-line @typescript-eslint/no-shadow
               onResponse: async (err, res, request, h, settings, ttl) => {
-                // console.log('handling response', res);
                 const response = h
                   .response(res)
                   .header('x-elastic-product', 'somethingitshouldnotbe', { override: true }) // changes the product header
@@ -226,15 +227,14 @@ describe('404s from proxies', () => {
           parse: false,
         },
         handler: (req, h) => {
-          // options: https://hapi.dev/module/req.params.typeh2o2/api/?v=9.1.0#hproxyoptions
+          // mimics a 404 'unexpected' response from the proxy
           if (req.params._id.startsWith('my_type:')) {
-            // I could create a set of params to match against to use as the throwing handler trigger
+            // TODO: replace with exact mathces
             // mimics a 404 'unexpected' response from the proxy
             return h.proxy({
               ...defaultProxyOptions(esUrl.hostname, esUrl.port),
               // eslint-disable-next-line @typescript-eslint/no-shadow
               onResponse: async (err, res, request, h, settings, ttl) => {
-                // console.log('handling response', res);
                 const response = h
                   .response(res)
                   .header('x-elastic-product', 'somethingitshouldnotbe', { override: true }) // changes the product header
@@ -259,10 +259,6 @@ describe('404s from proxies', () => {
           parse: false,
         },
         handler: (req, h) => {
-          // if ((req.method === 'post') | (req.method === 'put')) {
-          //   console.log('---------------------->>catch_all path:', req.path);
-          //   console.log('---------------------->>catch_all method:', req.method);
-          // }
           return relayHandler(h, esUrl.hostname, esUrl.port);
         },
       },
@@ -302,14 +298,12 @@ describe('404s from proxies', () => {
 
     beforeAll(async () => {
       repository = start.savedObjects.createInternalRepository();
-      myOtherType = await repository.create('my_other_type', {
-        _id: '123',
-        namespace: 'default',
-        references: [],
-        attributes: {
-          title: 'my_other_type1',
-        },
-      });
+
+      myOtherType = await repository.create(
+        'my_other_type',
+        { title: 'my_other_type1' },
+        { overwrite: false, references: [] }
+      );
     });
     beforeEach(() => {
       proxyInterrupt = null;
@@ -332,13 +326,12 @@ describe('404s from proxies', () => {
     });
 
     it('handles `update` requests that are successful', async () => {
-      const docToUpdate = await repository.create('my_other_type', {
-        namespace: 'default',
-        references: [],
-        attributes: {
-          title: 'original title',
-        },
-      });
+      const docToUpdate = await repository.create(
+        'my_other_type',
+        { title: 'original title' },
+        { overwrite: false, references: [] }
+      );
+
       const updatedDoc = await repository.update('my_other_type', `${docToUpdate.id}`, {
         title: 'updated title',
       });
@@ -380,14 +373,12 @@ describe('404s from proxies', () => {
 
     it('handles `delete` requests that are successful', async () => {
       let deleteErr: any;
-      const docToDelete = await repository.create('my_other_type', {
-        namespace: 'default',
-        references: [],
-        attributes: {
-          title: 'delete me please',
-        },
-      });
-      const deleteResult = await repository.delete('my_other_type', `${docToDelete.id}`, {
+      const docToDelete = await repository.create(
+        'my_other_type',
+        { title: 'delete me please' },
+        { id: '123', overwrite: false, references: [] }
+      );
+      const deleteResult = await repository.delete('my_other_type', '123', {
         namespace: 'default',
       });
       expect(deleteResult).toStrictEqual({});
@@ -401,11 +392,21 @@ describe('404s from proxies', () => {
         `Saved object [my_other_type/${docToDelete.id}] not found`
       );
     });
+
+    describe('resolve', () => {
+      it('handles `resolve` requests that are successful with an exact match', async () => {
+        const resolvedExactMatch = await repository.resolve('my_other_type', `${myOtherType.id}`);
+        expect(resolvedExactMatch.outcome).toBe('exactMatch');
+      });
+
+      it.todo('handles `resolve` requests that are successful with an alias match');
+
+      it.todo('handles `resolve` requests that result in a conflict outcome');
+    });
   });
 
   describe('requests when a proxy returns Not Found with an incorrect product header', () => {
     let repository: ISavedObjectsRepository;
-    let myType: SavedObject;
 
     beforeAll(async () => {
       repository = start.savedObjects.createInternalRepository();
@@ -419,34 +420,30 @@ describe('404s from proxies', () => {
 
     it('returns an EsUnavailable error if the document exists but the proxy cannot find the es node (mimics allocator changes)', async () => {
       let myError;
-      myType = await repository.create('my_type', {
-        _id: '123',
-        namespace: 'default',
-        references: [],
-        attributes: {
-          title: 'my_type1',
-        },
-      });
+      await repository.create(
+        'my_type',
+        { title: 'my_type1' },
+        { id: 'myType_123', overwrite: true, references: [] }
+      );
       try {
-        await repository.get('my_type', `${myType.id}`);
+        const item = await repository.get('my_type', 'myType_123');
+        expect(item).toBe('bob');
       } catch (err) {
         myError = err;
       }
-      expect(myError.output.statusCode).toBe(503);
-      expect(myError.output.payload.message).toBe(
-        `x-elastic-product not present or not recognized: Saved object [my_type/${myType.id}] not found`
+      expect(myError?.output?.statusCode).toBe(503);
+      expect(myError?.output?.payload?.message).toBe(
+        'x-elastic-product not present or not recognized: Saved object [my_type/myType_123] not found'
       );
     });
 
     it('returns an EsUnavailable error on `update` requests that are interrupted', async () => {
       let myError;
-      const docToUpdate = await repository.create('my_type', {
-        namespace: 'default',
-        references: [],
-        attributes: {
-          title: 'original title',
-        },
-      });
+      const docToUpdate = await repository.create(
+        'my_type',
+        { title: 'original title' },
+        { overwrite: false, references: [], namespace: 'default' }
+      );
       try {
         await repository.update('my_type', `${docToUpdate.id}`, {
           title: 'updated title',
@@ -508,15 +505,13 @@ describe('404s from proxies', () => {
 
     it('returns an EsUnavailable error on `delete` requests with a 404 proxy response and wrong product header', async () => {
       let deleteErr: any;
-      const docToDelete = await repository.create('my_type', {
-        namespace: 'default',
-        references: [],
-        attributes: {
-          title: 'delete me please',
-        },
-      });
+      const docToDelete = await repository.create(
+        'my_type',
+        { title: 'delete me please' },
+        { id: 'delete_me_please', overwrite: true, references: [], namespace: 'default' }
+      );
       try {
-        await repository.delete('my_type', `${docToDelete.id}`, { namespace: 'default' });
+        await repository.delete('my_type', 'delete_me_please', { namespace: 'default' });
       } catch (err) {
         deleteErr = err;
       }
@@ -525,14 +520,39 @@ describe('404s from proxies', () => {
         `x-elastic-product not present or not recognized: Saved object [my_type/${docToDelete.id}] not found`
       );
     });
+
+    describe('resolve', () => {
+      it('returns an EsUnavailable error on `resolve` requests with a 404 proxy response and wrong product header for an exact match', async () => {
+        let testResolveErr: any;
+        await repository.create(
+          'my_type',
+          { title: 'my_type1' },
+          { id: 'my_type123', overwrite: true, references: [] }
+        );
+        try {
+          await repository.resolve('my_type', 'my_type123');
+        } catch (err) {
+          testResolveErr = err;
+        }
+        expect(testResolveErr?.output?.statusCode).toEqual(503);
+        expect(testResolveErr?.output?.payload?.message).toBe(
+          'x-elastic-product not present or not recognized: Saved object [my_type/my_type123] not found'
+        );
+      });
+    });
   });
 });
 
-// TODO: paths with '/.kibana_8.0.0..... Won't work for backports!
+// FIXUP TODO's:
+// fix so register calls!
+// fix create calls
+// paths with '/.kibana_8.0.0..... Won't work for backports!
 /**
  * Methods TODO:
- *  delete
- *  resolve
+ *  resolve:
+ *    resolve exact match executed against SO's in 'default' namespace and that uses `get`. Nothing to do here
+ *    retrieve alias uses `update` and we need to test the proxy 404 here
+ *
  *  bulkGet
  *  openPointInTime
  *  checkConflicts
@@ -546,4 +566,5 @@ describe('404s from proxies', () => {
  *  update,
  *  bulkCreate
  *  find
+ *  delete
  */
