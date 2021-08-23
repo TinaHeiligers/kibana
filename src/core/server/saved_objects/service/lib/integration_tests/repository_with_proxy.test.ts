@@ -272,6 +272,35 @@ describe('404s from proxies', () => {
         },
       },
     });
+    // POST _pit
+    hapiServer.route({
+      method: 'POST',
+      path: '/.kibana_8.0.0/_pit',
+      options: {
+        payload: {
+          output: 'data',
+          parse: false,
+        },
+        handler: (req, h) => {
+          // mimics a 404 'unexpected' response from the proxy
+          if (proxyInterrupt === 'openPit') {
+            return h.proxy({
+              ...defaultProxyOptions(esUrl.hostname, esUrl.port),
+              // eslint-disable-next-line @typescript-eslint/no-shadow
+              onResponse: async (err, res, request, h, settings, ttl) => {
+                const response = h
+                  .response(res)
+                  .header('x-elastic-product', 'somethingitshouldnotbe', { override: true }) // changes the product header
+                  .code(404); // returning 404 throws the 404 from the repository call
+                return response;
+              },
+            });
+          } else {
+            return relayHandler(h, esUrl.hostname, esUrl.port);
+          }
+        },
+      },
+    });
     // catch-all passthrough route
     hapiServer.route({
       method: '*',
@@ -282,6 +311,7 @@ describe('404s from proxies', () => {
           parse: false,
         },
         handler: (req, h) => {
+          // console.log(`---------------------->method: ${req.method}; path: ${req.path}`);
           return relayHandler(h, esUrl.hostname, esUrl.port);
         },
       },
@@ -444,6 +474,11 @@ describe('404s from proxies', () => {
       const resolvedExactMatch = await repository.resolve('my_other_type', `${myOtherType.id}`);
       expect(resolvedExactMatch.outcome).toBe('exactMatch');
     });
+
+    it('handles `openPointInTime` requests when the proxy passes through the product header', async () => {
+      const openPitResult = await repository.openPointInTimeForType('my_other_type');
+      expect(Object.keys(openPitResult)).toContain('id');
+    });
   });
 
   describe('requests when a proxy returns Not Found with an incorrect product header', () => {
@@ -589,6 +624,17 @@ describe('404s from proxies', () => {
       }
       expect(genericNotFoundEsUnavailableError(bulkGetError));
     });
+
+    it('returns an EsUnavailable error on `openPointInTimeForType` requests with a 404 proxy response and wrong product header', async () => {
+      proxyInterrupt = 'openPit';
+      let openPitErr: any;
+      try {
+        await repository.openPointInTimeForType('my_other_type');
+      } catch (err) {
+        openPitErr = err;
+      }
+      expect(genericNotFoundEsUnavailableError(openPitErr));
+    });
   });
 });
 
@@ -598,7 +644,6 @@ describe('404s from proxies', () => {
 // paths with '/.kibana_8.0.0..... Won't work for backports!
 /**
  * Methods TODO:
- *  openPointInTime
  *  checkConflicts
  *  deleteByNamespace
  *  optional:
@@ -616,4 +661,5 @@ describe('404s from proxies', () => {
  *  find
  *  delete
  *  bulkGet
+ *  openPointInTime
  */
