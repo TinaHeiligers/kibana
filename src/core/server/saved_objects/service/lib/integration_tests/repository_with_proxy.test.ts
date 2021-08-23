@@ -171,7 +171,7 @@ describe('404s from proxies', () => {
           parse: false,
         },
         handler: (req, h) => {
-          if (proxyInterrupt === 'bulkGetMyType') {
+          if (proxyInterrupt === 'bulkGetMyType' || proxyInterrupt === 'checkConficts') {
             return h.proxy({
               ...defaultProxyOptions(esUrl.hostname, esUrl.port),
               // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -478,6 +478,18 @@ describe('404s from proxies', () => {
       const openPitResult = await repository.openPointInTimeForType('my_other_type');
       expect(Object.keys(openPitResult)).toContain('id');
     });
+
+    it('handles `checkConflicts` requests that are successful when the proxy passes through the product header', async () => {
+      const checkConflictsResult = await repository.checkConflicts(
+        [
+          { id: myOtherTypeDocs[0].id, type: myOtherTypeDocs[0].type },
+          { id: 'myOtherType456', type: 'my_other_type' },
+        ],
+        { namespace: 'default' }
+      );
+      expect(checkConflictsResult.errors.length).toEqual(1);
+      expect(checkConflictsResult.errors[0].error.error).toStrictEqual('Conflict');
+    });
   });
 
   describe('requests when a proxy returns Not Found with an incorrect product header', () => {
@@ -633,6 +645,23 @@ describe('404s from proxies', () => {
         openPitErr = err;
       }
       expect(genericNotFoundEsUnavailableError(openPitErr));
+    });
+
+    it('returns an EsUnavailable error on `checkConflicts` requests with a 404 proxy response and wrong product header', async () => {
+      proxyInterrupt = 'checkConficts';
+      let checkConflictsErr: any;
+      try {
+        await repository.checkConflicts(
+          [
+            { id: myTypeDocs[0].id, type: myTypeDocs[0].type },
+            { id: 'myType456', type: 'my_type' },
+          ],
+          { namespace: 'default' }
+        );
+      } catch (err) {
+        checkConflictsErr = err;
+      }
+      expect(genericNotFoundEsUnavailableError(checkConflictsErr));
     });
   });
 });
