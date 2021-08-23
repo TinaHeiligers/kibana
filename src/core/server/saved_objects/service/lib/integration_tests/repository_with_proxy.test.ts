@@ -311,7 +311,6 @@ describe('404s from proxies', () => {
           parse: false,
         },
         handler: (req, h) => {
-          // console.log(`---------------------->method: ${req.method}; path: ${req.path}`);
           return relayHandler(h, esUrl.hostname, esUrl.port);
         },
       },
