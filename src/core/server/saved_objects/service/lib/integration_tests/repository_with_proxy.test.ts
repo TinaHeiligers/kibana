@@ -200,6 +200,7 @@ describe('404s from proxies', () => {
         },
         handler: (req, h) => {
           if (proxyInterrupt === 'find') {
+            // TODO: improve on this
             return h.proxy({
               ...defaultProxyOptions(esUrl.hostname, esUrl.port),
               // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -259,6 +260,7 @@ describe('404s from proxies', () => {
           parse: false,
         },
         handler: (req, h) => {
+          // console.log(`catch-all route req.path: ${req.path};\n req.meethod: ${req.method}`);
           return relayHandler(h, esUrl.hostname, esUrl.port);
         },
       },
@@ -295,6 +297,7 @@ describe('404s from proxies', () => {
   describe('requests when a proxy relays request/responses with the correct product header', () => {
     let repository: ISavedObjectsRepository;
     let myOtherType: SavedObject;
+    const myOtherTypeDocs: SavedObject[] = [];
 
     beforeAll(async () => {
       repository = start.savedObjects.createInternalRepository();
@@ -304,6 +307,18 @@ describe('404s from proxies', () => {
         { title: 'my_other_type1' },
         { overwrite: false, references: [] }
       );
+      for (let i = 1; i < 11; i++) {
+        myOtherTypeDocs.push({
+          type: 'my_other_type',
+          id: `myOtherTypeId${i}`,
+          attributes: { title: `MyOtherTypeTitle${i}` },
+          references: [],
+        });
+      }
+      await repository.bulkCreate(myOtherTypeDocs, {
+        overwrite: true,
+        namespace: 'default',
+      });
     });
     beforeEach(() => {
       proxyInterrupt = null;
@@ -343,7 +358,7 @@ describe('404s from proxies', () => {
       const bulkObjects = [
         {
           type: 'my_other_type',
-          id: '1',
+          id: 'my_other_type1',
           attributes: {
             title: 'bulkType1',
           },
@@ -351,7 +366,7 @@ describe('404s from proxies', () => {
         },
         {
           type: 'my_other_type',
-          id: '2',
+          id: 'my_other_type2',
           attributes: {
             title: 'bulkType2',
           },
@@ -359,7 +374,10 @@ describe('404s from proxies', () => {
         },
       ];
       if (proxyInterrupt === null) {
-        const bulkResponse = await repository.bulkCreate(bulkObjects, { namespace: 'default' });
+        const bulkResponse = await repository.bulkCreate(bulkObjects, {
+          namespace: 'default',
+          overwrite: true,
+        });
         expect(bulkResponse.saved_objects.length).toEqual(2);
       }
       expect(true); // force test exit.
@@ -376,14 +394,14 @@ describe('404s from proxies', () => {
       const docToDelete = await repository.create(
         'my_other_type',
         { title: 'delete me please' },
-        { id: '123', overwrite: false, references: [] }
+        { id: 'docToDelete1', overwrite: true, references: [] }
       );
-      const deleteResult = await repository.delete('my_other_type', '123', {
+      const deleteResult = await repository.delete('my_other_type', 'docToDelete1', {
         namespace: 'default',
       });
       expect(deleteResult).toStrictEqual({});
       try {
-        await repository.get('my_other_type', `${docToDelete.id}`);
+        await repository.get('my_other_type', 'docToDelete1');
       } catch (err) {
         deleteErr = err;
       }
@@ -391,6 +409,14 @@ describe('404s from proxies', () => {
       expect(deleteErr?.output?.payload?.message).toBe(
         `Saved object [my_other_type/${docToDelete.id}] not found`
       );
+    });
+
+    it('handles `bulkGet` requests that are successful when the proxy passes through the product header', async () => {
+      const docsToGet = myOtherTypeDocs;
+      const docsFound = await repository.bulkGet(
+        docsToGet.map((doc) => ({ id: doc.id, type: 'my_other_type' }))
+      );
+      expect(docsFound.saved_objects.length).toBeGreaterThan(0);
     });
 
     describe('resolve', () => {
@@ -407,14 +433,25 @@ describe('404s from proxies', () => {
 
   describe('requests when a proxy returns Not Found with an incorrect product header', () => {
     let repository: ISavedObjectsRepository;
+    const myTypeDocs: SavedObject[] = [];
 
     beforeAll(async () => {
       repository = start.savedObjects.createInternalRepository();
+      proxyInterrupt = null; // allow creation of docs to test against
+      for (let i = 1; i < 11; i++) {
+        myTypeDocs.push({
+          type: 'my_type',
+          id: `myTypeId${i}`,
+          attributes: { title: `MyTypeTitle${i}` },
+          references: [],
+        });
+      }
+      await repository.bulkCreate(myTypeDocs, {
+        overwrite: true,
+        namespace: 'default',
+      });
     });
     beforeEach(() => {
-      proxyInterrupt = null;
-    });
-    afterEach(() => {
       proxyInterrupt = null;
     });
 
@@ -553,7 +590,7 @@ describe('404s from proxies', () => {
  *    resolve exact match executed against SO's in 'default' namespace and that uses `get`. Nothing to do here
  *    retrieve alias uses `update` and we need to test the proxy 404 here
  *
- *  bulkGet
+ *  bulkGet -> current WIP
  *  openPointInTime
  *  checkConflicts
  *  deleteByNamespace
