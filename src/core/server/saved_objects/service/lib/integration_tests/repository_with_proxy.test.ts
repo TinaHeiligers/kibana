@@ -64,7 +64,6 @@ describe('404s from proxies', () => {
       adjustTimeout: (t: number) => jest.setTimeout(t),
     });
     esServer = await startES();
-    // const { hosts, stop: stopES } = await startES();
     const esUrl = new URL(esServer.hosts[0]);
     // For the proxy, use a port number that is 100 higher than the one that the actual ES instance is using
     const proxyPort = parseInt(esUrl.port, 10) + 100;
@@ -74,7 +73,7 @@ describe('404s from proxies', () => {
     });
     await hapiServer.register(h2o2);
 
-    // register routes, specific ones to modify the response and a catch-all to relay the request/response
+    // register specific routes to modify the response and a catch-all to relay the request/response as-is
 
     // GET /.kibana_8.0.0/_doc/{type*} route (repository.get calls)
     hapiServer.route({
@@ -101,7 +100,6 @@ describe('404s from proxies', () => {
         },
       },
     });
-
     // DELETE /.kibana_8.0.0/_doc/{type*} route (repository.delete calls)
     hapiServer.route({
       method: 'DELETE',
@@ -120,8 +118,8 @@ describe('404s from proxies', () => {
               onResponse: async (err, res, request, h, settings, ttl) => {
                 const response = h
                   .response(res)
-                  .header('x-elastic-product', 'somethingitshouldnotbe', { override: true }) // changes the product header
-                  .code(404); // specifically return not found
+                  .header('x-elastic-product', 'somethingitshouldnotbe', { override: true })
+                  .code(404);
                 return response;
               },
             });
@@ -149,8 +147,8 @@ describe('404s from proxies', () => {
               onResponse: async (err, res, request, h, settings, ttl) => {
                 const response = h
                   .response(res)
-                  .header('x-elastic-product', 'somethingitshouldnotbe', { override: true }) // changes the product header
-                  .code(404); // returning 404 throws the 404 from the repository call
+                  .header('x-elastic-product', 'somethingitshouldnotbe', { override: true })
+                  .code(404);
                 return response;
               },
             });
@@ -160,7 +158,6 @@ describe('404s from proxies', () => {
         },
       },
     });
-
     // POST _mget route (repository.bulkGet calls)
     hapiServer.route({
       method: 'POST',
@@ -301,6 +298,36 @@ describe('404s from proxies', () => {
         },
       },
     });
+    // POST _update_by_query
+    hapiServer.route({
+      method: 'POST',
+      path: '/.kibana_8.0.0/_update_by_query',
+      options: {
+        payload: {
+          output: 'data',
+          parse: false,
+        },
+        handler: (req, h) => {
+          // mimics a 404 'unexpected' response from the proxy
+          if (proxyInterrupt === 'deleteByNamespace') {
+            return h.proxy({
+              ...defaultProxyOptions(esUrl.hostname, esUrl.port),
+              // eslint-disable-next-line @typescript-eslint/no-shadow
+              onResponse: async (err, res, request, h, settings, ttl) => {
+                const response = h
+                  .response(res)
+                  .header('x-elastic-product', 'somethingitshouldnotbe', { override: true }) // changes the product header
+                  .code(404); // returning 404 throws the 404 from the repository call
+                return response;
+              },
+            });
+          } else {
+            return relayHandler(h, esUrl.hostname, esUrl.port);
+          }
+        },
+      },
+    });
+
     // catch-all passthrough route
     hapiServer.route({
       method: '*',
@@ -316,7 +343,7 @@ describe('404s from proxies', () => {
       },
     });
 
-    await hapiServer.start(); // start ES with proxy
+    await hapiServer.start();
 
     // Setup kibana configured to use proxy as ES backend
     root = kbnTestServer.createRootWithCorePlugins({
@@ -343,7 +370,7 @@ describe('404s from proxies', () => {
       await esServer.stop();
     }
   });
-  // my_other_type test (proxy relays request/response as is)
+
   describe('requests when a proxy relays request/responses with the correct product header', () => {
     let repository: ISavedObjectsRepository;
     let myOtherType: SavedObject;
@@ -370,6 +397,7 @@ describe('404s from proxies', () => {
         namespace: 'default',
       });
     });
+
     beforeEach(() => {
       proxyInterrupt = null;
     });
@@ -489,6 +517,13 @@ describe('404s from proxies', () => {
       );
       expect(checkConflictsResult.errors.length).toEqual(1);
       expect(checkConflictsResult.errors[0].error.error).toStrictEqual('Conflict');
+    });
+
+    it('handles `deleteByNamespace` requests when the proxy passes through the product header', async () => {
+      const deleteByNamespaceResult = await repository.deleteByNamespace('default');
+      expect(Object.keys(deleteByNamespaceResult)).toEqual(
+        expect.arrayContaining(['total', 'updated', 'deleted'])
+      );
     });
   });
 
@@ -663,31 +698,16 @@ describe('404s from proxies', () => {
       }
       expect(genericNotFoundEsUnavailableError(checkConflictsErr));
     });
+
+    it('returns an EsUnavailable error on `deleteByNamespace` requests with a 404 proxy response and wrong product header', async () => {
+      proxyInterrupt = 'deleteByNamespace';
+      let deleteByNamespaceErr: any;
+      try {
+        await repository.deleteByNamespace('default');
+      } catch (err) {
+        deleteByNamespaceErr = err;
+      }
+      expect(genericNotFoundEsUnavailableError(deleteByNamespaceErr));
+    });
   });
 });
-
-// FIXUP TODO's:
-// fix so register calls!
-// fix create calls
-// paths with '/.kibana_8.0.0..... Won't work for backports!
-/**
- * Methods TODO:
- *  checkConflicts
- *  deleteByNamespace
- *  optional:
- *    collectMultiNamespaceReferences
- *  resolve:
- *    resolve exact match executed against SO's in 'default' namespace and that uses `get`. Nothing to do here
- *    retrieve alias uses `update` and we need to test the proxy 404 here
-
- *
- * Methods tested:
- *  get,
- *  create,
- *  update,
- *  bulkCreate
- *  find
- *  delete
- *  bulkGet
- *  openPointInTime
- */
