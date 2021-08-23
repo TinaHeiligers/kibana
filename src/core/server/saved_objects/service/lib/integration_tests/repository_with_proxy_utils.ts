@@ -7,6 +7,21 @@
  */
 import Hapi from '@hapi/hapi';
 import { IncomingMessage } from 'http';
+import { Env } from '@kbn/config';
+import { REPO_ROOT } from '@kbn/dev-utils';
+import type { getEnvOptions as getEnvOptionsTyped } from '@kbn/config/target_types/mocks';
+import {
+  getEnvOptions as getEnvOptionsNonTyped,
+  // @ts-expect-error
+} from '@kbn/config/target_node/mocks';
+
+// Inspired by src/core/server/ui_settings/integration_tests/index.test.ts
+// we need the current kibana version to target the specific .kibana_<version> index for routes that need the active kibana index
+const getEnvOptions: typeof getEnvOptionsTyped = getEnvOptionsNonTyped;
+const kibanaVersion = Env.createDefault(REPO_ROOT, getEnvOptions()).packageInfo.version;
+const kbnIndex = `.kibana_${kibanaVersion}`;
+
+// proxy setup
 const defaultProxyOptions = (hostname: string, port: number | string) => ({
   host: hostname,
   port,
@@ -37,14 +52,10 @@ const proxyOnResponseHandler = async (res: IncomingMessage, h: Hapi.ResponseTool
     .code(404);
 };
 // GET /.kibana_8.0.0/_doc/{type*} route (repository.get calls)
-export const registerGetRoute = (
-  hapiServer: Hapi.Server,
-  hostname: string,
-  port: string | number
-) =>
+export const declareGetRoute = (hapiServer: Hapi.Server, hostname: string, port: string | number) =>
   hapiServer.route({
     method: 'GET',
-    path: '/.kibana_8.0.0/_doc/{type*}',
+    path: `/${kbnIndex}/_doc/{type*}`,
     options: {
       handler: (req, h) => {
         // mimics a 404 'unexpected' response from the proxy for specific docs
@@ -57,14 +68,14 @@ export const registerGetRoute = (
     },
   });
 // DELETE /.kibana_8.0.0/_doc/{type*} route (repository.delete calls)
-export const registerDeleteRoute = (
+export const declareDeleteRoute = (
   hapiServer: Hapi.Server,
   hostname: string,
   port: string | number
 ) =>
   hapiServer.route({
     method: 'DELETE',
-    path: '/.kibana_8.0.0/_doc/{_id*}',
+    path: `/${kbnIndex}/_doc/{_id*}`,
     options: {
       payload: {
         output: 'data',
@@ -82,7 +93,7 @@ export const registerDeleteRoute = (
   });
 
 // POST _bulk route
-export const registerPostBulkRoute = (
+export const declarePostBulkRoute = (
   hapiServer: Hapi.Server,
   hostname: string,
   port: string | number
@@ -105,7 +116,7 @@ export const registerPostBulkRoute = (
     },
   });
 // POST _mget route (repository.bulkGet calls)
-export const registerPostMgetRoute = (
+export const declarePostMgetRoute = (
   hapiServer: Hapi.Server,
   hostname: string,
   port: string | number
@@ -128,14 +139,14 @@ export const registerPostMgetRoute = (
     },
   });
 // GET _search route
-export const registerGetSearchRoute = (
+export const declareGetSearchRoute = (
   hapiServer: Hapi.Server,
   hostname: string,
   port: string | number
 ) =>
   hapiServer.route({
     method: 'GET',
-    path: '/.kibana_8.0.0/_search',
+    path: `/${kbnIndex}/_search`,
     options: {
       handler: (req, h) => {
         const payload = req.payload;
@@ -148,14 +159,14 @@ export const registerGetSearchRoute = (
     },
   });
 // POST _search route (`find` calls)
-export const registerPostSearchRoute = (
+export const declarePostSearchRoute = (
   hapiServer: Hapi.Server,
   hostname: string,
   port: string | number
 ) =>
   hapiServer.route({
     method: 'POST',
-    path: '/.kibana_8.0.0/_search',
+    path: `/${kbnIndex}/_search`,
     options: {
       payload: {
         output: 'data',
@@ -172,14 +183,14 @@ export const registerPostSearchRoute = (
     },
   });
 // POST _update
-export const registerPostUpdateRoute = (
+export const declarePostUpdateRoute = (
   hapiServer: Hapi.Server,
   hostname: string,
   port: string | number
 ) =>
   hapiServer.route({
     method: 'POST',
-    path: '/.kibana_8.0.0/_update/{_id*}', // I only want to match on part of a param
+    path: `/${kbnIndex}/_update/{_id*}`, // I only want to match on part of a param
     options: {
       payload: {
         output: 'data',
@@ -196,14 +207,14 @@ export const registerPostUpdateRoute = (
     },
   });
 // POST _pit
-export const registerPostPitRoute = (
+export const declarePostPitRoute = (
   hapiServer: Hapi.Server,
   hostname: string,
   port: string | number
 ) =>
   hapiServer.route({
     method: 'POST',
-    path: '/.kibana_8.0.0/_pit',
+    path: `/${kbnIndex}/_pit`,
     options: {
       payload: {
         output: 'data',
@@ -220,14 +231,14 @@ export const registerPostPitRoute = (
     },
   });
 // POST _update_by_query
-export const registerPostUpdateByQueryRoute = (
+export const declarePostUpdateByQueryRoute = (
   hapiServer: Hapi.Server,
   hostname: string,
   port: string | number
 ) =>
   hapiServer.route({
     method: 'POST',
-    path: '/.kibana_8.0.0/_update_by_query',
+    path: `/${kbnIndex}/_update_by_query`,
     options: {
       payload: {
         output: 'data',
@@ -245,7 +256,7 @@ export const registerPostUpdateByQueryRoute = (
   });
 
 // catch-all passthrough route
-export const registerPassthroughRoute = (
+export const declarePassthroughRoute = (
   hapiServer: Hapi.Server,
   hostname: string,
   port: string | number

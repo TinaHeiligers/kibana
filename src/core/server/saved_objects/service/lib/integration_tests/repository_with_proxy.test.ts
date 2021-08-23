@@ -15,22 +15,21 @@ import { InternalCoreSetup, InternalCoreStart } from '../../../../internal_types
 import { Root } from '../../../../root';
 import * as kbnTestServer from '../../../../../test_helpers/kbn_server';
 import {
-  registerGetRoute,
-  registerDeleteRoute,
-  registerPostBulkRoute,
-  registerPostMgetRoute,
-  registerGetSearchRoute,
-  registerPostSearchRoute,
-  registerPostUpdateRoute,
-  registerPostPitRoute,
-  registerPostUpdateByQueryRoute,
-  registerPassthroughRoute,
+  declareGetRoute,
+  declareDeleteRoute,
+  declarePostBulkRoute,
+  declarePostMgetRoute,
+  declareGetSearchRoute,
+  declarePostSearchRoute,
+  declarePostUpdateRoute,
+  declarePostPitRoute,
+  declarePostUpdateByQueryRoute,
+  declarePassthroughRoute,
   setProxyInterrupt,
   getProxyInterrupt,
 } from './repository_with_proxy_utils';
 
 let esServer: kbnTestServer.TestElasticsearchUtils;
-
 const registerSOTypes = (setup: InternalCoreSetup) => {
   setup.savedObjects.registerType({
     name: 'my_type',
@@ -83,18 +82,18 @@ describe('404s from proxies', () => {
     await hapiServer.register(h2o2);
     // register specific routes to modify the response and a catch-all to relay the request/response as-is
 
-    registerGetRoute(hapiServer, esUrl.hostname, esUrl.port);
-    registerDeleteRoute(hapiServer, esUrl.hostname, esUrl.port);
-    registerPostUpdateRoute(hapiServer, esUrl.hostname, esUrl.port);
+    declareGetRoute(hapiServer, esUrl.hostname, esUrl.port);
+    declareDeleteRoute(hapiServer, esUrl.hostname, esUrl.port);
+    declarePostUpdateRoute(hapiServer, esUrl.hostname, esUrl.port);
 
-    registerGetSearchRoute(hapiServer, esUrl.hostname, esUrl.port);
-    registerPostSearchRoute(hapiServer, esUrl.hostname, esUrl.port);
-    registerPostBulkRoute(hapiServer, esUrl.hostname, esUrl.port);
-    registerPostMgetRoute(hapiServer, esUrl.hostname, esUrl.port);
-    registerPostPitRoute(hapiServer, esUrl.hostname, esUrl.port);
-    registerPostUpdateByQueryRoute(hapiServer, esUrl.hostname, esUrl.port);
+    declareGetSearchRoute(hapiServer, esUrl.hostname, esUrl.port);
+    declarePostSearchRoute(hapiServer, esUrl.hostname, esUrl.port);
+    declarePostBulkRoute(hapiServer, esUrl.hostname, esUrl.port);
+    declarePostMgetRoute(hapiServer, esUrl.hostname, esUrl.port);
+    declarePostPitRoute(hapiServer, esUrl.hostname, esUrl.port);
+    declarePostUpdateByQueryRoute(hapiServer, esUrl.hostname, esUrl.port);
 
-    registerPassthroughRoute(hapiServer, esUrl.hostname, esUrl.port);
+    declarePassthroughRoute(hapiServer, esUrl.hostname, esUrl.port);
 
     await hapiServer.start();
 
