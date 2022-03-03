@@ -117,7 +117,7 @@ describe('migration actions', () => {
         body: {
           persistent: {
             // Enable all routing allocation again
-            cluster: { routing: { allocation: { enable: 'all' } } },
+            cluster: { routing: { allocation: { enable: null } } },
           },
         },
       });
@@ -150,7 +150,7 @@ describe('migration actions', () => {
       );
     });
     it('resolves left with cluster routing allocation disabled', async () => {
-      expect.assertions(1);
+      expect.assertions(3);
       await client.cluster.putSettings({
         body: {
           persistent: {
@@ -164,6 +164,46 @@ describe('migration actions', () => {
         indices: ['existing_index_with_docs'],
       });
       await expect(task()).resolves.toMatchInlineSnapshot(`
+              Object {
+                "_tag": "Left",
+                "left": Object {
+                  "type": "cluster_routing_allocation_disabled",
+                },
+              }
+            `);
+      await client.cluster.putSettings({
+        body: {
+          persistent: {
+            // Disable all routing allocation
+            cluster: { routing: { allocation: { enable: 'primaries' } } },
+          },
+        },
+      });
+      const task2 = initAction({
+        client,
+        indices: ['existing_index_with_docs'],
+      });
+      await expect(task2()).resolves.toMatchInlineSnapshot(`
+              Object {
+                "_tag": "Left",
+                "left": Object {
+                  "type": "cluster_routing_allocation_disabled",
+                },
+              }
+            `);
+      await client.cluster.putSettings({
+        body: {
+          persistent: {
+            // Disable all routing allocation
+            cluster: { routing: { allocation: { enable: 'new_primaries' } } },
+          },
+        },
+      });
+      const task3 = initAction({
+        client,
+        indices: ['existing_index_with_docs'],
+      });
+      await expect(task3()).resolves.toMatchInlineSnapshot(`
               Object {
                 "_tag": "Left",
                 "left": Object {
