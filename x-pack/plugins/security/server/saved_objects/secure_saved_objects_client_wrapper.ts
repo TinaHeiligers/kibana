@@ -6,6 +6,11 @@
  */
 
 import type {
+  SavedObjectsBulkDeleteObject,
+  SavedObjectsBulkDeleteOptions,
+  SavedObjectsBulkDeleteResponse,
+} from '@kbn/core-saved-objects-api-server';
+import type {
   SavedObjectReferenceWithContext,
   SavedObjectsBaseOptions,
   SavedObjectsBulkCreateObject,
@@ -102,6 +107,12 @@ export class SecureSavedObjectsClientWrapper implements SavedObjectsClientContra
     this.baseClient = baseClient;
     this.checkSavedObjectsPrivilegesAsCurrentUser = checkSavedObjectsPrivilegesAsCurrentUser;
     this.getSpacesService = getSpacesService;
+  }
+  bulkDelete(
+    objects: SavedObjectsBulkDeleteObject[],
+    options?: SavedObjectsBulkDeleteOptions
+  ): Promise<SavedObjectsBulkDeleteResponse> {
+    throw new Error('Method not implemented.');
   }
 
   public async create<T = unknown>(

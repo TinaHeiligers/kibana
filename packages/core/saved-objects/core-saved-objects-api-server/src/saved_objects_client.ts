@@ -41,6 +41,9 @@ import type {
   SavedObjectsRemoveReferencesToResponse,
   SavedObjectsCollectMultiNamespaceReferencesOptions,
   SavedObjectsBulkResponse,
+  SavedObjectsBulkDeleteObject,
+  SavedObjectsBulkDeleteOptions,
+  SavedObjectsBulkDeleteResponse,
 } from './apis';
 
 /**
@@ -150,6 +153,17 @@ export interface SavedObjectsClientContract {
    * @param options
    */
   delete(type: string, id: string, options?: SavedObjectsDeleteOptions): Promise<{}>;
+
+  /**
+   * Deletes multiple SavedObjects batched together as a single request
+   *
+   * @param objects
+   * @param options
+   */
+  bulkDelete(
+    objects: SavedObjectsBulkDeleteObject[],
+    options?: SavedObjectsBulkDeleteOptions
+  ): Promise<SavedObjectsBulkDeleteResponse>;
 
   /**
    * Find all SavedObjects matching the search query

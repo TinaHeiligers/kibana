@@ -51,4 +51,8 @@ export type {
   SavedObjectsClosePointInTimeOptions,
   SavedObjectsCreatePointInTimeFinderOptions,
   SavedObjectsFindOptions,
+  SavedObjectsBulkDeleteObject,
+  SavedObjectsBulkDeleteOptions,
+  SavedObjectsBulkDeleteStatus,
+  SavedObjectsBulkDeleteResponse,
 } from './apis';
