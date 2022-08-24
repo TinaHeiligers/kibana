@@ -687,22 +687,13 @@ export class SavedObjectsRepository implements ISavedObjectsRepository {
     options: SavedObjectsBulkDeleteOptions
   ): Promise<SavedObjectsBulkDeleteResponse> {
     const { refresh = DEFAULT_REFRESH_SETTING, force } = options;
-
-    // if (objects.length === 0) {
-    //   return { statuses: [{ success: true, id: '', type }] };
-    // }
-
-    // the following normalization throws if namespace is "*"
-    // otherwise, return the space name or undefined again if namespace isn't defined (default)
     const namespace = normalizeNamespace(options.namespace);
-
-    let bulkGetRequestIndexCounter = 0; // used in params for the bulk request
+    let bulkGetRequestIndexCounter = 0;
 
     type ExpectedBulkGetResult = Either<
       { type: string; id: string; error: Payload },
       { type: string; id: string; version?: string; esRequestIndex?: number }
     >;
-
     const expectedBulkGetResults = objects.map<ExpectedBulkGetResult>((object) => {
       const { type, id } = object;
       if (!this._allowedTypes.includes(type)) {
@@ -715,9 +706,7 @@ export class SavedObjectsRepository implements ISavedObjectsRepository {
           },
         };
       }
-      // we can only do the check on if an  on the object's namespace itself, which we don't have yet, we'll need to get that through n mget response
       const requiresNamespacesCheck = this._registry.isMultiNamespace(type);
-
       return {
         tag: 'Right',
         value: {
@@ -727,12 +716,6 @@ export class SavedObjectsRepository implements ISavedObjectsRepository {
         },
       };
     });
-
-    // utility methods for namespace
-    const getNamespaceId = (objectNamespace?: string) =>
-      objectNamespace !== undefined
-        ? SavedObjectsUtils.namespaceStringToId(objectNamespace)
-        : namespace;
 
     // get multi-namespace saved objects.
     const bulkGetDocs = expectedBulkGetResults
@@ -758,8 +741,6 @@ export class SavedObjectsRepository implements ISavedObjectsRepository {
       throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
     }
 
-    let bulkDeleteRequestIndexCounter = 0;
-
     interface BulkDeleteParams {
       delete: BulkDeleteParamsItem;
     }
@@ -770,9 +751,6 @@ export class SavedObjectsRepository implements ISavedObjectsRepository {
       _index: string;
     }
 
-    const bulkDeleteParams: BulkDeleteParams[] = [];
-    // TODO: Joe's typeguard work from his refactor draft PR
-    // NOTE: The expected results have nothing to do with the public types for bulkDelete
     type ExpectedBulkDeleteResult = Either<
       { type: string; id: string; error: Payload },
       {
@@ -782,7 +760,10 @@ export class SavedObjectsRepository implements ISavedObjectsRepository {
         esRequestIndex: number;
       }
     >;
-    // sort docs we retrieved with the bulk get into those that we want to issue a bulkDelete request for and those we're not going to even bother with (we know they're invalid in some way). Note: We mutate the initialized params for the request within this map but don't return them. What we do return is the expected result for each doc.
+
+    let bulkDeleteRequestIndexCounter = 0;
+    const bulkDeleteParams: BulkDeleteParams[] = [];
+
     const expectedBulkDeleteResults = await Promise.all(
       expectedBulkGetResults.map<Promise<ExpectedBulkDeleteResult>>(
         async (expectedBulkGetResult) => {
@@ -793,15 +774,15 @@ export class SavedObjectsRepository implements ISavedObjectsRepository {
 
           let namespaces;
           let versionProperties;
-          // esRequestIndex is defined for multi-namespace SO's
+
           if (esRequestIndex !== undefined) {
-            const indexFound = bulkGetResponse?.statusCode !== 404; // we have the index
+            const indexFound = bulkGetResponse?.statusCode !== 404;
 
             const actualResult = indexFound
               ? bulkGetResponse?.body.docs[esRequestIndex]
-              : undefined; // we have an actual result
+              : undefined;
 
-            const docFound = indexFound && isMgetDoc(actualResult) && actualResult.found; // we have an actual so document
+            const docFound = indexFound && isMgetDoc(actualResult) && actualResult.found;
 
             if (!docFound) {
               return {
@@ -817,7 +798,7 @@ export class SavedObjectsRepository implements ISavedObjectsRepository {
             }
             if (
               // @ts-expect-error MultiGetHit is incorrectly missing _id, _source
-              !this.rawDocExistsInNamespace(actualResult, getNamespaceId(undefined)) &&
+              !this.rawDocExistsInNamespace(actualResult, namespace) &&
               !force
             ) {
               // the document exists but not in the namespace for this client. Deleting the doc is still possible but one needs to force the action.
@@ -843,7 +824,6 @@ export class SavedObjectsRepository implements ISavedObjectsRepository {
             versionProperties = getExpectedVersionProperties(version);
           } else {
             if (this._registry.isSingleNamespace(type)) {
-              // if `objectNamespace` is undefined, fall back to `options.namespace`
               namespaces = [SavedObjectsUtils.namespaceIdToString(namespace)];
             }
             versionProperties = getExpectedVersionProperties(version);
@@ -855,7 +835,6 @@ export class SavedObjectsRepository implements ISavedObjectsRepository {
             namespaces,
             esRequestIndex: bulkDeleteRequestIndexCounter++,
           };
-          // only create bulk payload from objects we think will be deleted successfully. We're not even going to try with the others. NOTE: creating the params is a side effect within this map, we're not actually returning the params themselves.
 
           bulkDeleteParams.push({
             delete: {
@@ -879,21 +858,21 @@ export class SavedObjectsRepository implements ISavedObjectsRepository {
         })
       : undefined;
 
+    // extracted to ensure consistency in the error results returned
+    let errorResult: { success: boolean; type: string; id: string; error: Payload };
+
     const savedObjects = await Promise.all(
       expectedBulkDeleteResults.map(async (expectedResult) => {
         if (isLeft(expectedResult)) {
-          // error:
-          return expectedResult.value; // it's an outright error result { id, type, error} If we don't have any right values, we'll exit here.
+          errorResult = { ...expectedResult.value, success: false };
+          return errorResult;
         }
         const { type, id, namespaces, esRequestIndex } = expectedResult.value;
 
-        // const response = bulkDeleteResponse?.items[esRequestIndex] ?? {};
-        // const rawUntypedResponse = Object.values(response)[0] as any;
-        // incomplete types
         type NewBulkItemResponse = BulkResponseItem & { error: ErrorCause & { index: string } };
 
-        // we wouldn't get here if bulkDeleteResponse is undefined,
-        if (bulkDeleteResponse === undefined) throw new Error(); // we assume this wouldn't happen and is a hack around the types
+        // we assume this wouldn't happen but is needed to circumvent type issues
+        if (bulkDeleteResponse === undefined) throw new Error();
 
         const rawResponse = Object.values(
           bulkDeleteResponse.items[esRequestIndex]
@@ -901,20 +880,12 @@ export class SavedObjectsRepository implements ISavedObjectsRepository {
 
         const error = getBulkOperationError(type, id, rawResponse);
         if (error) {
-          // error:
-          return { success: false, type, id, error };
+          errorResult = { success: false, type, id, error };
+          return errorResult;
         }
-
-        // When a bulk update operation is completed, any fields specified in `_sourceIncludes` will be found in the "get" value of the
-        // returned object. We need to retrieve the `originId` if it exists so we can return it to the consumer.
-        const { _seq_no: seqNo, _primary_term: primaryTerm } = rawResponse;
-        // const { originId } = get._source;
-        // clean up legacy aliases for rawResponse.
         const deleted = rawResponse.result === 'deleted';
-        // clean up legacy aliases
         if (deleted) {
           if (namespaces) {
-            // This is a multi-namespace object type, and it might have legacy URL aliases that need to be deleted.
             await deleteLegacyUrlAliases({
               mappings: this._mappings,
               registry: this._registry,
@@ -934,21 +905,14 @@ export class SavedObjectsRepository implements ISavedObjectsRepository {
             });
           }
         }
-        // return of expectedResult if successful in the map
-        return {
-          result: {
-            success: true,
-            id,
-            type,
-            // ...(namespaces && { namespaces }),
-            // ...(originId && { originId }),
-            // version: encodeVersion(seqNo, primaryTerm),
-          },
+        const successfulResult = {
+          success: true,
+          id,
+          type,
         };
+        return successfulResult;
       })
     );
-    // we need to handle the failed and successful deleted objects to let the callee know what the result is.
-    // sort the savedObjects in terms of success and erro
     return { statuses: [...savedObjects] };
   }
 

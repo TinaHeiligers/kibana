@@ -20,7 +20,6 @@ export interface SavedObjectsBulkDeleteObject {
 
 /**
  * @public
- bulk delete options extends base options which includes an optional namespace
  */
 export interface SavedObjectsBulkDeleteOptions extends SavedObjectsBaseOptions {
   refresh?: MutatingOperationRefreshSetting;
@@ -33,7 +32,7 @@ export interface SavedObjectsBulkDeleteOptions extends SavedObjectsBaseOptions {
 export interface SavedObjectsBulkDeleteStatus {
   id: string;
   type: string;
-  success: boolean; // infer from bulkDelete result.
+  success: boolean;
   error?: SavedObjectError;
 }
 
