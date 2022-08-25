@@ -17,6 +17,7 @@ const create = () => {
     bulkCreate: jest.fn(),
     checkConflicts: jest.fn(),
     bulkUpdate: jest.fn(),
+    bulkDelete: jest.fn(),
     delete: jest.fn(),
     bulkGet: jest.fn(),
     find: jest.fn(),

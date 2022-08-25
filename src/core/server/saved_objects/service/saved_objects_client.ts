@@ -39,6 +39,9 @@ import type {
   SavedObjectsClosePointInTimeOptions,
   SavedObjectsCreatePointInTimeFinderOptions,
   SavedObjectsFindOptions,
+  SavedObjectsBulkDeleteObject,
+  SavedObjectsBulkDeleteOptions,
+  SavedObjectsBulkDeleteResponse,
 } from '@kbn/core-saved-objects-api-server';
 import { SavedObjectsErrorHelpers } from '@kbn/core-saved-objects-utils-server';
 
@@ -76,6 +79,14 @@ export class SavedObjectsClient implements SavedObjectsClientContract {
     options: SavedObjectsBaseOptions = {}
   ): Promise<SavedObjectsCheckConflictsResponse> {
     return await this._repository.checkConflicts(objects, options);
+  }
+
+  /** {@inheritDoc SavedObjectsClientContract.bulkDelete} */
+  async bulkDelete(
+    objects: SavedObjectsBulkDeleteObject[],
+    options: SavedObjectsBulkDeleteOptions = {}
+  ): Promise<SavedObjectsBulkDeleteResponse> {
+    return await this._repository.bulkDelete(objects, options);
   }
 
   /** {@inheritDoc SavedObjectsClientContract.delete} */
