@@ -29,14 +29,20 @@ export const registerBulkDeleteRoute = (
             id: schema.string(),
           })
         ),
+        query: schema.object({
+          force: schema.maybe(schema.boolean()),
+          refresh: schema.maybe(schema.boolean()),
+        }),
       },
     },
     catchAndReturnBoomErrors(async (context, req, res) => {
+      const { force, refresh } = req.query;
       const usageStatsClient = coreUsageData.getClient();
       usageStatsClient.incrementSavedObjectsBulkDelete({ request: req }).catch(() => {});
 
       const { savedObjects } = await context.core;
-      const result = await savedObjects.client.bulkDelete(req.body);
+
+      const result = await savedObjects.client.bulkDelete(req.body, { force, refresh });
       return res.ok({ body: result });
     })
   );

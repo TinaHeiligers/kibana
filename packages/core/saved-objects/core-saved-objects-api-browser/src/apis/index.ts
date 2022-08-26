@@ -10,6 +10,12 @@ export type { SavedObjectsBatchResponse } from './base';
 export type { SavedObjectsBulkCreateObject, SavedObjectsBulkCreateOptions } from './bulk_create';
 export type { SavedObjectsBulkResolveResponse } from './bulk_resolve';
 export type { SavedObjectsBulkUpdateObject, SavedObjectsBulkUpdateOptions } from './bulk_update';
+export type {
+  SavedObjectsBulkDeleteObject,
+  SavedObjectsBulkDeleteOptions,
+  SavedObjectsBulkDeleteStatus,
+  SavedObjectsBulkDeleteResponse,
+} from './bulk_delete';
 export type { SavedObjectsCreateOptions } from './create';
 export type { SavedObjectsDeleteOptions } from './delete';
 export type {
