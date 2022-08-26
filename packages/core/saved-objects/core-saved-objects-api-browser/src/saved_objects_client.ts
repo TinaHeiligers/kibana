@@ -19,9 +19,9 @@ import type {
   SavedObjectsFindOptions,
   SavedObjectsUpdateOptions,
   SavedObjectsDeleteOptions,
-  SavedObjectsBulkDeleteObject,
-  SavedObjectsBulkDeleteOptions,
-  SavedObjectsBulkDeleteResponse,
+  // SavedObjectsBulkDeleteObject,
+  // SavedObjectsBulkDeleteOptions,
+  // SavedObjectsBulkDeleteResponse,
 } from './apis';
 import type { SimpleSavedObject } from './simple_saved_object';
 
@@ -157,15 +157,4 @@ export interface SavedObjectsClientContract {
   bulkUpdate<T = unknown>(
     objects: SavedObjectsBulkUpdateObject[]
   ): Promise<SavedObjectsBatchResponse<T>>;
-
-  /**
-   * Delete multiple documents at once
-   *
-   * @param {array} objects - [{ type, id }]
-   * @returns The result of the delete operation containing both failed and deleted saved objects' ids and types, and success flag (true for deleted, false for errors).
-   */
-  bulkDelete<T = unknown>(
-    objects: SavedObjectsBulkDeleteObject[],
-    options?: SavedObjectsBulkDeleteOptions
-  ): Promise<SavedObjectsBulkDeleteResponse>;
 }

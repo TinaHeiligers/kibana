@@ -10,9 +10,6 @@ import { pick, throttle, cloneDeep } from 'lodash';
 import type { HttpSetup, HttpFetchOptions } from '@kbn/core-http-browser';
 import type { SavedObject, SavedObjectTypeIdTuple } from '@kbn/core-saved-objects-common';
 import type {
-  SavedObjectsBulkDeleteObject,
-  SavedObjectsBulkDeleteOptions,
-  SavedObjectsBulkDeleteResponse,
   SavedObjectsBulkResolveResponse as SavedObjectsBulkResolveResponseServer,
   SavedObjectsClientContract as SavedObjectsApi,
   SavedObjectsFindResponse as SavedObjectsFindResponseServer,
@@ -21,6 +18,7 @@ import type {
 import type {
   SavedObjectsClientContract,
   SavedObjectsCreateOptions,
+  // SavedObjectsBulkDeleteObject,
   // SavedObjectsBulkDeleteOptions,
   SavedObjectsDeleteOptions,
   SavedObjectsBatchResponse,
@@ -258,38 +256,6 @@ export class SavedObjectsClient implements SavedObjectsClientContract {
 
     return this.savedObjectsFetch(this.getPath([type, id]), { method: 'DELETE', query });
   };
-
-  public bulkDelete = async (
-    objects: SavedObjectsBulkDeleteObject[],
-    options?: SavedObjectsBulkDeleteOptions
-  ): Promise<ReturnType<SavedObjectsApi['bulkDelete']>> => {
-    const filteredObjects = objects.map((obj) => pick(obj, ['id', 'type']));
-    if (filteredObjects.length === 0) {
-      return Promise.reject(new Error('objects require type and id'));
-    }
-
-    const query = {
-      force: !!options?.force,
-      refresh: !!options?.refresh,
-    };
-
-    return await this.performBulkDelete(filteredObjects, query);
-  };
-
-  private async performBulkDelete<T>(
-    objects: SavedObjectsBulkDeleteObject[],
-    query: SavedObjectsBulkDeleteOptions
-  ) {
-    const path = this.getPath(['_bulk_delete']);
-    const request: Promise<SavedObjectsBulkDeleteResponse> = this.savedObjectsFetch(path, {
-      method: 'POST',
-      body: JSON.stringify(objects),
-      query: {
-        ...query,
-      },
-    });
-    return request;
-  }
 
   public find = <T = unknown, A = unknown>(
     options: SavedObjectsFindOptions
