@@ -1,0 +1,19 @@
+{
+  "type": "doc",
+  "value": {
+    "id": "test-hidden-from-http-apis-importable-exportable:obj-1",
+    "index": ".kibana",
+    "source": {
+      "coreMigrationVersion": "8.5.0",
+      "references": [
+      ],
+      "test-hidden-from-http-apis-importable-exportable": {
+        "title": "hidden-from-http-apis-title"
+      },
+      "type": "test-hidden-from-http-apis-importable-exportable",
+      "updated_at": "2023-01-15T00:43:07.096Z"
+    },
+    "type": "_doc"
+  }
+}
+
