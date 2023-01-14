@@ -157,7 +157,6 @@ export class SavedObjectExportTransformsPlugin implements Plugin {
     savedObjects.registerType<{ enabled: boolean; title: string }>({
       name: 'test-is-exportable',
       hidden: false,
-      hiddenFromHttpApis: true,
       namespaceType: 'single',
       mappings: {
         properties: {
@@ -182,7 +181,6 @@ export class SavedObjectExportTransformsPlugin implements Plugin {
     savedObjects.registerType<{ enabled: boolean; title: string }>({
       name: 'test-not-visible-in-management',
       hidden: false,
-      hiddenFromHttpApis: true,
       namespaceType: 'single',
       mappings: {
         properties: {
@@ -201,7 +199,6 @@ export class SavedObjectExportTransformsPlugin implements Plugin {
     savedObjects.registerType<{ enabled: boolean; title: string }>({
       name: 'test-visible-in-management',
       hidden: false,
-      hiddenFromHttpApis: true,
       namespaceType: 'single',
       mappings: {
         properties: {
@@ -220,7 +217,6 @@ export class SavedObjectExportTransformsPlugin implements Plugin {
     savedObjects.registerType<{ enabled: boolean; title: string }>({
       name: 'test-with-display-name',
       hidden: false,
-      hiddenFromHttpApis: true,
       namespaceType: 'single',
       mappings: {
         properties: {
