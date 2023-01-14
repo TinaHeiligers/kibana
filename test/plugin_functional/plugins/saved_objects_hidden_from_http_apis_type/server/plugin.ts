@@ -10,7 +10,8 @@ import { Plugin, CoreSetup } from '@kbn/core/server';
 
 export class SavedObjectsHiddenFromHttpApisTypePlugin implements Plugin {
   public setup({ savedObjects }: CoreSetup, deps: {}) {
-    // example of a SO type that is hidden and importableAndExportable
+    // example of a SO type that not hidden but is hidden from the http apis.
+    // the kbn index mapping strict issue's not allowing me to add to the index mappings using esArchiver and I get errors when trying to index a doc for this type.
     savedObjects.registerType({
       name: 'test-hidden-from-http-apis-importable-exportable',
       hidden: false,
