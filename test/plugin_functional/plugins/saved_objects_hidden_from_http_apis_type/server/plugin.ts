@@ -41,6 +41,7 @@ export class SavedObjectsHiddenFromHttpApisTypePlugin implements Plugin {
         visibleInManagement: true,
       },
     });
+    // TINA TODO: Add custom routes for bypassing the blocking behavior
   }
 
   public start() {}

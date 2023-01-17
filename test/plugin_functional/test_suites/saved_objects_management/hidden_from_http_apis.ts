@@ -10,8 +10,6 @@ import { join } from 'path';
 import expect from '@kbn/expect';
 import type { Response } from 'supertest';
 import { SavedObject } from '@kbn/core/types';
-import type { SavedObjectManagementTypeInfo } from '@kbn/saved-objects-management-plugin/common/types';
-import { EsArchiver } from '@kbn/es-archiver';
 import type { PluginFunctionalProviderContext } from '../../services';
 
 function parseNdJson(input: string): Array<SavedObject<any>> {
@@ -25,58 +23,33 @@ export default function ({ getService }: PluginFunctionalProviderContext) {
 
   describe('types with `hiddenFromHttpApis` ', () => {
     before(async () => {
-      // TINA todo: remove esArchiver files
-      // await esArchiver.load(
-      //   'test/functional/fixtures/es_archiver/saved_objects_management/hidden_from_http_apis'
-      // );
-      // await kbnServer.savedObjects.cleanStandardList();
+      // If there are any remaining saved objects registered as `hiddenFromHttpApis:true`, cleaning them up will fail.
+      await kbnServer.savedObjects.cleanStandardList();
+
       await kbnServer.importExport.load(
         'test/functional/fixtures/kbn_archiver/saved_objects_management/hidden_from_http_apis.json'
       );
     });
 
     after(async () => {
+      // We cannot use `kbnServer.importExport.unload` to clean up test fixtures because `unload` uses the global SOM `delete` HTTP API and that blocks requests containing hiddenFromHttpApis:true objects
       await esArchiver.unload(
         'test/functional/fixtures/es_archiver/saved_objects_management/hidden_from_http_apis'
       );
-      // I need some other way to clear the data. `kbnServer.importExport.unload` uses the global delete HTTP API
-      // and that blocks requests containing hiddenFromHttpApis objects
-      // await kbnServer.importExport.unload(
-      //   'test/functional/fixtures/kbn_archiver/saved_objects_management/hidden_from_http_apis.json'
-      // );
     });
 
-    describe.only('savedObjects management APIS', () => {
+    describe('savedObjects management APIS', () => {
+      const hiddenFromHttpApisType = {
+        type: 'test-hidden-from-http-apis-importable-exportable',
+        id: 'hidden-from-http-apis-1',
+      };
+      const notHiddenFromHttpApisType = {
+        type: 'test-not-hidden-from-http-apis-importable-exportable',
+        id: 'not-hidden-from-http-apis-1',
+      };
       describe('_bulk_get', () => {
         describe('saved objects with hiddenFromHttpApis type', () => {
           const URL = '/api/kibana/management/saved_objects/_bulk_get';
-
-          const hiddenFromHttpApisType = {
-            type: 'test-hidden-from-http-apis-importable-exportable',
-            id: 'hidden-from-http-apis-1',
-          };
-          const notHiddenFromHttpApisType = {
-            type: 'test-not-hidden-from-http-apis-importable-exportable',
-            id: 'not-hidden-from-http-apis-1',
-          };
-
-          function expectSuccess(index: number, { body }: Response) {
-            const { type, id, meta, error } = body[index];
-            expect(type).to.eql(notHiddenFromHttpApisType.type);
-            expect(id).to.eql(notHiddenFromHttpApisType.id);
-            expect(meta).to.not.equal(undefined);
-            expect(error).to.equal(undefined);
-          }
-
-          function expectBadRequest(index: number, { body, badRequest, error }: Response) {
-            const { status } = error;
-            expect(status).to.eql(400);
-            expect(error).to.eql({
-              message: `Unsupported saved object type: '${hiddenFromHttpApisType.type}': Bad Request`,
-              statusCode: 400,
-              error: 'Bad Request',
-            });
-          }
 
           it('should return 200 for types that are not hidden from the http apis', async () =>
             await supertest
@@ -125,13 +98,36 @@ export default function ({ getService }: PluginFunctionalProviderContext) {
               }));
         });
       });
+      describe('find', () => {
+        it('returns saved objects with importableAndExportable types', async () => {
+          await supertest
+            .get(
+              `/api/kibana/management/saved_objects/_find?type=${hiddenFromHttpApisType.type}&fields=title`
+            )
+            .set('kbn-xsrf', 'true')
+            .expect(200)
+            .then((resp) => {
+              expect(
+                resp.body.saved_objects.map((so: { id: string; type: string }) => ({
+                  id: so.id,
+                  type: so.type,
+                }))
+              ).to.eql([
+                {
+                  id: 'hidden-from-http-apis-1',
+                  type: 'test-hidden-from-http-apis-importable-exportable',
+                },
+                {
+                  id: 'hidden-from-http-apis-2',
+                  type: 'test-hidden-from-http-apis-importable-exportable',
+                },
+              ]);
+            });
+        });
+      });
     });
 
-    describe.only('export', () => {
-      const hiddenFromHttpApisType = {
-        type: 'test-hidden-from-http-apis-importable-exportable',
-        id: 'hidden-from-http-apis-1',
-      };
+    describe('export', () => {
       it('allows to export them directly by id', async () => {
         await supertest
           .post('/api/saved_objects/_export')
@@ -171,24 +167,31 @@ export default function ({ getService }: PluginFunctionalProviderContext) {
       });
     });
 
-    describe.skip('import', () => {
+    describe('import', () => {
       it('allows to import them', async () => {
         await supertest
           .post('/api/saved_objects/_import')
           .set('kbn-xsrf', 'true')
-          .attach('file', join(__dirname, './exports/_import_non_visible_in_management.ndjson'))
+          .attach('file', join(__dirname, './exports/_import_hidden_from_http_apis.ndjson'))
           .expect(200)
           .then((resp) => {
             expect(resp.body).to.eql({
               success: true,
-              successCount: 1,
+              successCount: 2,
               successResults: [
                 {
-                  id: 'ff3773b0-9ate-11e7-ahb3-3dcb94193fab',
+                  id: 'hidden-from-http-apis-import1',
                   meta: {
-                    title: 'Saved object type that is not visible in management',
+                    title: 'I am hidden from http apis but the client can still see me',
                   },
-                  type: 'test-not-visible-in-management',
+                  type: 'test-hidden-from-http-apis-importable-exportable',
+                },
+                {
+                  id: 'not-hidden-from-http-apis-import1',
+                  meta: {
+                    title: 'I am not hidden from http apis',
+                  },
+                  type: 'test-not-hidden-from-http-apis-importable-exportable',
                 },
               ],
               warnings: [],
