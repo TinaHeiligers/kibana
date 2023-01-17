@@ -78,7 +78,7 @@ export default function ({ getService }: PluginFunctionalProviderContext) {
             });
           }
 
-          it.skip('should return 200 for types that are not hidden from the http apis', async () =>
+          it('should return 200 for types that are not hidden from the http apis', async () =>
             await supertest
               .post(URL)
               .send([notHiddenFromHttpApisType])
@@ -126,24 +126,12 @@ export default function ({ getService }: PluginFunctionalProviderContext) {
         });
       });
     });
-    describe.skip('GET /api/kibana/management/saved_objects/_allowed_types', () => {
-      let types: SavedObjectManagementTypeInfo[];
-      before(async () => {
-        await supertest
-          .get(
-            '/api/kibana/management/saved_objects/_find?type=test-hidden-from-http-apis-importable-exportable&fields=title'
-          )
-          .set('kbn-xsrf', 'true')
-          .expect(200)
-          .then((response: Response) => {
-            types = response.body.types as SavedObjectManagementTypeInfo[];
-          });
-      });
 
-      // it.todo('should only return types that are `visibleInManagement: true`');
-    });
-
-    describe.skip('export', () => {
+    describe.only('export', () => {
+      const hiddenFromHttpApisType = {
+        type: 'test-hidden-from-http-apis-importable-exportable',
+        id: 'hidden-from-http-apis-1',
+      };
       it('allows to export them directly by id', async () => {
         await supertest
           .post('/api/saved_objects/_export')
@@ -152,7 +140,7 @@ export default function ({ getService }: PluginFunctionalProviderContext) {
             objects: [
               {
                 type: 'test-hidden-from-http-apis-importable-exportable',
-                id: 'hidden-true-1',
+                id: 'hidden-from-http-apis-1',
               },
             ],
             excludeExportDetails: true,
@@ -160,7 +148,7 @@ export default function ({ getService }: PluginFunctionalProviderContext) {
           .expect(200)
           .then((resp) => {
             const objects = parseNdJson(resp.text);
-            expect(objects.map((obj) => obj.id)).to.eql(['vim-1']);
+            expect(objects.map((obj) => obj.id)).to.eql(['hidden-from-http-apis-1']);
           });
       });
 
@@ -175,7 +163,10 @@ export default function ({ getService }: PluginFunctionalProviderContext) {
           .expect(200)
           .then((resp) => {
             const objects = parseNdJson(resp.text);
-            expect(objects.map((obj) => obj.id)).to.eql(['hidden-true-1']);
+            expect(objects.map((obj) => obj.id)).to.eql([
+              'hidden-from-http-apis-1',
+              'hidden-from-http-apis-2',
+            ]);
           });
       });
     });
