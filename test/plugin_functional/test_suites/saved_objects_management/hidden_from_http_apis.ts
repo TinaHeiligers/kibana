@@ -11,6 +11,7 @@ import expect from '@kbn/expect';
 import type { Response } from 'supertest';
 import { SavedObject } from '@kbn/core/types';
 import type { SavedObjectManagementTypeInfo } from '@kbn/saved-objects-management-plugin/common/types';
+import { EsArchiver } from '@kbn/es-archiver';
 import type { PluginFunctionalProviderContext } from '../../services';
 
 function parseNdJson(input: string): Array<SavedObject<any>> {
@@ -19,25 +20,127 @@ function parseNdJson(input: string): Array<SavedObject<any>> {
 
 export default function ({ getService }: PluginFunctionalProviderContext) {
   const supertest = getService('supertest');
-  const esArchiver = getService('esArchiver');
   const kbnServer = getService('kibanaServer');
+  const esArchiver = getService('esArchiver');
 
   describe('types with `hiddenFromHttpApis` ', () => {
     before(async () => {
-      // TINA todo: use kbnServer.importExport
+      // TINA todo: remove esArchiver files
       // await esArchiver.load(
       //   'test/functional/fixtures/es_archiver/saved_objects_management/hidden_from_http_apis'
       // );
-      await kbnServer.savedObjects.cleanStandardList();
+      // await kbnServer.savedObjects.cleanStandardList();
       await kbnServer.importExport.load(
         'test/functional/fixtures/kbn_archiver/saved_objects_management/hidden_from_http_apis.json'
       );
     });
 
     after(async () => {
-      await kbnServer.importExport.unload(
-        'test/functional/fixtures/kbn_archiver/saved_objects_management/hidden_from_http_apis.json'
+      await esArchiver.unload(
+        'test/functional/fixtures/es_archiver/saved_objects_management/hidden_from_http_apis'
       );
+      // I need some other way to clear the data. `kbnServer.importExport.unload` uses the global delete HTTP API
+      // and that blocks requests containing hiddenFromHttpApis objects
+      // await kbnServer.importExport.unload(
+      //   'test/functional/fixtures/kbn_archiver/saved_objects_management/hidden_from_http_apis.json'
+      // );
+    });
+
+    describe.only('savedObjects management APIS', () => {
+      describe('_bulk_get', () => {
+        describe('saved objects with hiddenFromHttpApis type', () => {
+          const URL = '/api/kibana/management/saved_objects/_bulk_get';
+
+          const hiddenFromHttpApisType = {
+            type: 'test-hidden-from-http-apis-importable-exportable',
+            id: 'hidden-from-http-apis-1',
+          };
+          const notHiddenFromHttpApisType = {
+            type: 'test-not-hidden-from-http-apis-importable-exportable',
+            id: 'not-hidden-from-http-apis-1',
+          };
+
+          function expectSuccess(index: number, { body }: Response) {
+            const { type, id, meta, error } = body[index];
+            expect(type).to.eql(notHiddenFromHttpApisType.type);
+            expect(id).to.eql(notHiddenFromHttpApisType.id);
+            expect(meta).to.not.equal(undefined);
+            expect(error).to.equal(undefined);
+          }
+
+          function expectBadRequest(index: number, { body, badRequest, error }: Response) {
+            const { status } = error;
+            expect(status).to.eql(400);
+            expect(error).to.eql({
+              message: `Unsupported saved object type: '${hiddenFromHttpApisType.type}': Bad Request`,
+              statusCode: 400,
+              error: 'Bad Request',
+            });
+          }
+
+          it.skip('should return 200 for types that are not hidden from the http apis', async () =>
+            await supertest
+              .post(URL)
+              .send([notHiddenFromHttpApisType])
+              .set('kbn-xsrf', 'true')
+              .expect(200)
+              .then((response: Response) => {
+                expect(response.body).to.have.length(1);
+                const { type, id, meta, error } = response.body[0];
+                expect(type).to.eql(notHiddenFromHttpApisType.type);
+                expect(id).to.eql(notHiddenFromHttpApisType.id);
+                expect(meta).to.not.equal(undefined);
+                expect(error).to.equal(undefined);
+              }));
+
+          it('should return 200 for types that are hidden from the http apis', async () =>
+            await supertest
+              .post(URL)
+              .send([hiddenFromHttpApisType])
+              .set('kbn-xsrf', 'true')
+              .expect(200)
+              .then((response: Response) => {
+                expect(response.body).to.have.length(1);
+                const { type, id, meta, error } = response.body[0];
+                expect(type).to.eql(hiddenFromHttpApisType.type);
+                expect(id).to.eql(hiddenFromHttpApisType.id);
+                expect(meta).to.not.equal(undefined);
+                expect(error).to.equal(undefined);
+              }));
+
+          it('should return 200 for a mix of types', async () =>
+            await supertest
+              .post(URL)
+              .send([hiddenFromHttpApisType, notHiddenFromHttpApisType])
+              .set('kbn-xsrf', 'true')
+              .expect(200)
+              .expect(200)
+              .then((response: Response) => {
+                expect(response.body).to.have.length(2);
+                const { type, id, meta, error } = response.body[0];
+                expect(type).to.eql(hiddenFromHttpApisType.type);
+                expect(id).to.eql(hiddenFromHttpApisType.id);
+                expect(meta).to.not.equal(undefined);
+                expect(error).to.equal(undefined);
+              }));
+        });
+      });
+    });
+    describe.skip('GET /api/kibana/management/saved_objects/_allowed_types', () => {
+      let types: SavedObjectManagementTypeInfo[];
+      before(async () => {
+        await supertest
+          .get(
+            '/api/kibana/management/saved_objects/_find?type=test-hidden-from-http-apis-importable-exportable&fields=title'
+          )
+          .set('kbn-xsrf', 'true')
+          .expect(200)
+          .then((response: Response) => {
+            types = response.body.types as SavedObjectManagementTypeInfo[];
+          });
+      });
+
+      // it.todo('should only return types that are `visibleInManagement: true`');
     });
 
     describe.skip('export', () => {
@@ -101,93 +204,6 @@ export default function ({ getService }: PluginFunctionalProviderContext) {
             });
           });
       });
-    });
-
-    describe.only('savedObjects management APIS', () => {
-      describe('_bulk_get', () => {
-        describe('saved objects with hiddenFromHttpApis type', () => {
-          const URL = '/api/kibana/management/saved_objects/_bulk_get';
-          const hiddenFromHttpApisType = {
-            type: 'test-hidden-from-http-apis-importable-exportable',
-            id: 'hidden-from-http-apis-1',
-          };
-          const notHiddenFromHttpApisType = {
-            type: 'test-not-hidden-from-http-apis-importable-exportable',
-            id: 'not-hidden-from-http-apis-1',
-          };
-          it('should run the test', () => {
-            expect(1).to.eql(1);
-          });
-
-          function expectSuccess(index: number, { body }: Response) {
-            const { type, id, meta, error } = body[index];
-            expect(type).to.eql(hiddenFromHttpApisType.type);
-            expect(id).to.eql(hiddenFromHttpApisType.id);
-            expect(meta).to.not.equal(undefined);
-            expect(error).to.equal(undefined);
-          }
-
-          function expectBadRequest(index: number, { body, badRequest, error }: Response) {
-            const { status } = error;
-            expect(status).to.eql(400);
-            expect(error).to.eql({
-              message: `Unsupported saved object type: '${hiddenFromHttpApisType.type}': Bad Request`,
-              statusCode: 400,
-              error: 'Bad Request',
-            });
-          }
-
-          it('should return 200 for types that are not hidden from the http apis', async () =>
-            await supertest
-              .post(URL)
-              .send([notHiddenFromHttpApisType])
-              .set('kbn-xsrf', 'true')
-              .expect(200)
-              .then((response: Response) => {
-                expect(response.body).to.have.length(1);
-                expectSuccess(0, response);
-              }));
-
-          it('should return error for hidden types that are hidden from the http apis', async () =>
-            await supertest
-              .post(URL)
-              .send([hiddenFromHttpApisType])
-              .set('kbn-xsrf', 'true')
-              .expect(400)
-              .then((response: Response) => {
-                expect(response.error).to.have.length(1);
-                expectBadRequest(0, response);
-              }));
-
-          it('should return error for a mix of types', async () =>
-            await supertest
-              .post(URL)
-              .send([hiddenFromHttpApisType, notHiddenFromHttpApisType])
-              .set('kbn-xsrf', 'true')
-              .expect(200)
-              .expect(400)
-              .then((response: Response) => {
-                expect(response.error).to.have.length(1);
-                expectBadRequest(0, response);
-              }));
-        });
-      });
-    });
-    describe('GET /api/kibana/management/saved_objects/_allowed_types', () => {
-      let types: SavedObjectManagementTypeInfo[];
-      before(async () => {
-        await supertest
-          .get(
-            '/api/kibana/management/saved_objects/_find?type=test-hidden-from-http-apis-importable-exportable&fields=title'
-          )
-          .set('kbn-xsrf', 'true')
-          .expect(200)
-          .then((response: Response) => {
-            types = response.body.types as SavedObjectManagementTypeInfo[];
-          });
-      });
-
-      // it.todo('should only return types that are `visibleInManagement: true`');
     });
   });
 }
