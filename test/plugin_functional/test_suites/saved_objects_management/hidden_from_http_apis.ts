@@ -38,7 +38,7 @@ export default function ({ getService }: PluginFunctionalProviderContext) {
       );
     });
 
-    describe('savedObjects management APIS', () => {
+    describe('APIS', () => {
       const hiddenFromHttpApisType = {
         type: 'test-hidden-from-http-apis-importable-exportable',
         id: 'hidden-from-http-apis-1',
@@ -125,78 +125,77 @@ export default function ({ getService }: PluginFunctionalProviderContext) {
             });
         });
       });
-    });
-
-    describe('export', () => {
-      it('allows to export them directly by id', async () => {
-        await supertest
-          .post('/api/saved_objects/_export')
-          .set('kbn-xsrf', 'true')
-          .send({
-            objects: [
-              {
-                type: 'test-hidden-from-http-apis-importable-exportable',
-                id: 'hidden-from-http-apis-1',
-              },
-            ],
-            excludeExportDetails: true,
-          })
-          .expect(200)
-          .then((resp) => {
-            const objects = parseNdJson(resp.text);
-            expect(objects.map((obj) => obj.id)).to.eql(['hidden-from-http-apis-1']);
-          });
-      });
-
-      it('allows to export them directly by type', async () => {
-        await supertest
-          .post('/api/saved_objects/_export')
-          .set('kbn-xsrf', 'true')
-          .send({
-            type: ['test-hidden-from-http-apis-importable-exportable'],
-            excludeExportDetails: true,
-          })
-          .expect(200)
-          .then((resp) => {
-            const objects = parseNdJson(resp.text);
-            expect(objects.map((obj) => obj.id)).to.eql([
-              'hidden-from-http-apis-1',
-              'hidden-from-http-apis-2',
-            ]);
-          });
-      });
-    });
-
-    describe('import', () => {
-      it('allows to import them', async () => {
-        await supertest
-          .post('/api/saved_objects/_import')
-          .set('kbn-xsrf', 'true')
-          .attach('file', join(__dirname, './exports/_import_hidden_from_http_apis.ndjson'))
-          .expect(200)
-          .then((resp) => {
-            expect(resp.body).to.eql({
-              success: true,
-              successCount: 2,
-              successResults: [
+      describe('export', () => {
+        it('allows to export them directly by id', async () => {
+          await supertest
+            .post('/api/saved_objects/_export')
+            .set('kbn-xsrf', 'true')
+            .send({
+              objects: [
                 {
-                  id: 'hidden-from-http-apis-import1',
-                  meta: {
-                    title: 'I am hidden from http apis but the client can still see me',
-                  },
                   type: 'test-hidden-from-http-apis-importable-exportable',
-                },
-                {
-                  id: 'not-hidden-from-http-apis-import1',
-                  meta: {
-                    title: 'I am not hidden from http apis',
-                  },
-                  type: 'test-not-hidden-from-http-apis-importable-exportable',
+                  id: 'hidden-from-http-apis-1',
                 },
               ],
-              warnings: [],
+              excludeExportDetails: true,
+            })
+            .expect(200)
+            .then((resp) => {
+              const objects = parseNdJson(resp.text);
+              expect(objects.map((obj) => obj.id)).to.eql(['hidden-from-http-apis-1']);
             });
-          });
+        });
+
+        it('allows to export them directly by type', async () => {
+          await supertest
+            .post('/api/saved_objects/_export')
+            .set('kbn-xsrf', 'true')
+            .send({
+              type: ['test-hidden-from-http-apis-importable-exportable'],
+              excludeExportDetails: true,
+            })
+            .expect(200)
+            .then((resp) => {
+              const objects = parseNdJson(resp.text);
+              expect(objects.map((obj) => obj.id)).to.eql([
+                'hidden-from-http-apis-1',
+                'hidden-from-http-apis-2',
+              ]);
+            });
+        });
+      });
+
+      describe('import', () => {
+        it('allows to import them', async () => {
+          await supertest
+            .post('/api/saved_objects/_import')
+            .set('kbn-xsrf', 'true')
+            .attach('file', join(__dirname, './exports/_import_hidden_from_http_apis.ndjson'))
+            .expect(200)
+            .then((resp) => {
+              expect(resp.body).to.eql({
+                success: true,
+                successCount: 2,
+                successResults: [
+                  {
+                    id: 'hidden-from-http-apis-import1',
+                    meta: {
+                      title: 'I am hidden from http apis but the client can still see me',
+                    },
+                    type: 'test-hidden-from-http-apis-importable-exportable',
+                  },
+                  {
+                    id: 'not-hidden-from-http-apis-import1',
+                    meta: {
+                      title: 'I am not hidden from http apis',
+                    },
+                    type: 'test-not-hidden-from-http-apis-importable-exportable',
+                  },
+                ],
+                warnings: [],
+              });
+            });
+        });
       });
     });
   });
