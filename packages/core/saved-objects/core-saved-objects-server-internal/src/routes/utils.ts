@@ -19,6 +19,7 @@ import Boom from '@hapi/boom';
 import type { RequestHandlerWrapper } from '@kbn/core-http-server';
 import type { SavedObject } from '@kbn/core-saved-objects-common';
 import type { SavedObjectsExportResultDetails } from '@kbn/core-saved-objects-server';
+import { SavedObjectsErrorHelpers } from '@kbn/core-saved-objects-utils-server';
 
 export async function createSavedObjectsStreamFromNdJson(ndJsonStream: Readable) {
   const savedObjects = await createPromiseFromStreams([
@@ -82,3 +83,42 @@ export const catchAndReturnBoomErrors: RequestHandlerWrapper = (handler) => {
     }
   };
 };
+
+/**
+ *
+ * @param {string[]} exposedVisibleTypes all registered types with hidden:false and hiddenFromHttpApis:false|undefined
+ * @param {string[]} typesToCheck saved object types provided to the httpApi request
+ */
+export function throwOnGloballyHiddenTypes(
+  allHttpApisVisibleTypes: string[],
+  typesToCheck: string[]
+) {
+  if (!typesToCheck.length) {
+    return;
+  }
+  const denyRequestForTypes = typesToCheck.filter(
+    (type: string) => !allHttpApisVisibleTypes.includes(type)
+  );
+  if (denyRequestForTypes.length > 0) {
+    throw SavedObjectsErrorHelpers.createBadRequestError(
+      `Unsupported saved object type(s): ${denyRequestForTypes.join(', ')}`
+    );
+  }
+}
+/**
+ * @param {string[]} unsupportedTypes saved object types registered with hidden=false and hiddenFromHttpApis=true
+ */
+
+export function throwOnHttpHiddenTypes(unsupportedTypes: string[]) {
+  if (unsupportedTypes.length > 0) {
+    throw SavedObjectsErrorHelpers.createBadRequestError(
+      `Unsupported saved object type(s): ${unsupportedTypes.join(', ')}`
+    );
+  }
+}
+export interface BulkGetItem {
+  type: string;
+  id: string;
+  fields?: string[];
+  namespaces?: string[];
+}

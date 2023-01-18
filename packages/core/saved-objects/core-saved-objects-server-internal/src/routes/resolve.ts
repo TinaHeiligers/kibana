@@ -7,6 +7,7 @@
  */
 
 import { schema } from '@kbn/config-schema';
+import { SavedObjectsErrorHelpers } from '@kbn/core-saved-objects-utils-server';
 import type { InternalCoreUsageDataSetup } from '@kbn/core-usage-data-base-server-internal';
 import type { InternalSavedObjectRouter } from '../internal_types';
 
@@ -34,6 +35,11 @@ export const registerResolveRoute = (
 
       const usageStatsClient = coreUsageData.getClient();
       usageStatsClient.incrementSavedObjectsResolve({ request: req }).catch(() => {});
+
+      const fullType = savedObjects.typeRegistry.getType(type);
+      if (!fullType?.hidden && fullType?.hiddenFromHttpApis) {
+        throw SavedObjectsErrorHelpers.createUnsupportedTypeError(type);
+      }
 
       const result = await savedObjects.client.resolve(type, id);
       return res.ok({ body: result });

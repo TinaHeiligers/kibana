@@ -6,7 +6,12 @@
  * Side Public License, v 1.
  */
 
-import { createSavedObjectsStreamFromNdJson, validateTypes, validateObjects } from './utils';
+import {
+  createSavedObjectsStreamFromNdJson,
+  validateTypes,
+  validateObjects,
+  throwOnHttpHiddenTypes,
+} from './utils';
 import { Readable } from 'stream';
 import { createPromiseFromStreams, createConcatStream } from '@kbn/utils';
 import { catchAndReturnBoomErrors } from './utils';
@@ -233,6 +238,21 @@ describe('catchAndReturnBoomErrors', () => {
     const wrapped = catchAndReturnBoomErrors(handler);
     await expect(wrapped(context, request, response)).rejects.toMatchInlineSnapshot(
       `[Error: Internal Server Error]`
+    );
+  });
+});
+
+describe('throwOnHttpHiddenTypes', () => {
+  it('should throw on types hidden from the HTTP Apis', () => {
+    expect(() => {
+      throwOnHttpHiddenTypes(['not-allowed-type']);
+    }).toThrowErrorMatchingInlineSnapshot(
+      `"Unsupported saved object type(s): not-allowed-type: Bad Request"`
+    );
+    expect(() => {
+      throwOnHttpHiddenTypes(['index-pattern', 'not-allowed-type', 'not-allowed-type-2']);
+    }).toThrowErrorMatchingInlineSnapshot(
+      `"Unsupported saved object type(s): index-pattern, not-allowed-type, not-allowed-type-2: Bad Request"`
     );
   });
 });
