@@ -33,7 +33,7 @@ const registerGetRoute = (router: IRouter<RequestHandlerContext>) => {
 };
 
 const registerDeleteRoute = (router: IRouter<RequestHandlerContext>) => {
-  router.get(
+  router.post(
     {
       path: '/api/hidden_from_http_api/delete/{type}/{id}',
       validate: {
@@ -58,7 +58,7 @@ const registerDeleteRoute = (router: IRouter<RequestHandlerContext>) => {
 const registerBulkGetRoute = (router: IRouter<RequestHandlerContext>) => {
   router.post(
     {
-      path: '/api/hidden_from_http_api/_bulk_get',
+      path: '/_bulk_get',
       validate: {
         body: schema.arrayOf(
           schema.object({
@@ -82,7 +82,7 @@ const registerBulkGetRoute = (router: IRouter<RequestHandlerContext>) => {
 };
 
 const registerBulkDeleteRoute = (router: IRouter<RequestHandlerContext>) => {
-  router.get(
+  router.post(
     {
       path: '/api/hidden_from_http_api/_bulk_delete',
       validate: {
