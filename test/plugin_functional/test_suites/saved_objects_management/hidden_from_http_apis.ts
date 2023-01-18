@@ -47,6 +47,7 @@ export default function ({ getService }: PluginFunctionalProviderContext) {
         type: 'test-not-hidden-from-http-apis-importable-exportable',
         id: 'not-hidden-from-http-apis-1',
       };
+
       describe('_bulk_get', () => {
         describe('saved objects with hiddenFromHttpApis type', () => {
           const URL = '/api/kibana/management/saved_objects/_bulk_get';
@@ -98,8 +99,9 @@ export default function ({ getService }: PluginFunctionalProviderContext) {
               }));
         });
       });
+
       describe('find', () => {
-        it('returns saved objects with importableAndExportable types', async () => {
+        it('returns saved objects registered as hidden from the http Apis', async () => {
           await supertest
             .get(
               `/api/kibana/management/saved_objects/_find?type=${hiddenFromHttpApisType.type}&fields=title`
@@ -125,6 +127,7 @@ export default function ({ getService }: PluginFunctionalProviderContext) {
             });
         });
       });
+
       describe('export', () => {
         it('allows to export them directly by id', async () => {
           await supertest

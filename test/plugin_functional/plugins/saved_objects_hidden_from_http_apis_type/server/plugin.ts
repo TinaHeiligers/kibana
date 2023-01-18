@@ -7,9 +7,12 @@
  */
 
 import { Plugin, CoreSetup } from '@kbn/core/server';
+import { registerRoutes } from './routes';
 
 export class SavedObjectsHiddenFromHttpApisTypePlugin implements Plugin {
-  public setup({ savedObjects }: CoreSetup, deps: {}) {
+  public setup({ savedObjects, http }: CoreSetup, deps: {}) {
+    // get, delete & bulkDelete that allows requests for types hidden from the http apis to proceed to the client
+    registerRoutes(http);
     // example of a SO type that not hidden but is hidden from the http apis.
     savedObjects.registerType({
       name: 'test-hidden-from-http-apis-importable-exportable',
@@ -41,7 +44,6 @@ export class SavedObjectsHiddenFromHttpApisTypePlugin implements Plugin {
         visibleInManagement: true,
       },
     });
-    // TINA TODO: Add custom routes for bypassing the blocking behavior
   }
 
   public start() {}

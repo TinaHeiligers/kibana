@@ -33,6 +33,7 @@ export default async function ({ readConfigFile }: FtrConfigProviderContext) {
       // require.resolve('./test_suites/data_plugin'),
       require.resolve('./test_suites/saved_objects_management'),
       // require.resolve('./test_suites/saved_objects_hidden_type'),
+      // require.resolve('./test_suites/saved_objects_hidden_from_http_apis_type'),
     ],
     services: {
       ...functionalConfig.get('services'),
