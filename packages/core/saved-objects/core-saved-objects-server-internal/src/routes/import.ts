@@ -110,6 +110,7 @@ export const registerImportRoute = (
           overwrite,
           createNewCopies,
           compatibilityMode,
+          managed: true,
         });
 
         return res.ok({ body: result });
