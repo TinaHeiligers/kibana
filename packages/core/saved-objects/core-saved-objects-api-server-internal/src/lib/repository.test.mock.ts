@@ -12,6 +12,7 @@ import type * as InternalUtils from './apis/utils/internal_utils';
 import type { preflightCheckForCreate } from './apis/internals/preflight_check_for_create';
 import type { updateObjectsSpaces } from './apis/internals/update_objects_spaces';
 import type { deleteLegacyUrlAliases } from './apis/internals/delete_legacy_url_aliases';
+import { internalUpdate } from './apis/internals';
 
 export const mockCollectMultiNamespaceReferences = jest.fn() as jest.MockedFunction<
   typeof collectMultiNamespaceReferences
@@ -72,3 +73,8 @@ jest.mock('./apis/internals/delete_legacy_url_aliases', () => ({
 
 export const mockGetSearchDsl = jest.fn();
 jest.mock('./search/search_dsl', () => ({ getSearchDsl: mockGetSearchDsl }));
+
+export const mockInternalUpdate = jest.fn() as jest.MockedFunction<typeof internalUpdate>;
+jest.mock('./apis/internals/internal_update', () => ({
+  internalUpdate: mockInternalUpdate,
+}));
