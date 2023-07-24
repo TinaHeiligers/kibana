@@ -25,12 +25,14 @@ export interface SavedObjectsUpdateOptions<Attributes = unknown> extends SavedOb
   /** The Elasticsearch Refresh setting for this operation */
   refresh?: MutatingOperationRefreshSetting;
   /** If specified, will be used to perform an upsert if the object doesn't exist */
-  upsert?: Attributes;
+  upsert?: Attributes; // Attributes: Pick<SavedObject, 'attributes'>
   /**
    * The Elasticsearch `retry_on_conflict` setting for this operation.
    * Defaults to `0` when `version` is provided, `3` otherwise.
    */
   retryOnConflict?: number;
+  /** {@link SavedObjectsRawDocParseOptions.migrationVersionCompatibility} */
+  migrationVersionCompatibility?: 'compatible' | 'raw';
 }
 
 /**

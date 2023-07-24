@@ -17,6 +17,7 @@ export { performFind } from './find';
 export { performBulkGet } from './bulk_get';
 export { performGet } from './get';
 export { performUpdate } from './update';
+// export { performBWCUpdate } from './update_bwc';
 export { performBulkUpdate } from './bulk_update';
 export { performRemoveReferencesTo } from './remove_references_to';
 export { performOpenPointInTime } from './open_point_in_time';

@@ -103,7 +103,8 @@ export const expectErrorConflict = (obj: TypeIdTuple, overrides?: Record<string,
 export const expectErrorInvalidType = (obj: TypeIdTuple, overrides?: Record<string, unknown>) =>
   expectErrorResult(obj, createUnsupportedTypeErrorPayload(obj.type), overrides);
 
-export const KIBANA_VERSION = '2.0.0';
+// export const KIBANA_VERSION = '2.0.0';
+export const KIBANA_VERSION = '8.8.0';
 export const ALLOWED_CONVERT_VERSION = '8.0.0';
 export const CUSTOM_INDEX_TYPE = 'customIndex';
 /** This type has namespaceType: 'agnostic'. */
@@ -497,11 +498,12 @@ export const mockUpdateResponse = (
   namespaces?: string[],
   originId?: string
 ) => {
-  client.update.mockResponseOnce(
+  client.create.mockResponseOnce(
     {
       _id: `${type}:${id}`,
       ...mockVersionProps,
       result: 'updated',
+
       // don't need the rest of the source for test purposes, just the namespace and namespaces attributes
       get: {
         _source: {
@@ -541,7 +543,34 @@ export const updateSuccess = async <T extends Partial<unknown>>(
   }
   mockUpdateResponse(client, type, id, options, objNamespaces, originId);
   const result = await repository.update(type, id, attributes, options);
-  expect(client.get).toHaveBeenCalledTimes(registry.isMultiNamespace(type) ? 1 : 0);
+  expect(client.get).toHaveBeenCalledTimes(1);
+  return result;
+};
+
+export const updateBWCSuccess = async <T extends Partial<unknown>>(
+  client: ElasticsearchClientMock,
+  repository: SavedObjectsRepository,
+  registry: SavedObjectTypeRegistry,
+  type: string,
+  id: string,
+  attributes: T,
+  options?: SavedObjectsUpdateOptions,
+  internalOptions: {
+    originId?: string;
+    mockGetResponseValue?: estypes.GetResponse;
+  } = {},
+  objNamespaces?: string[]
+) => {
+  const { mockGetResponseValue, originId } = internalOptions;
+  const mockGetResponse =
+    mockGetResponseValue ??
+    getMockGetResponse(registry, { type, id }, objNamespaces ?? options?.namespace);
+  client.get.mockResponseOnce(mockGetResponse, { statusCode: 200 });
+
+  mockUpdateResponse(client, type, id, options, objNamespaces, originId);
+
+  const result = await repository.updateBWC(type, id, attributes, options);
+  expect(client.get).toHaveBeenCalledTimes(1);
   return result;
 };
 

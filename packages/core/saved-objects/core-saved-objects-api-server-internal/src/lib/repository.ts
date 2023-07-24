@@ -85,6 +85,7 @@ import {
   performResolve,
   performUpdateObjectsSpaces,
   performCollectMultiNamespaceReferences,
+  performBWCUpdate,
 } from './apis';
 import { createRepositoryHelpers } from './utils';
 
@@ -414,6 +415,27 @@ export class SavedObjectsRepository implements ISavedObjectsRepository {
       this.apiExecutionContext
     );
   }
+
+  // /**
+  //  * {@inheritDoc ISavedObjectsRepository.updateBWC}
+  //  */
+  // async updateBWC<T = unknown>(
+  //   type: string,
+  //   id: string,
+  //   attributes: Partial<T>,
+  //   options: SavedObjectsUpdateOptions<T> = {}
+  // ): Promise<SavedObjectsUpdateResponse<T>> {
+  //   const result = await performBWCUpdate(
+  //     {
+  //       type,
+  //       id,
+  //       attributes,
+  //       options,
+  //     },
+  //     this.apiExecutionContext
+  //   );
+  //   return result;
+  // }
 
   /**
    * {@inheritDoc ISavedObjectsRepository.collectMultiNamespaceReferences}

@@ -109,13 +109,14 @@ function isMgetDoc(doc?: estypes.MgetResponseItem<unknown>): doc is estypes.GetG
 export async function preflightCheckForCreate(params: PreflightCheckForCreateParams) {
   const { registry, client, serializer, getIndexForType, createPointInTimeFinder, objects } =
     params;
-
+  // console.log('preflightCheckForCreate', JSON.stringify(objects));
   // Step 1: for each object, check if it is over the potential alias threshold; if so, attempt to search for aliases that may be affected.
   // The result is a discriminated union: the left side is 'aliasConflict' errors, and the right side is objects/aliases to bulk-get.
   const aliasConflictsOrObjectsToGet = await optionallyFindAliases(
     createPointInTimeFinder,
     objects
   );
+  // console.log('step 1: aliasConflictsOrObjectsToGet', aliasConflictsOrObjectsToGet);
 
   // Step 2: bulk-get all objects and aliases.
   const objectsAndAliasesToBulkGet = aliasConflictsOrObjectsToGet
@@ -127,7 +128,7 @@ export async function preflightCheckForCreate(params: PreflightCheckForCreatePar
     getIndexForType,
     objectsAndAliasesToBulkGet
   );
-
+  // console.log('step 2: objectsAndAliasesToBulkGet', aliasConflictsOrObjectsToGet);
   // Step 3: process all of the find and bulk-get results, and return appropriate results to the consumer.
   let getResponseIndex = 0;
   let aliasSpacesIndex = 0;
@@ -274,14 +275,12 @@ async function bulkGetObjectsAndAliases(
       }
     }
   }
-
   const bulkGetResponse = docsToBulkGet.length
     ? await client.mget<SavedObjectsRawDocSource>(
         { body: { docs: docsToBulkGet } },
         { ignore: [404], meta: true }
       )
     : undefined;
-
   // throw if we can't verify a 404 response is from Elasticsearch
   if (
     bulkGetResponse &&

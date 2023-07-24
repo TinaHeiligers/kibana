@@ -13,3 +13,9 @@ export {
   type InternalBulkResolveParams,
   type InternalSavedObjectsBulkResolveResponse,
 } from './internal_bulk_resolve';
+export {
+  type InternalUpsertParams,
+  type SavedObjectInternalUpsertResponse,
+  // internalUpsert,
+} from './internal_upsert';
+export { type InternalUpdateParams, internalUpdate } from './internal_update';

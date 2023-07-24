@@ -108,7 +108,8 @@ export const performUpdate = async <T>(
     } else if (registry.isMultiNamespace(type)) {
       savedObjectNamespaces = preflightResult!.savedObjectNamespaces;
     }
-
+    // create doc: it doesn't exist.
+    // note: es will apply
     const migrated = migrationHelper.migrateInputDocument({
       id,
       type,
@@ -121,7 +122,7 @@ export const performUpdate = async <T>(
     });
     rawUpsert = serializer.savedObjectToRaw(migrated as SavedObjectSanitizedDoc);
   }
-
+  // update existing doc: it exsits
   const doc = {
     [type]: await encryptionHelper.optionallyEncryptAttributes(type, id, namespace, attributes),
     updated_at: time,
