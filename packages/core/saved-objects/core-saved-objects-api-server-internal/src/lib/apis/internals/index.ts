@@ -13,3 +13,4 @@ export {
   type InternalBulkResolveParams,
   type InternalSavedObjectsBulkResolveResponse,
 } from './internal_bulk_resolve';
+export { executeUpdateRetryOnConflict, type PerformUpdateParams } from './update_retry';

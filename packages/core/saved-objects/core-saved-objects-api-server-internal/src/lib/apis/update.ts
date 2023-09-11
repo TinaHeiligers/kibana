@@ -21,10 +21,10 @@ import type {
   SavedObjectsUpdateResponse,
 } from '@kbn/core-saved-objects-api-server';
 import { isNotFoundFromUnsupportedServer } from '@kbn/core-elasticsearch-server-internal';
-import { DEFAULT_REFRESH_SETTING, DEFAULT_RETRY_COUNT } from '../constants';
-import { isValidRequest } from '../utils';
+import { DEFAULT_REFRESH_SETTING } from '../constants';
 import { getCurrentTime, getSavedObjectFromSource, mergeForUpdate } from './utils';
 import type { ApiExecutionContext } from './types';
+import { executeUpdateRetryOnConflict } from './internals/update_retry';
 
 export interface PerformUpdateParams<T = unknown> {
   type: string;
@@ -32,44 +32,19 @@ export interface PerformUpdateParams<T = unknown> {
   attributes: T;
   options: SavedObjectsUpdateOptions<T>;
 }
-
+// #TODO: factorise: accept `execute` option -> execute update, execute bulkUpdate) and reuse for wait_for reties.
 export const performUpdate = async <T>(
   updateParams: PerformUpdateParams<T>,
   apiContext: ApiExecutionContext
 ): Promise<SavedObjectsUpdateResponse<T>> => {
-  const { type, id, options } = updateParams;
-  const { allowedTypes, helpers } = apiContext;
-  const namespace = helpers.common.getCurrentNamespace(options.namespace);
-
-  // check request is valid
-  const { validRequest, error } = isValidRequest({ allowedTypes, type, id });
-  if (!validRequest && error) {
-    throw error;
-  }
-
-  const maxAttempts = options.version ? 1 : 1 + DEFAULT_RETRY_COUNT;
-
-  // handle retryOnConflict manually by reattempting the operation in case of conflict errors
-  let response: SavedObjectsUpdateResponse<T>;
-  for (let currentAttempt = 1; currentAttempt <= maxAttempts; currentAttempt++) {
-    try {
-      response = await executeUpdate(updateParams, apiContext, { namespace });
-      break;
-    } catch (e) {
-      if (
-        SavedObjectsErrorHelpers.isConflictError(e) &&
-        e.retryableConflict &&
-        currentAttempt < maxAttempts
-      ) {
-        continue;
-      }
-      throw e;
-    }
-  }
-
-  return response!;
+  return await executeUpdateRetryOnConflict(updateParams, apiContext);
 };
 
+export interface ExecuteUpdateParams<T = unknown> {
+  updateParams: PerformUpdateParams<T>;
+  apiContext: ApiExecutionContext;
+  options: { namespace: string | undefined };
+}
 export const executeUpdate = async <T>(
   { id, type, attributes, options }: PerformUpdateParams<T>,
   { registry, helpers, client, serializer, extensions = {}, logger }: ApiExecutionContext,

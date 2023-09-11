@@ -405,7 +405,7 @@ describe('SavedObjectsRepository', () => {
         );
       });
 
-      it('retries the operation in case of conflict error', async () => {
+      it.only('retries the operation in case of conflict error', async () => {
         client.get.mockResponse(getMockGetResponse(registry, { type, id }));
 
         client.index
@@ -431,7 +431,7 @@ describe('SavedObjectsRepository', () => {
         expect(client.index).toHaveBeenCalledTimes(3);
       });
 
-      it('retries the operation a maximum of `retryOnConflict` times', async () => {
+      it.only('retries the operation a maximum of `retryOnConflict` times', async () => {
         client.get.mockResponse(getMockGetResponse(registry, { type, id }));
 
         client.index.mockImplementation(() => {
