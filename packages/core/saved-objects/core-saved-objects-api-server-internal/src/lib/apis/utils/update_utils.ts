@@ -7,27 +7,35 @@
  */
 
 import { SavedObjectsErrorHelpers } from '@kbn/core-saved-objects-server';
+import { ALL_NAMESPACES_STRING } from '@kbn/core-saved-objects-utils-server';
 
 export const isValidRequest = ({
   allowedTypes,
   type,
   id,
+  objectNamespace,
 }: {
   allowedTypes: string[];
   type: string;
   id?: string;
+  objectNamespace?: string;
 }) => {
-  return !id
-    ? {
-        validRequest: false,
-        error: SavedObjectsErrorHelpers.createBadRequestError('id cannot be empty'),
-      }
-    : !allowedTypes.includes(type)
-    ? {
+  if (!id) {
+    return {
+      validRequest: false,
+      error: SavedObjectsErrorHelpers.createBadRequestError('id cannot be empty'),
+    };
+  } else if (!allowedTypes.includes(type)) {
+    return {
         validRequest: false,
         error: SavedObjectsErrorHelpers.createGenericNotFoundError(type, id),
       }
-    : {
-        validRequest: true,
-      };
+  } else if (objectNamespace === ALL_NAMESPACES_STRING) {
+    return {
+      ValidRequest: false,
+      error: SavedObjectsErrorHelpers.createBadRequestError('"namespace" cannot be "*"');
+    }
+  } else {
+    return {validRequest: true}
+  }
 };

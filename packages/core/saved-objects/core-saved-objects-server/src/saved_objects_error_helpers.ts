@@ -259,6 +259,9 @@ export class SavedObjectsErrorHelpers {
     }
     return decorate(Boom.notFound(), CODE_NOT_FOUND, 404);
   }
+  public static isGenericNotFoundError(error: Error | DecoratedError) {
+    return isSavedObjectsClientError(error) && error[code] === CODE_NOT_FOUND
+  }
 
   /**
    * Creates an alias not found error (flavor of general error 500)

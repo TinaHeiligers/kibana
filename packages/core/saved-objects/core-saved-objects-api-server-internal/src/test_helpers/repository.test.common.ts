@@ -385,7 +385,6 @@ export const createRegistry = () => {
   );
   return registry;
 };
-
 export const createSpySerializer = (registry: SavedObjectTypeRegistry) => {
   const serializer = new SavedObjectsSerializer(registry);
 
@@ -402,6 +401,7 @@ export const createSpySerializer = (registry: SavedObjectTypeRegistry) => {
 
   return serializer as jest.Mocked<SavedObjectsSerializer>;
 };
+
 
 export const createDocumentMigrator = (registry: SavedObjectTypeRegistry) => {
   return new DocumentMigrator({

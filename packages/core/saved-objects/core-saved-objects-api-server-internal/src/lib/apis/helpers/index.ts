@@ -27,6 +27,9 @@ export {
   type PreflightDocResult,
   type PreflightNSParams,
   type PreflightNSResult,
+  type DocumentToSave,
+  type ExpectedBulkGetResult,
+  type PreflightGetDocsForBulkUpdateParams,
 } from './preflight_check';
 
 export interface RepositoryHelpers {
