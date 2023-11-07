@@ -264,30 +264,17 @@ export class PreflightCheckHelper {
     // const { expectedBulkGetResults, namespace } = params;
     const validObjectsAsRight = validObjects as ExpectedBulkGetResultRight[];
 
-    // if (validObjects.length === 0) {
-    //   // We only have error results; return early to avoid potentially trying authZ checks for 0 types which would result in an exception.
-    //   return {
-    //     // Technically the returned array should only contain SavedObject results, but for errors this is not true (we cast to 'any' below)
-    //     saved_objects: expectedBulkGetResults.map<SavedObject>(
-    //       ({ value }) => value as unknown as SavedObject
-    //     ),
-    //   };
-    // }
-
     // `objectNamespace` is a namespace string, while `namespace` is a namespace ID.
     // each of the validObjects in the map might have it's own objectNamespace, we get that using a custom function
 
     // @TINA note: only using type, id and namespace to get the docs, not searching by attributes
     const bulkGetDocs = validObjectsAsRight
-      .filter(({ value }) => value.esRequestIndex !== undefined)
+      .filter(({ value }) => value.esRequestIndex !== undefined) // no-op, should be every doc anyway
       .map(({ value: { type, id, objectNamespace } }) => ({
-        _id: this.serializer.generateRawId(
-          this.getNamespaceId(objectNamespace, namespace),
-          type,
-          id
-        ),
+        _id: this.serializer.generateRawId(this.getNamespaceId(objectNamespace), type, id),
         _index: this.getIndexForType(type), // the index in which to get the object
-        _source: ['type', 'namespaces'],
+        _source: true, // we need all the fields and not only type and namespaces
+        // _source: ['type', 'namespaces'],
       }));
     // @TINA note: initial call to fetch all docs, seems to be issued for single and multinamespace types
     const bulkGetResponse = bulkGetDocs.length

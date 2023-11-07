@@ -51,6 +51,7 @@ export const performBulkUpdate = async <T>(
     common: commonHelper,
     encryption: encryptionHelper,
     preflight: preflightHelper,
+    migration: migratorHelper,
   } = helpers;
   const { securityExtension } = extensions;
 
@@ -69,13 +70,14 @@ export const performBulkUpdate = async <T>(
       version?: string;
       documentToSave: DocumentToSave;
       objectNamespace?: string;
-      esRequestIndex?: number;
+      esRequestIndex: number;
     }
   >;
-  // initial check on request validity
+  // create the expected results from fetching all docs
   const expectedBulkGetResults = objects.map<ExpectedBulkGetResult>((object) => {
     const { type, id, attributes, references, version, namespace: objectNamespace } = object;
     let error: DecoratedError | undefined;
+    //  initial check on request validity
     try {
       const { validRequest, error: invalidRequestError } = isValidRequest({
         allowedTypes,
@@ -92,7 +94,8 @@ export const performBulkUpdate = async <T>(
     if (error) {
       return left({ id, type, error: errorContent(error) });
     }
-    // the Doc as Kibana Client sees it (possibly v1 when server is v2) we need to move this to after fetching and migrating the docs
+    // the update to the doc as Kibana Client sees it (possibly v1 when server is v2)
+    // we need to move this to after fetching and migrating the docs
     const documentToSave = {
       // at this point, these are partial updates to a doc, as requested
       [type]: attributes,
@@ -111,16 +114,13 @@ export const performBulkUpdate = async <T>(
       // keep all objects, regardless of namespace checking requirements
       ...(!requiresNamespacesCheck && {
         skipNamespaceCheck: true,
-        esRequestIndex: bulkGetRequestIndexCounter++,
       }),
-      ...(requiresNamespacesCheck && { esRequestIndex: bulkGetRequestIndexCounter++ }),
+      ...(requiresNamespacesCheck && {
+        skipNamespaceCheck: false,
+      }),
+      esRequestIndex: bulkGetRequestIndexCounter++,
     });
   });
-
-  // const validObjects = await preflightHelper.preflightGetDocsForBulkUpdate({
-  //   expectedBulkGetResults,
-  //   namespace,
-  // });
 
   const validObjects = expectedBulkGetResults.filter(isRight);
 
@@ -133,7 +133,7 @@ export const performBulkUpdate = async <T>(
       ),
     };
   }
-  // Namespace utility methods
+  // Namespace utility methods - TODO refactor to extract if possible
   // `objectNamespace` is a namespace string, while `namespace` is a namespace ID.
   // The object namespace string, if defined, will supersede the operation's namespace ID
   // (converted here to the namespaceString for the namespace ID).
@@ -150,37 +150,18 @@ export const performBulkUpdate = async <T>(
     validObjects,
     namespace,
   });
-  //   .filter(({ value }) => value.esRequestIndex !== undefined)
-  //   .map(({ value: { type, id, objectNamespace } }) => ({
-  //     _id: serializer.generateRawId(getNamespaceId(objectNamespace), type, id),
-  //     _index: commonHelper.getIndexForType(type), // the index in which to get the object
-  //     _source: ['type', 'namespaces'],
-  //   }));
-  // // @TINA note: initial call to fetch all docs, seems to be issued for single and multinamespace types
-  // const bulkGetResponse = bulkGetDocs.length
-  //   ? await client.mget({ body: { docs: bulkGetDocs } }, { ignore: [404], meta: true })
-  //   : undefined;
-  // // fail fast if we can't verify a 404 response is from Elasticsearch
-  // if (
-  //   bulkGetResponse &&
-  //   isNotFoundFromUnsupportedServer({
-  //     statusCode: bulkGetResponse.statusCode,
-  //     headers: bulkGetResponse.headers,
-  //   })
-  // ) {
-  //   throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
-  // }
   // END PREFLIGHT CHECKS: up to here is preflight checks and virtual hashmaps creation to keep track of each object
   // START AUTH CHECK FOR IF REQUESTOR HAS AUTHORIZATION & PERMISSIONS TO UPDATE THE OBJECT
   const authObjects: AuthorizeUpdateObject[] = validObjects.map((element) => {
     const { type, id, objectNamespace, esRequestIndex: index } = element.value;
-    const preflightResult = index !== undefined ? bulkGetResponse?.body.docs[index] : undefined;
+    // we previously didn't check auth for objects that aren't shared, now we do.
+    const preflightResult = bulkGetResponse?.body.docs[index]; // check auth for all objects that exist. We optimistically assume that every valid object will have a corresponding doc returned from mget
     return {
       type,
       id,
       objectNamespace,
       // @ts-expect-error MultiGetHit._source is optional
-      existingNamespaces: preflightResult?._source?.namespaces ?? [],
+      existingNamespaces: preflightResult?._source?.namespaces ?? [], // leave as empty array for types that aren't multinamespace
     };
   });
 
@@ -188,7 +169,7 @@ export const performBulkUpdate = async <T>(
     namespace,
     objects: authObjects,
   });
-
+  // END AUTH CHECK -- @TINA end Nov 7th.
   let bulkUpdateRequestIndexCounter = 0;
   const bulkUpdateParams: object[] = [];
   type ExpectedBulkUpdateResult = Either<
