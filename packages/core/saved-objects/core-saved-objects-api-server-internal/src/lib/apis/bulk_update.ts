@@ -72,18 +72,9 @@ export const performBulkUpdate = async <T>(
       esRequestIndex?: number;
     }
   >;
-  // initial check on request validity, takes care of initial update single object checks too
+  // initial check on request validity
   const expectedBulkGetResults = objects.map<ExpectedBulkGetResult>((object) => {
-    const {
-      type,
-      id,
-      attributes,
-      references,
-      version,
-      namespace: objectNamespace,
-      upsert,
-      migrationVersionCompatibility,
-    } = object;
+    const { type, id, attributes, references, version, namespace: objectNamespace } = object;
     let error: DecoratedError | undefined;
     try {
       const { validRequest, error: invalidRequestError } = isValidRequest({
@@ -103,7 +94,8 @@ export const performBulkUpdate = async <T>(
     }
     // the Doc as Kibana Client sees it (possibly v1 when server is v2) we need to move this to after fetching and migrating the docs
     const documentToSave = {
-      [type]: attributes, // @TINA change needed here for handling upsert
+      // at this point, these are partial updates to a doc, as requested
+      [type]: attributes,
       updated_at: time,
       ...(Array.isArray(references) && { references }),
     };
@@ -116,6 +108,7 @@ export const performBulkUpdate = async <T>(
       version,
       documentToSave,
       objectNamespace,
+      // keep all objects, regardless of namespace checking requirements
       ...(!requiresNamespacesCheck && {
         skipNamespaceCheck: true,
         esRequestIndex: bulkGetRequestIndexCounter++,
@@ -142,7 +135,8 @@ export const performBulkUpdate = async <T>(
   }
   // Namespace utility methods
   // `objectNamespace` is a namespace string, while `namespace` is a namespace ID.
-  // The object namespace string, if defined, will supersede the operation's namespace ID.
+  // The object namespace string, if defined, will supersede the operation's namespace ID
+  // (converted here to the namespaceString for the namespace ID).
   const namespaceString = SavedObjectsUtils.namespaceIdToString(namespace);
   const getNamespaceString = (objectNamespace?: string) => objectNamespace ?? namespaceString;
   const getNamespaceId = (objectNamespace?: string) =>

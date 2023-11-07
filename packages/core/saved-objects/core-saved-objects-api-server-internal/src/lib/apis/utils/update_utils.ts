@@ -27,15 +27,15 @@ export const isValidRequest = ({
     };
   } else if (!allowedTypes.includes(type)) {
     return {
-        validRequest: false,
-        error: SavedObjectsErrorHelpers.createGenericNotFoundError(type, id),
-      }
-  } else if (objectNamespace === ALL_NAMESPACES_STRING) {
+      validRequest: false,
+      error: SavedObjectsErrorHelpers.createGenericNotFoundError(type, id),
+    };
+  } else if (objectNamespace && objectNamespace === ALL_NAMESPACES_STRING) {
     return {
       ValidRequest: false,
-      error: SavedObjectsErrorHelpers.createBadRequestError('"namespace" cannot be "*"');
-    }
+      error: SavedObjectsErrorHelpers.createBadRequestError('"namespace" cannot be "*"'),
+    };
   } else {
-    return {validRequest: true}
+    return { validRequest: true };
   }
 };
