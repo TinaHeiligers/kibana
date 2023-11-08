@@ -14,6 +14,7 @@ import type {
 } from '@kbn/core-saved-objects-server';
 import { SavedObjectsUtils } from '@kbn/core-saved-objects-utils-server';
 import { SavedObjectsErrorHelpers, SavedObjectsRawDocSource } from '@kbn/core-saved-objects-server';
+import { MgetResponseItem } from '@elastic/elasticsearch/lib/api/typesWithBodyKey';
 import type { RepositoryEsClient } from '../../repository_es_client';
 import type { PreflightCheckForBulkDeleteParams } from '../internals/repository_bulk_delete_internal_types';
 import type { CreatePointInTimeFinderFn } from '../../point_in_time_finder';
@@ -263,20 +264,11 @@ export class PreflightCheckHelper {
   }: PreflightGetDocsForBulkUpdateParams) {
     // const { expectedBulkGetResults, namespace } = params;
     const validObjectsAsRight = validObjects as ExpectedBulkGetResultRight[];
+    const bulkGetDocs = validObjectsAsRight.map(({ value: { type, id, objectNamespace } }) => ({
+      _id: this.serializer.generateRawId(this.getNamespaceId(objectNamespace, namespace), type, id),
+      _index: this.getIndexForType(type),
+    }));
 
-    // `objectNamespace` is a namespace string, while `namespace` is a namespace ID.
-    // each of the validObjects in the map might have it's own objectNamespace, we get that using a custom function
-
-    // @TINA note: only using type, id and namespace to get the docs, not searching by attributes
-    const bulkGetDocs = validObjectsAsRight
-      .filter(({ value }) => value.esRequestIndex !== undefined) // no-op, should be every doc anyway
-      .map(({ value: { type, id, objectNamespace } }) => ({
-        _id: this.serializer.generateRawId(this.getNamespaceId(objectNamespace), type, id),
-        _index: this.getIndexForType(type), // the index in which to get the object
-        _source: true, // we need all the fields and not only type and namespaces
-        // _source: ['type', 'namespaces'],
-      }));
-    // @TINA note: initial call to fetch all docs, seems to be issued for single and multinamespace types
     const bulkGetResponse = bulkGetDocs.length
       ? await this.client.mget({ body: { docs: bulkGetDocs } }, { ignore: [404], meta: true })
       : undefined;
@@ -407,7 +399,7 @@ export type ExpectedBulkGetResult = Either<
     type: string;
     id: string;
     version?: string;
-    documentToSave: DocumentToSave;
+    documentUpdates: DocumentToSave;
     objectNamespace?: string;
     esRequestIndex?: number;
   }
@@ -427,8 +419,10 @@ interface ExpectedBulkGetResultRight {
     type: string;
     id: string;
     version?: string;
-    documentToSave: DocumentToSave;
+    documentUpdates: DocumentToSave;
     objectNamespace?: string;
     esRequestIndex?: number;
+    migrationVersionCompatibility?: 'compatible' | 'raw';
+    rawDocSource?: MgetResponseItem<unknown>;
   };
 }

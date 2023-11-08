@@ -12,6 +12,7 @@ import {
   DecoratedError,
   AuthorizeUpdateObject,
   SavedObjectsRawDoc,
+  SavedObjectSanitizedDoc,
 } from '@kbn/core-saved-objects-server';
 import { SavedObjectsUtils } from '@kbn/core-saved-objects-utils-server';
 import { encodeVersion } from '@kbn/core-saved-objects-base-server-internal';
@@ -21,6 +22,7 @@ import {
   SavedObjectsBulkUpdateOptions,
   SavedObjectsBulkUpdateResponse,
 } from '@kbn/core-saved-objects-api-server';
+import { MgetResponseItem } from '@elastic/elasticsearch/lib/api/typesWithBodyKey';
 import { DEFAULT_REFRESH_SETTING } from '../constants';
 import {
   type Either,
@@ -35,8 +37,11 @@ import {
   rawDocExistsInNamespace,
   isValidRequest,
   isRight,
+  getSavedObjectFromSource,
+  mergeForUpdate,
 } from './utils';
 import { ApiExecutionContext } from './types';
+import { MigrationHelper } from './helpers';
 
 export interface PerformUpdateParams<T = unknown> {
   objects: Array<SavedObjectsBulkUpdateObject<T>>;
@@ -61,21 +66,31 @@ export const performBulkUpdate = async <T>(
 
   // START PREFLIGHT CHECKS: start of preflight check helpers calls and virtual hash maps creation(s) to keep track of objects.
   let bulkGetRequestIndexCounter = 0;
-  type DocumentToSave = Record<string, unknown>;
+  type DocumentUpdates = Record<string, unknown>;
   type ExpectedBulkGetResult = Either<
     { type: string; id: string; error: Payload },
     {
       type: string;
       id: string;
       version?: string;
-      documentToSave: DocumentToSave;
+      documentUpdates: DocumentUpdates;
       objectNamespace?: string;
       esRequestIndex: number;
+      migrationVersionCompatibility?: 'compatible' | 'raw';
+      rawDocSource?: MgetResponseItem<unknown>;
     }
   >;
   // create the expected results from fetching all docs
   const expectedBulkGetResults = objects.map<ExpectedBulkGetResult>((object) => {
-    const { type, id, attributes, references, version, namespace: objectNamespace } = object;
+    const {
+      type,
+      id,
+      attributes,
+      references,
+      version,
+      namespace: objectNamespace,
+      migrationVersionCompatibility,
+    } = object;
     let error: DecoratedError | undefined;
     //  initial check on request validity
     try {
@@ -94,31 +109,21 @@ export const performBulkUpdate = async <T>(
     if (error) {
       return left({ id, type, error: errorContent(error) });
     }
-    // the update to the doc as Kibana Client sees it (possibly v1 when server is v2)
-    // we need to move this to after fetching and migrating the docs
-    const documentToSave = {
-      // at this point, these are partial updates to a doc, as requested
+    const documentUpdates = {
       [type]: attributes,
       updated_at: time,
       ...(Array.isArray(references) && { references }),
     };
-    // we want to fetch all the docs, regardless of namespace type
-    const requiresNamespacesCheck = registry.isMultiNamespace(object.type);
 
     return right({
       type,
       id,
       version,
-      documentToSave,
+      documentUpdates,
       objectNamespace,
-      // keep all objects, regardless of namespace checking requirements
-      ...(!requiresNamespacesCheck && {
-        skipNamespaceCheck: true,
-      }),
-      ...(requiresNamespacesCheck && {
-        skipNamespaceCheck: false,
-      }),
       esRequestIndex: bulkGetRequestIndexCounter++,
+      migrationVersionCompatibility,
+      rawDocSource: {} as MgetResponseItem<unknown>,
     });
   });
 
@@ -137,8 +142,9 @@ export const performBulkUpdate = async <T>(
   // `objectNamespace` is a namespace string, while `namespace` is a namespace ID.
   // The object namespace string, if defined, will supersede the operation's namespace ID
   // (converted here to the namespaceString for the namespace ID).
-  const namespaceString = SavedObjectsUtils.namespaceIdToString(namespace);
-  const getNamespaceString = (objectNamespace?: string) => objectNamespace ?? namespaceString;
+  const getNamespaceString = (objectNamespace?: string) =>
+    objectNamespace ?? SavedObjectsUtils.namespaceIdToString(namespace);
+
   const getNamespaceId = (objectNamespace?: string) =>
     objectNamespace !== undefined
       ? SavedObjectsUtils.namespaceStringToId(objectNamespace)
@@ -178,7 +184,7 @@ export const performBulkUpdate = async <T>(
       type: string;
       id: string;
       namespaces: string[];
-      documentToSave: DocumentToSave;
+      documentUpdates: DocumentUpdates;
       esRequestIndex: number;
     }
   >;
@@ -188,29 +194,39 @@ export const performBulkUpdate = async <T>(
         return expectedBulkGetResult;
       }
 
-      const { esRequestIndex, id, type, version, documentToSave, objectNamespace } =
-        expectedBulkGetResult.value;
+      const {
+        esRequestIndex,
+        id,
+        type,
+        version,
+        documentUpdates,
+        objectNamespace,
+        migrationVersionCompatibility,
+      } = expectedBulkGetResult.value;
 
       let namespaces;
       let versionProperties;
-      if (esRequestIndex !== undefined) {
-        const indexFound = bulkGetResponse?.statusCode !== 404;
-        const actualResult = indexFound ? bulkGetResponse?.body.docs[esRequestIndex] : undefined;
-        const docFound = indexFound && isMgetDoc(actualResult) && actualResult.found;
-        if (
-          !docFound ||
-          !rawDocExistsInNamespace(
-            registry,
-            actualResult as SavedObjectsRawDoc,
-            getNamespaceId(objectNamespace)
-          )
-        ) {
-          return left({
-            id,
-            type,
-            error: errorContent(SavedObjectsErrorHelpers.createGenericNotFoundError(type, id)),
-          });
-        }
+
+      const indexFound = bulkGetResponse?.statusCode !== 404;
+      const actualResult = indexFound ? bulkGetResponse?.body.docs[esRequestIndex] : undefined;
+      const docFound = indexFound && isMgetDoc(actualResult) && actualResult.found;
+
+      if (
+        !docFound ||
+        !rawDocExistsInNamespace(
+          registry,
+          actualResult as SavedObjectsRawDoc,
+          getNamespaceId(objectNamespace)
+        )
+      ) {
+        return left({
+          id,
+          type,
+          error: errorContent(SavedObjectsErrorHelpers.createGenericNotFoundError(type, id)),
+        });
+      }
+
+      if (registry.isMultiNamespace(type)) {
         // @ts-expect-error MultiGetHit is incorrectly missing _id, _source
         namespaces = actualResult!._source.namespaces ?? [
           // @ts-expect-error MultiGetHit is incorrectly missing _id, _source
@@ -224,14 +240,64 @@ export const performBulkUpdate = async <T>(
         }
         versionProperties = getExpectedVersionProperties(version);
       }
+      let migrated;
+      const documentFromSource = getSavedObjectFromSource<T>(
+        registry,
+        type,
+        id,
+        actualResult as SavedObjectsRawDoc,
+        { migrationVersionCompatibility }
+      );
+      try {
+        migrated = migratorHelper.migrateStorageDocument(documentFromSource) as SavedObject<T>;
+      } catch (migrateStorageDocError) {
+        return left({
+          id,
+          type,
+          error: errorContent(
+            SavedObjectsErrorHelpers.decorateGeneralError(
+              migrateStorageDocError,
+              'Failed to migrate document to the latest version'
+            )
+          ),
+        });
+      }
+      const updatedAttributes = mergeForUpdate({
+        targetAttributes: {
+          ...migrated!.attributes,
+        },
+        updatedAttributes: await encryptionHelper.optionallyEncryptAttributes(
+          type,
+          id,
+          namespaces,
+          documentUpdates
+        ),
+        typeMappings: registry.getType(type)!.mappings,
+      });
+      const migratedUpdatedSavedObjectDoc = migratorHelper.migrateInputDocument({
+        ...migrated!,
+        id,
+        type,
+        // need to override the redacted NS values from the decrypted/migrated document
+        namespace: objectNamespace,
+        namespaces,
+        attributes: updatedAttributes,
+        ...documentUpdates,
+      });
 
+      const docToSend = serializer.savedObjectToRaw(
+        migratedUpdatedSavedObjectDoc as SavedObjectSanitizedDoc
+      );
+      // @TINA: types problem, a lot above is wrong and a lot below needs to change.
       const expectedResult = {
         type,
         id,
         namespaces,
         esRequestIndex: bulkUpdateRequestIndexCounter++,
-        documentToSave: expectedBulkGetResult.value.documentToSave,
+        documentUpdates: docToSend,
+        // documentUpdates: expectedBulkGetResult.value.documentUpdates, // merge raw updates with existing doc migrated to the client version
       };
+      // migrate down, merge update, migrate back up.
 
       bulkUpdateParams.push(
         {
@@ -243,12 +309,12 @@ export const performBulkUpdate = async <T>(
         },
         {
           doc: {
-            ...documentToSave,
+            ...documentUpdates,
             [type]: await encryptionHelper.optionallyEncryptAttributes(
               type,
               id,
               objectNamespace || namespace,
-              documentToSave[type]
+              documentUpdates[type]
             ),
           },
         }
@@ -274,7 +340,7 @@ export const performBulkUpdate = async <T>(
         return expectedResult.value as any;
       }
 
-      const { type, id, namespaces, documentToSave, esRequestIndex } = expectedResult.value;
+      const { type, id, namespaces, documentUpdates, esRequestIndex } = expectedResult.value;
       const response = bulkUpdateResponse?.items[esRequestIndex] ?? {};
       const rawResponse = Object.values(response)[0] as any;
 
@@ -288,7 +354,7 @@ export const performBulkUpdate = async <T>(
       const { _seq_no: seqNo, _primary_term: primaryTerm, get } = rawResponse;
 
       // eslint-disable-next-line @typescript-eslint/naming-convention
-      const { [type]: attributes, references, updated_at } = documentToSave;
+      const { [type]: attributes, references, updated_at } = documentUpdates;
 
       const { originId } = get._source;
       return {
