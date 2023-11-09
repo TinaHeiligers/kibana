@@ -5,7 +5,7 @@
  * in compliance with, at your election, the Elastic License 2.0 or the Server
  * Side Public License, v 1.
  */
-
+import { Payload } from '@hapi/boom';
 import type { PublicMethodsOf } from '@kbn/utility-types';
 import { isNotFoundFromUnsupportedServer } from '@kbn/core-elasticsearch-server-internal';
 import type {
@@ -14,10 +14,12 @@ import type {
 } from '@kbn/core-saved-objects-server';
 import { SavedObjectsUtils } from '@kbn/core-saved-objects-utils-server';
 import { SavedObjectsErrorHelpers, SavedObjectsRawDocSource } from '@kbn/core-saved-objects-server';
+import { MgetResponseItem } from '@elastic/elasticsearch/lib/api/typesWithBodyKey';
 import type { RepositoryEsClient } from '../../repository_es_client';
 import type { PreflightCheckForBulkDeleteParams } from '../internals/repository_bulk_delete_internal_types';
 import type { CreatePointInTimeFinderFn } from '../../point_in_time_finder';
 import {
+  type Either,
   getSavedObjectNamespaces,
   isRight,
   rawDocExistsInNamespaces,
@@ -247,6 +249,51 @@ export class PreflightCheckHelper {
     }
     // any other error from this check does not matter
   }
+
+  /**
+  Pre-flight check fetching all documents for bulkUpdate, regardless of its namespace type */
+  // public async preflightGetDocsForBulkUpdate(params: PreflightGetDocsForBulkUpdate)
+  /**
+   * Fetch multiple saved objects
+   * @returns MgetResponse
+   * @internal
+   */
+  public async preflightGetDocsForBulkUpdate({
+    validObjects,
+    namespace,
+  }: PreflightGetDocsForBulkUpdateParams) {
+    // const { expectedBulkGetResults, namespace } = params;
+    const validObjectsAsRight = validObjects as ExpectedBulkGetResultRight[];
+    const bulkGetDocs = validObjectsAsRight.map(({ value: { type, id, objectNamespace } }) => ({
+      _id: this.serializer.generateRawId(this.getNamespaceId(objectNamespace, namespace), type, id),
+      _index: this.getIndexForType(type),
+    }));
+
+    const bulkGetResponse = bulkGetDocs.length
+      ? await this.client.mget({ body: { docs: bulkGetDocs } }, { ignore: [404], meta: true })
+      : undefined;
+    // fail fast if we can't verify a 404 response is from Elasticsearch
+    if (
+      bulkGetResponse &&
+      isNotFoundFromUnsupportedServer({
+        statusCode: bulkGetResponse.statusCode,
+        headers: bulkGetResponse.headers,
+      })
+    ) {
+      throw SavedObjectsErrorHelpers.createGenericNotFoundEsUnavailableError();
+    }
+    return bulkGetResponse;
+  }
+  /**
+  Private method to get the objects' namespace id for bulkUpdate
+  /**
+   * @returns string | undefined
+   * @internal
+   */
+  private getNamespaceId = (objectNamespace?: string, namespace?: string) =>
+    objectNamespace !== undefined
+      ? SavedObjectsUtils.namespaceStringToId(objectNamespace)
+      : namespace;
 }
 
 /**
@@ -336,4 +383,46 @@ export interface PreflightDocResult {
   checkDocFound: 'not_found' | 'found';
   /** The source of the raw document, if the object already exists in the server's version (unsafe to use) */
   rawDocSource?: GetResponseFound<SavedObjectsRawDocSource>;
+}
+/**
+  @internal
+
+   */
+export type DocumentToSave = Record<string, unknown>;
+/**
+  @internal
+
+   */
+export type ExpectedBulkGetResult = Either<
+  { type: string; id: string; error: Payload },
+  {
+    type: string;
+    id: string;
+    version?: string;
+    documentUpdates: DocumentToSave;
+    objectNamespace?: string;
+    esRequestIndex?: number;
+  }
+>;
+/**
+  @internal
+
+   */
+export interface PreflightGetDocsForBulkUpdateParams {
+  validObjects: ExpectedBulkGetResult[];
+  namespace?: string;
+}
+
+interface ExpectedBulkGetResultRight {
+  tag: 'Right';
+  value: {
+    type: string;
+    id: string;
+    version?: string;
+    documentUpdates: DocumentToSave;
+    objectNamespace?: string;
+    esRequestIndex?: number;
+    migrationVersionCompatibility?: 'compatible' | 'raw';
+    rawDocSource?: MgetResponseItem<unknown>;
+  };
 }

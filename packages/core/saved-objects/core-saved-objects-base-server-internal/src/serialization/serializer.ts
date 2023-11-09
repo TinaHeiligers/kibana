@@ -177,6 +177,7 @@ export class SavedObjectsSerializer implements ISavedObjectsSerializer {
    * @param {string} namespace - The namespace of the saved object
    * @param {string} type - The saved object type
    * @param {string} id - The id of the saved object
+   * @returns {string} raw id from type, id, prefixed with namespace if defined, otherwise ''
    */
   public generateRawId(namespace: string | undefined, type: string, id: string) {
     const namespacePrefix =

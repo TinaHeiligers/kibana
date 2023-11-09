@@ -24,3 +24,4 @@ export {
 } from './internal_utils';
 export { type Left, type Either, type Right, isLeft, isRight, left, right } from './either';
 export { mergeForUpdate } from './merge_for_update';
+export { isValidRequest } from './update_utils';
