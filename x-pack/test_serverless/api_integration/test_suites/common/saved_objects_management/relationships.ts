@@ -108,6 +108,17 @@ export default function ({ getService }: FtrProviderContext) {
           responseSchema.validate(resp.body);
         }).not.to.throwError();
       });
+      it('index-pattern', async () => {
+        const resp = await supertest
+          .get(relationshipsUrl('index-pattern', '8963ca30-3224-11e8-a572-ffca06da1357'))
+          .set(svlCommonApi.getInternalRequestHeader())
+          .set(roleAuthc.apiKeyHeader)
+          .expect(200);
+
+        expect(() => {
+          responseSchema.validate(resp.body);
+        }).not.to.throwError();
+      });
     });
   });
 
