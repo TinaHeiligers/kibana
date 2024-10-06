@@ -121,7 +121,6 @@ export type {
   InternalRouteSecurity,
   RouteDeprecation,
   RouteInputDeprecationDescription,
-  RouteInputDeprecation,
   RouteInputDeprecationFactory,
   RouteInputDeprecationLocation,
   RouteInputDeprecationRemovedDescription,

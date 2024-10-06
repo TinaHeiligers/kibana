@@ -110,6 +110,14 @@ export interface RouteConfigOptionsBody {
  * @remark as of 9.0, access to internal routes is restricted by default. See https://github.com/elastic/kibana/issues/163654.
  */
 export type RouteAccess = 'public' | 'internal';
+// /**
+//  * Declare route input deprecations.
+//  * @public
+//  */
+// export interface RouteInputDeprecation {
+//   query?: RouteInputDeprecationFactory;
+//   body?: RouteInputDeprecationFactory;
+// }
 
 /** @public */
 export type RouteInputDeprecationLocation = 'query' | 'body';

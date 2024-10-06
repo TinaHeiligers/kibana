@@ -19,7 +19,7 @@ import type {
   RequestHandlerContextBase,
   RouteValidationFunction,
   LazyValidator,
-  RouteInputDeprecation,
+  RouteInputDeprecationLocation,
 } from '../..';
 
 type RqCtx = RequestHandlerContextBase;
@@ -351,7 +351,7 @@ export interface AddVersionOpts<P, Q, B> {
   /**
    * A description of which parts of this route are deprecated.
    */
-  deprecated?: RouteInputDeprecation;
+  deprecated?: RouteInputDeprecationLocation;
   security?: Exclude<RouteConfigOptions<RouteMethod>['security'], undefined>;
 }
 

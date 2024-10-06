@@ -65,7 +65,6 @@ export type {
   Privilege,
   PrivilegeSet,
   RouteDeprecation,
-  RouteInputDeprecation,
   RouteInputDeprecationFactory,
   RouteInputDeprecationLocation,
   RouteInputDeprecationDescription,
