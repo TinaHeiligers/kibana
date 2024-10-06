@@ -13,8 +13,14 @@ import type { Observable } from 'rxjs';
 import type { RecursiveReadonly } from '@kbn/utility-types';
 import type { HttpProtocol } from '../http_contract';
 import type { IKibanaSocket } from './socket';
-import type { RouteMethod, RouteConfigOptions, RouteDeprecation } from './route';
+import type { RouteMethod, RouteConfigOptions, RouteSecurity, RouteDeprecation } from './route';
 import type { Headers } from './headers';
+
+export type RouteSecurityGetter = (request: {
+  headers: KibanaRequest['headers'];
+  query?: KibanaRequest['query'];
+}) => RouteSecurity | undefined;
+export type InternalRouteSecurity = RouteSecurity | RouteSecurityGetter;
 
 /**
  * @public
@@ -23,6 +29,7 @@ export interface KibanaRouteOptions extends RouteOptionsApp {
   deprecated?: RouteDeprecation;
   xsrfRequired: boolean;
   access: 'internal' | 'public';
+  security?: InternalRouteSecurity;
 }
 
 /**
@@ -33,6 +40,7 @@ export interface KibanaRequestState extends RequestApplicationState {
   requestUuid: string;
   rewrittenUrl?: URL;
   traceId?: string;
+  authzResult?: Record<string, boolean>;
   measureElu?: () => void;
 }
 
@@ -137,6 +145,12 @@ export interface KibanaRequest<
    * Even if the API facade is the same, fake requests have some stubbed functionalities.
    */
   readonly isFakeRequest: boolean;
+
+  /**
+   * Authorization check result, passed to the route handler.
+   * Indicates whether the specific privilege was granted or denied.
+   */
+  readonly authzResult?: Record<string, boolean>;
 
   /**
    * An internal request has access to internal routes.

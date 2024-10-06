@@ -43,10 +43,12 @@ export type VersionedRouteConfig<Method extends RouteMethod> = Omit<
 > & {
   options?: Omit<
     RouteConfigOptions<Method>,
-    'access' | 'description' | 'deprecated' | 'discontinued'
+    'access' | 'description' | 'deprecated' | 'discontinued' | 'security'
   >;
   /** See {@link RouteConfigOptions<RouteMethod>['access']} */
   access: Exclude<RouteConfigOptions<Method>['access'], undefined>;
+  /** See {@link RouteConfigOptions<RouteMethod>['security']} */
+  security?: Exclude<RouteConfigOptions<Method>['security'], undefined>;
   /**
    * When enabled, the router will also check for the presence of an `apiVersion`
    * query parameter to determine the route version to resolve to:
@@ -350,6 +352,7 @@ export interface AddVersionOpts<P, Q, B> {
    * A description of which parts of this route are deprecated.
    */
   deprecated?: RouteInputDeprecation;
+  security?: Exclude<RouteConfigOptions<RouteMethod>['security'], undefined>;
 }
 
 /**
