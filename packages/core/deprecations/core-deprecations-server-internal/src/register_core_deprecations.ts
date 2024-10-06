@@ -68,14 +68,14 @@ export const registerApiDeprecationsInfo = ({
 
   deprecationsRegistery.registerDeprecations({
     getDeprecations: async () => {
-      console.log('calling get!!');
+      // console.log('calling get!!');
 
       const usageClient = coreUsageData.getClient();
       const deprecatedRoutes = http.getDeprecatedRoutes();
       const deprecatedStats = await usageClient.getDeprecatedApisStats();
 
-      console.log('deprecatedRoutes::', deprecatedRoutes);
-      console.log('deprecatedStats::', deprecatedStats);
+      // console.log('deprecatedRoutes::', deprecatedRoutes);
+      // console.log('deprecatedStats::', deprecatedStats);
 
       // Do the matching here
       // Do the diff here

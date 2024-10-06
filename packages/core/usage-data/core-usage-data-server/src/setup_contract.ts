@@ -21,6 +21,11 @@ export interface CoreUsageDataSetup {
    * when tracking events.
    */
   registerUsageCounter: (usageCounter: CoreUsageCounter) => void;
+  /**
+   * API for a deprecated API usage tracker plugin to inject the {@link CoreUsageCounter} to use
+   * when tracking API deprecations.
+   */
+  registerDeprecatedApiUsageCounter: (usageCounter: CoreUsageCounter) => void;
 }
 
 /**
