@@ -427,6 +427,46 @@ export class HttpServer {
 
     return deprecatedRoutes;
   }
+  /*
+    private getRestrictedRoutes(): RouterRestrictedRouteDetails[] {
+    const restrictedRoutes: RouterRestrictedRouteDetails[] = [];
+
+    for (const router of this.registeredRouters) {
+      const allRouterRoutes = [
+        // exclude so we dont get double entries.
+        // we need to call the versioned getRoutes to grab the full version options details
+        router.getRoutes({ excludeVersionedRoutes: true }),
+        router.versioned.getRoutes(),
+      ].flat();
+
+      restrictedRoutes.push(
+        ...allRouterRoutes
+          .flat()
+          .map((route) => {
+            if (route.isVersioned === true) {
+              return [...route.handlers.entries()].map(([version, { options }]) => {
+                const restricted = options.options?.access === 'internal'; // here we're diverging a bit from how deprecated is implemented
+                return { route, version: `${version}`, restricted };
+              });
+            }
+            return { route, version: undefined, restricted: route.options.access === 'internel' };
+          })
+          .flat()
+          .filter(({ restricted }) => isObject(restricted))
+          .flatMap(({ route, restricted, version }) => {
+            return {
+              routeRestrictedOptions: restricted!,
+              routeMethod: route.method as RouteMethod,
+              routePath: route.path,
+              routeVersion: version,
+            };
+          })
+      );
+    }
+
+    return restrictedRoutes;
+  }
+  */
 
   private setupGracefulShutdownHandlers() {
     this.registerOnPreRouting((request, response, toolkit) => {

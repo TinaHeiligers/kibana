@@ -73,7 +73,13 @@ export type VersionedRouteConfig<Method extends RouteMethod> = Omit<
    * ```
    */
   summary?: string;
-
+  /**
+   * Declares this operation to be deprecated. Consumers SHOULD refrain from usage
+   * of this route. This will be surfaced in OAS documentation.
+   *
+   * @default false
+   */
+  deprecated?: boolean;
   /**
    * Optional API description, which supports [CommonMark](https://spec.commonmark.org) markdown formatting
    *

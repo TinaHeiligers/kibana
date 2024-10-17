@@ -149,3 +149,11 @@ export interface RouterDeprecatedRouteDetails {
   routePath: string;
   routeVersion?: string;
 }
+// I'm not sure if I need this, TBD
+// /** @public */
+// export interface RouterRestrictedRouteDetails {
+//   routeRestrictedOptions: RouteRestrictedInfo;
+//   routeMethod: RouteMethod;
+//   routePath: string;
+//   routeVersion?: string;
+// }

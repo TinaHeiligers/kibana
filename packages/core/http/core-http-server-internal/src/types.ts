@@ -17,9 +17,11 @@ import type {
   HttpServiceSetup,
   HttpServiceStart,
   RouterDeprecatedRouteDetails,
+  // RouterRestrictedRouteDetails,
 } from '@kbn/core-http-server';
 import { CoreKibanaRequest } from '@kbn/core-http-router-server-internal';
 import { RouteDeprecationInfo } from '@kbn/core-http-server/src/router/route';
+// import { RouteRestrictedInfo } from '@kbn/core-http-server/src/router/route';
 import type { HttpServerSetup } from './http_server';
 import type { ExternalUrlConfig } from './external_url';
 import type { InternalStaticAssets } from './static_assets';
@@ -57,6 +59,10 @@ export interface InternalHttpServiceSetup
     path: string,
     plugin?: PluginOpaqueId
   ) => IRouter<Context>;
+  // not sure yet if we can combine deprecations and restrictions
+  // registerOnPostValidation(
+  //   cb: (req: CoreKibanaRequest, metadata: { deprecated: RouteDeprecationInfo, restricted: RouteRestrictedInfo }) => void
+  // ): void;
   registerOnPostValidation(
     cb: (req: CoreKibanaRequest, metadata: { deprecated: RouteDeprecationInfo }) => void
   ): void;
@@ -72,6 +78,7 @@ export interface InternalHttpServiceSetup
     provider: IContextProvider<Context, ContextName>
   ) => IContextContainer;
   getRegisteredDeprecatedApis: () => RouterDeprecatedRouteDetails[];
+  // getRegisteredRestrictedApis: () => RouterRestrictedRouteDetails[];
 }
 
 /** @internal */

@@ -8,7 +8,10 @@
  */
 
 import type { ISavedObjectsRepository } from '@kbn/core-saved-objects-api-server';
-import type { CoreDeprecatedApiUsageStats } from './core_usage_stats';
+import type {
+  CoreDeprecatedApiUsageStats,
+  // CoreRestrictedApiCounterStats,
+} from './core_usage_stats';
 
 /**
  * Internal API for registering the Usage Tracker used for Core's usage data payload.
@@ -22,6 +25,7 @@ export interface CoreUsageDataSetup {
    */
   registerUsageCounter: (usageCounter: CoreUsageCounter) => void;
   registerDeprecatedUsageFetch: (fetchFn: DeprecatedApiUsageFetcher) => void;
+  // registerRestrictedUsageFetch: (fetchFn: RestrictedApiUsageFetcher) => void;
 }
 
 /**
@@ -58,3 +62,11 @@ export type CoreIncrementUsageCounter = (params: CoreIncrementCounterParams) => 
 export type DeprecatedApiUsageFetcher = (params: {
   soClient: ISavedObjectsRepository;
 }) => Promise<CoreDeprecatedApiUsageStats[]>;
+
+// /**
+//  * @public
+//  * Registers the restricted API fetcher to be called to grab all the restricted API usage details.
+//  */
+// export type RestrictedApiUsageFetcher = (params: {
+//   soClient: ISavedObjectsRepository;
+// }) => Promise<CoreRestrictedApiCounterStats[]>;

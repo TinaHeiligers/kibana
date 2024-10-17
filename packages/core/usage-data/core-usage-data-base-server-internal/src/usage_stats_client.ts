@@ -44,7 +44,14 @@ export interface ICoreUsageStatsClient {
     counterName: string,
     options: { resolved?: boolean; incrementBy?: number }
   ): Promise<void>;
+  /*
+  getRestrictedApiUsageStats(): Promise<CoreRestrictedApiUsageStats[]>;
 
+  incrementRestrictedApi(
+    counterName: string,
+    options: { resolved?: boolean; incrementBy?: number }
+  ): Promise<void>;
+*/
   incrementSavedObjectsBulkCreate(options: BaseIncrementOptions): Promise<void>;
 
   incrementSavedObjectsBulkGet(options: BaseIncrementOptions): Promise<void>;

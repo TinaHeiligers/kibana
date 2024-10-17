@@ -49,7 +49,10 @@ import {
 } from '@kbn/core-saved-objects-server';
 
 import { ISavedObjectsRepository } from '@kbn/core-saved-objects-api-server';
-import { DeprecatedApiUsageFetcher } from '@kbn/core-usage-data-server/src/setup_contract';
+import {
+  DeprecatedApiUsageFetcher,
+  // RestrictedApiUsageFetcher,
+} from '@kbn/core-usage-data-server/src/setup_contract';
 import { isConfigured } from './is_configured';
 import { coreUsageStatsType } from './saved_objects';
 import { CoreUsageStatsClient } from './core_usage_stats_client';
@@ -91,6 +94,7 @@ export class CoreUsageDataService
   private deprecatedConfigPaths: ChangedDeprecatedPaths = { set: [], unset: [] };
   private incrementUsageCounter: CoreIncrementUsageCounter = () => {}; // Initially set to noop
   private deprecatedApiUsageFetcher: DeprecatedApiUsageFetcher = async () => []; // Initially set to noop
+  // private restrictedApiUsageFetcher: RestrictedApiUsageFetcher = async () => []; // Initially set to noop
 
   constructor(core: CoreContext) {
     this.logger = core.logger.get('core-usage-stats-service');
@@ -524,6 +528,14 @@ export class CoreUsageDataService
       return this.deprecatedApiUsageFetcher(params);
     };
 
+    // const registerRestrictedUsageFetch = (fetchFn: RestrictedApiUsageFetcher) => {
+    //   this.restrictedApiUsageFetcher = fetchFn;
+    // };
+
+    // const fetchRestrictedUsageStats = (params: { soClient: ISavedObjectsRepository }) => {
+    //   return this.restrictedApiUsageFetcher(params);
+    // };
+
     this.coreUsageStatsClient = new CoreUsageStatsClient({
       debugLogger: (message: string) => this.logger.debug(message),
       basePath: http.basePath,
@@ -531,6 +543,7 @@ export class CoreUsageDataService
       stop$: this.stop$,
       incrementUsageCounter,
       fetchDeprecatedUsageStats,
+      // fetchRestrictedUsageStats,
     });
 
     const contract: InternalCoreUsageDataSetup = {
@@ -539,6 +552,7 @@ export class CoreUsageDataService
       registerUsageCounter,
       incrementUsageCounter,
       registerDeprecatedUsageFetch,
+      // registerRestrictedUsageFetch,
     };
 
     return contract;

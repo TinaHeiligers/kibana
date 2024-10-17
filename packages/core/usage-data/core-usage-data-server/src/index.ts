@@ -12,7 +12,11 @@ export type {
   CoreEnvironmentUsageData,
   CoreConfigUsageData,
 } from './core_usage_data';
-export type { CoreUsageStats, CoreDeprecatedApiUsageStats } from './core_usage_stats';
+export type {
+  CoreUsageStats,
+  CoreDeprecatedApiUsageStats,
+  // CoreRestrictedApiUsageStats,
+} from './core_usage_stats';
 export type {
   CoreUsageDataSetup,
   CoreUsageCounter,

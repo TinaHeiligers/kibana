@@ -44,6 +44,7 @@ import {
   registerSavedObjectsCountUsageCollector,
   registerEventLoopDelaysCollector,
   fetchDeprecatedApiCounterStats,
+  // fetchRestrictedApiCounterStats
 } from './collectors';
 
 interface KibanaUsageCollectionPluginsDepsSetup {
@@ -78,7 +79,13 @@ export class KibanaUsageCollectionPlugin implements Plugin {
     const deprecatedUsageFetch = fetchDeprecatedApiCounterStats(
       this.logger.get('deprecated-api-usage')
     );
+    /*
+    const restrictedUsageFetch = fetchRestrictedApiCounterStats(
+      this.logger.get('restricted-api-usage')
+    );
+    */
     coreSetup.coreUsageData.registerDeprecatedUsageFetch(deprecatedUsageFetch);
+    // coreSetup.coreUsageData.registerRestrictedUsageFetch(RestrictedUsageFetch);
     this.registerUsageCollectors(
       usageCollection,
       coreSetup,

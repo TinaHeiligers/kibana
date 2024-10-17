@@ -10,8 +10,11 @@
 import { schema } from '@kbn/config-schema';
 import { InternalCoreUsageDataSetup } from '@kbn/core-usage-data-base-server-internal';
 import type { InternalDeprecationRouter } from '../internal_types';
-import { buildApiDeprecationId } from '../deprecations';
-
+import {
+  buildApiDeprecationId,
+  // buildRestrictedApiId,
+} from '../deprecations';
+// refactor to reuse for restrictedApiRequests
 export const registerMarkAsResolvedRoute = (
   router: InternalDeprecationRouter,
   { coreUsageData }: { coreUsageData: InternalCoreUsageDataSetup }
@@ -44,8 +47,15 @@ export const registerMarkAsResolvedRoute = (
         routePath,
         routeVersion,
       });
-
+      /*
+      const counterName = buildRestrictedApiId({
+        routeMethod,
+        routePath,
+        routeVersion,
+      });
+      */
       await usageClient.incrementDeprecatedApi(counterName, { resolved: true, incrementBy });
+      // await usageClient.incrementRestrictedApi(counterName, { resolved: true, incrementBy });
       return res.ok();
     }
   );
