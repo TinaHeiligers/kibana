@@ -22,4 +22,5 @@ export type {
   CoreDeprecatedApiUsageStats,
   // CoreRestrictedApiUsageStats,
   DeprecatedApiUsageFetcher,
+  // RestrictedApiUsageFetcher,
 } from './src';
