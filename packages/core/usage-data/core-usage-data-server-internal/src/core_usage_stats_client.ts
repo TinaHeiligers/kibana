@@ -37,10 +37,14 @@ import {
   takeUntil,
   tap,
 } from 'rxjs';
+<<<<<<< HEAD
 import {
   DeprecatedApiUsageFetcher,
   // RestrictedApiUsafeFetcher,
 } from '@kbn/core-usage-data-server/src/setup_contract';
+=======
+import type { DeprecatedApiUsageFetcher } from '@kbn/core-usage-data-server';
+>>>>>>> bb3fea6d1eb9cb036f451d0d625b07f334eecc70
 
 export const BULK_CREATE_STATS_PREFIX = 'apiCalls.savedObjectsBulkCreate';
 export const BULK_GET_STATS_PREFIX = 'apiCalls.savedObjectsBulkGet';
@@ -113,7 +117,7 @@ export interface CoreUsageEvent {
 }
 
 /**
- * Interface that models some of the core events (e.g. SO HTTP API calls)
+ * Interface that models core events triggered by API deprecations. (e.g. SO HTTP API calls)
  * @internal
  */
 export interface CoreUsageDeprecatedApiEvent {

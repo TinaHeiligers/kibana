@@ -157,6 +157,7 @@ export interface InternalRegistrarOptions {
    */
   events: boolean;
 }
+
 /** @internal */
 export type VersionedRouteConfig<P, Q, B, M extends RouteMethod> = Omit<
   RouteConfig<P, Q, B, M>,
@@ -204,15 +205,15 @@ export class Router<Context extends RequestHandlerContextBase = RequestHandlerCo
       <P, Q, B>(
         route: InternalRouteConfig<P, Q, B, Method>,
         handler: RequestHandler<P, Q, B, Context, Method>,
-        internalOptions: InternalRegistrarOptions = {
-          isVersioned: false,
-          events: true,
-        }
+        { isVersioned, events }: InternalRegistrarOptions = { isVersioned: false, events: false }
       ) => {
         route = prepareRouteConfigValidation(route);
         const routeSchemas = routeSchemasFromRouteConfig(route, method);
         const isPublicUnversionedRoute =
-          route.options?.access === 'public' && !internalOptions.isVersioned;
+          !isVersioned &&
+          route.options?.access === 'public' &&
+          // We do not consider HTTP resource routes as APIs
+          route.options?.httpResource !== true;
 
         this.routes.push({
           handler: async (req, responseToolkit) => {
@@ -222,21 +223,20 @@ export class Router<Context extends RequestHandlerContextBase = RequestHandlerCo
               responseToolkit,
               isPublicUnversionedRoute,
               handler: this.enhanceWithContext(handler),
-              emit: internalOptions.events
-                ? { onPostValidation: this.emitPostValidate }
-                : undefined,
+              emit: events ? { onPostValidation: this.emitPostValidate } : undefined,
             });
           },
           method,
           path: getRouteFullPath(this.routerPath, route.path),
           options: validOptions(method, route),
           // For the versioned route security is validated in the versioned router
-          security: internalOptions.isVersioned
+          security: isVersioned
             ? route.security
             : validRouteSecurity(route.security as DeepPartial<RouteSecurity>, route.options),
-          /** Below is added for introspection */
           validationSchemas: route.validate,
-          isVersioned: internalOptions.isVersioned,
+          // @ts-ignore using isVersioned: false in the type instead of boolean
+          // for typeguarding between versioned and unversioned RouterRoute types
+          isVersioned,
         });
       };
 
@@ -247,11 +247,11 @@ export class Router<Context extends RequestHandlerContextBase = RequestHandlerCo
     this.patch = buildMethod('patch');
   }
 
-  public static on(event: RouterEvents, cb: (req: CoreKibanaRequest) => void) {
+  public static on(event: RouterEvents, cb: (req: CoreKibanaRequest, ...args: any[]) => void) {
     Router.ee.on(event, cb);
   }
 
-  public static off(event: RouterEvents, cb: (req: CoreKibanaRequest) => void) {
+  public static off(event: RouterEvents, cb: (req: CoreKibanaRequest, ...args: any[]) => void) {
     Router.ee.off(event, cb);
   }
 
