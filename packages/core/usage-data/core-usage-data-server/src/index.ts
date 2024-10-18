@@ -12,11 +12,16 @@ export type {
   CoreEnvironmentUsageData,
   CoreConfigUsageData,
 } from './core_usage_data';
-export type { CoreUsageStats } from './core_usage_stats';
+export type {
+  CoreUsageStats,
+  CoreDeprecatedApiUsageStats,
+  // CoreRestrictedApiUsageStats,
+} from './core_usage_stats';
 export type {
   CoreUsageDataSetup,
   CoreUsageCounter,
   CoreIncrementUsageCounter,
   CoreIncrementCounterParams,
+  DeprecatedApiUsageFetcher,
 } from './setup_contract';
 export type { CoreUsageData, ConfigUsageData, CoreUsageDataStart } from './start_contract';
