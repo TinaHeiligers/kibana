@@ -152,6 +152,7 @@ const createTestRoute: () => VersionedRouterRoute = () => ({
   isVersioned: true,
   options: {
     access: 'public',
+    deprecated: true,
     discontinued: 'discontinued versioned router',
     options: { body: { access: ['application/test+json'] } as any },
   },

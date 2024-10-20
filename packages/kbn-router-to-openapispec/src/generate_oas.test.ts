@@ -189,6 +189,7 @@ describe('generateOpenApiDocument', () => {
         versionedRouters: { testVersionedRouter: { routes: [{}] } },
         bodySchema: createSharedZodSchema(),
       });
+
       expect(
         generateOpenApiDocument(
           {
@@ -239,8 +240,8 @@ describe('generateOpenApiDocument', () => {
                 routes: [
                   {
                     method: 'get',
-                    isVersioned: true,
                     path: '/test',
+                    isVersioned: true,
                     options: { access: 'public' },
                     handlers: [
                       {
