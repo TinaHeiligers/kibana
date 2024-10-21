@@ -163,12 +163,12 @@ export interface CoreDeprecatedApiUsageStats {
 /**
  * @public
  *
- * CoreRestrictedApiCounterStats are collected over time while Kibana is running.
+ * CoreRestrictedApiUsageStats are collected over time while Kibana is running.
  */
-// export interface CoreRestrictedApiCounterStats {
-//   apiId: string;
-//   totalMarkedAsResolved: number;
-//   markedAsResolvedLastCalledAt: string;
-//   apiTotalCalls: number;
-//   apiLastCalledAt: string;
-// }
+export interface CoreRestrictedApiUsageStats {
+  apiId: string;
+  totalMarkedAsResolved: number;
+  markedAsResolvedLastCalledAt: string;
+  apiTotalCalls: number;
+  apiLastCalledAt: string;
+}

@@ -15,7 +15,7 @@ export type {
 export type {
   CoreUsageStats,
   CoreDeprecatedApiUsageStats,
-  // CoreRestrictedApiUsageStats,
+  CoreRestrictedApiUsageStats,
 } from './core_usage_stats';
 export type {
   CoreUsageDataSetup,
@@ -23,5 +23,6 @@ export type {
   CoreIncrementUsageCounter,
   CoreIncrementCounterParams,
   DeprecatedApiUsageFetcher,
+  RestrictedApiUsageFetcher,
 } from './setup_contract';
 export type { CoreUsageData, ConfigUsageData, CoreUsageDataStart } from './start_contract';
