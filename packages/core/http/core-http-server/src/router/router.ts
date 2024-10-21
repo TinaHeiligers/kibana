@@ -10,7 +10,7 @@
 import type { Request, ResponseObject, ResponseToolkit } from '@hapi/hapi';
 import type Boom from '@hapi/boom';
 import type { VersionedRouter } from '../versioning';
-import type { RouteConfig, RouteDeprecationInfo, RouteMethod } from './route';
+import type { RouteConfig, RouteDeprecationInfo, RouteMethod, RouteRestrictionInfo } from './route';
 import type { RequestHandler, RequestHandlerWrapper } from './request_handler';
 import type { RequestHandlerContextBase } from './request_handler_context';
 import type { RouteConfigOptions } from './route';
@@ -149,11 +149,11 @@ export interface RouterDeprecatedRouteDetails {
   routePath: string;
   routeVersion?: string;
 }
-// I'm not sure if I need this, TBD
-// /** @public */
-// export interface RouterRestrictedRouteDetails {
-//   routeRestrictedOptions: RouteRestrictedInfo;
-//   routeMethod: RouteMethod;
-//   routePath: string;
-//   routeVersion?: string;
-// }
+// @TINA verify we need this
+/** @public */
+export interface RouterRestrictedRouteDetails {
+  routeRestrictedOptions: RouteRestrictionInfo;
+  routeMethod: RouteMethod;
+  routePath: string;
+  routeVersion?: string;
+}
