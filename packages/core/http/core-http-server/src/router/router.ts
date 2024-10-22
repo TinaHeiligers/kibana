@@ -152,7 +152,7 @@ export interface RouterDeprecatedRouteDetails {
 // @TINA verify we need this
 /** @public */
 export interface RouterRestrictedRouteDetails {
-  routeRestrictedOptions: RouteRestrictionInfo;
+  routeRestrictionOptions: RouteRestrictionInfo;
   routeMethod: RouteMethod;
   routePath: string;
   routeVersion?: string;

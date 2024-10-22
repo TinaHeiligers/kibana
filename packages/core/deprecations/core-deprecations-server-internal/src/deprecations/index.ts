@@ -8,4 +8,5 @@
  */
 
 export { buildApiDeprecationId, registerApiDeprecationsInfo } from './api_deprecations';
+export { buildApiRestrictionId, registerApiRestrictionsInfo } from './api_restrictions';
 export { registerConfigDeprecationsInfo } from './config_deprecations';

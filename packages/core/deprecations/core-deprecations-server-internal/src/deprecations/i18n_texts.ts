@@ -7,14 +7,141 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { RouterDeprecatedRouteDetails } from '@kbn/core-http-server';
-import { CoreDeprecatedApiUsageStats } from '@kbn/core-usage-data-server';
+import { RouterDeprecatedRouteDetails, RouterRestrictedRouteDetails } from '@kbn/core-http-server';
+import {
+  CoreDeprecatedApiUsageStats,
+  CoreRestrictedApiUsageStats,
+} from '@kbn/core-usage-data-server';
 import { i18n } from '@kbn/i18n';
 import moment from 'moment';
+
+// @TINA TODO: implement similar getters for apiRestrictions
+export const getApiRestrictionTitle = (details: RouterRestrictedRouteDetails) => {
+  const { routePath, routeMethod } = details;
+  const routeWithMethod = `${routeMethod.toUpperCase()} ${routePath}`;
+  // if (details)
+  const deprecationTypeText = getApiRestrictionTypeText(details);
+
+  return i18n.translate('core.deprecations.deprecations.apiRestrictionInfoTitle', {
+    defaultMessage: 'The "{routeWithMethod}" route {deprecationTypeText}',
+    values: {
+      routeWithMethod,
+      deprecationTypeText,
+    },
+  });
+};
+
+export const getApiRestrictionTypeText = (details: RouterRestrictedRouteDetails) => {
+  const { routeRestrictionOptions } = details;
+  const deprecationType = routeRestrictionOptions.reason.type;
+
+  return i18n.translate('core.deprecations.deprecations.apiRestrictionType', {
+    defaultMessage: '{deprecationType, select, restricted {is restricted}}',
+    values: { deprecationType },
+  });
+};
+
+export const getApiRestrictionMessage = (
+  details: RouterRestrictedRouteDetails,
+  apiUsageStats: CoreRestrictedApiUsageStats
+) => {
+  const { routePath, routeMethod } = details;
+  const { apiLastCalledAt, apiTotalCalls, markedAsResolvedLastCalledAt, totalMarkedAsResolved } =
+    apiUsageStats;
+
+  const diff = apiTotalCalls - totalMarkedAsResolved;
+  const wasResolvedBefore = totalMarkedAsResolved > 0;
+  const routeWithMethod = `${routeMethod.toUpperCase()} ${routePath}`;
+
+  const messages = [
+    i18n.translate('core.deprecations.deprecations.apiRestrictionApiCallsDetailsMessage', {
+      defaultMessage:
+        'The API {routeWithMethod} has been called {apiTotalCalls} times. The API was last called on {apiLastCalledAt}.',
+      values: {
+        routeWithMethod,
+        apiTotalCalls,
+        apiLastCalledAt: moment(apiLastCalledAt).format('LLLL Z'),
+      },
+    }),
+  ];
+
+  if (wasResolvedBefore) {
+    messages.push(
+      i18n.translate(
+        'core.deprecations.deprecations.apiRestrictionPreviouslyMarkedAsResolvedMessage',
+        {
+          defaultMessage:
+            'This API has been marked as resolved before. It has been called {timeSinceLastResolved} times since it was marked as resolved on {markedAsResolvedLastCalledAt}.',
+          values: {
+            timeSinceLastResolved: diff,
+            markedAsResolvedLastCalledAt: moment(markedAsResolvedLastCalledAt).format('LLLL Z'),
+          },
+        }
+      )
+    );
+  }
+
+  return messages.join('\n');
+};
+
+export const getApiRestrictionsManualSteps = (details: RouterRestrictedRouteDetails): string[] => {
+  const { routeRestrictionOptions, routePath } = details;
+  const { documentationUrl } = routeRestrictionOptions;
+  const restrictionType = routeRestrictionOptions.reason.type;
+
+  const manualSteps = [
+    i18n.translate('core.deprecations.deprecations.manualSteps.apiIsRestrictedStep', {
+      defaultMessage: 'This API {restrictionTypeText}',
+      values: { restrictionTypeText: getApiRestrictionTypeText(details) },
+    }),
+  ];
+
+  switch (restrictionType) {
+    case 'restricted': {
+      manualSteps.push(
+        i18n.translate(
+          'core.deprecations.deprecations.manualSteps.restrictedTypeExplainationStep',
+          {
+            defaultMessage:
+              'A restricted deprecation means the API is restricted and will not be publically accessible.',
+          }
+        ),
+        i18n.translate('core.deprecations.deprecations.manualSteps.restrictedDetailsStep', {
+          defaultMessage: 'This API {routePath} is restricted.',
+          values: { routePath },
+        })
+      );
+      break;
+    }
+  }
+
+  if (documentationUrl) {
+    manualSteps.push(
+      i18n.translate('core.deprecations.deprecations.manualSteps.documentationStep', {
+        defaultMessage:
+          'Click the learn more documentation link for more details on addressing the restricted API.',
+      })
+    );
+  }
+
+  manualSteps.push(
+    i18n.translate('core.deprecations.deprecations.manualSteps.markAsResolvedStep', {
+      defaultMessage:
+        'Once you are no longer using the restricted API. You can click on the "Mark as Resolved" button to track if the API is still getting called.',
+    }),
+    i18n.translate('core.deprecations.deprecations.manualSteps.deprecationWillBeHiddenStep', {
+      defaultMessage:
+        'The deprecation will be hidden from the Upgrade Assistant unless the restricted API has been called again.',
+    })
+  );
+
+  return manualSteps;
+};
 
 export const getApiDeprecationTitle = (details: RouterDeprecatedRouteDetails) => {
   const { routePath, routeMethod } = details;
   const routeWithMethod = `${routeMethod.toUpperCase()} ${routePath}`;
+  // if (details)
   const deprecationTypeText = getApiDeprecationTypeText(details);
 
   return i18n.translate('core.deprecations.deprecations.apiDeprecationInfoTitle', {
