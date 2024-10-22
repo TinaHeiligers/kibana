@@ -8,7 +8,11 @@
  */
 
 import type { KibanaRequest } from '@kbn/core-http-server';
-import type { CoreUsageStats } from '@kbn/core-usage-data-server';
+import type {
+  CoreUsageStats,
+  CoreDeprecatedApiUsageStats,
+  CoreRestrictedApiUsageStats,
+} from '@kbn/core-usage-data-server';
 
 /** @internal */
 export interface BaseIncrementOptions {
@@ -37,6 +41,20 @@ export type IncrementSavedObjectsExportOptions = BaseIncrementOptions & {
 /** @internal */
 export interface ICoreUsageStatsClient {
   getUsageStats(): Promise<CoreUsageStats>;
+
+  getDeprecatedApiUsageStats(): Promise<CoreDeprecatedApiUsageStats[]>;
+
+  incrementDeprecatedApi(
+    counterName: string,
+    options: { resolved?: boolean; incrementBy?: number }
+  ): Promise<void>;
+
+  getRestrictedApiUsageStats(): Promise<CoreRestrictedApiUsageStats[]>;
+
+  incrementRestrictedApi(
+    counterName: string,
+    options: { resolved?: boolean; incrementBy?: number }
+  ): Promise<void>;
 
   incrementSavedObjectsBulkCreate(options: BaseIncrementOptions): Promise<void>;
 

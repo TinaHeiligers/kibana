@@ -35,10 +35,12 @@ import type {
   HttpServerInfo,
   HttpAuth,
   IAuthHeadersStorage,
+  RouterDeprecatedRouteDetails,
+  RouteMethod,
 } from '@kbn/core-http-server';
 import { performance } from 'perf_hooks';
 import { isBoom } from '@hapi/boom';
-import { identity } from 'lodash';
+import { identity, isObject } from 'lodash';
 import { IHttpEluMonitorConfig } from '@kbn/core-http-server/src/elu_monitor';
 import { Env } from '@kbn/config';
 import { CoreContext } from '@kbn/core-base-server-internal';
@@ -140,6 +142,7 @@ export interface HttpServerSetup {
   registerAuth: HttpServiceSetup['registerAuth'];
   registerOnPostAuth: HttpServiceSetup['registerOnPostAuth'];
   registerOnPreResponse: HttpServiceSetup['registerOnPreResponse'];
+  getDeprecatedRoutes: HttpServiceSetup['getDeprecatedRoutes'];
   authRequestHeaders: IAuthHeadersStorage;
   auth: HttpAuth;
   getServerInfo: () => HttpServerInfo;
@@ -280,6 +283,7 @@ export class HttpServer {
 
     return {
       registerRouter: this.registerRouter.bind(this),
+      getDeprecatedRoutes: this.getDeprecatedRoutes.bind(this),
       registerRouterAfterListening: this.registerRouterAfterListening.bind(this),
       registerStaticDir: this.registerStaticDir.bind(this),
       staticAssets,
@@ -384,6 +388,85 @@ export class HttpServer {
       return false;
     }
   }
+
+  private getDeprecatedRoutes(): RouterDeprecatedRouteDetails[] {
+    const deprecatedRoutes: RouterDeprecatedRouteDetails[] = [];
+
+    for (const router of this.registeredRouters) {
+      const allRouterRoutes = [
+        // exclude so we dont get double entries.
+        // we need to call the versioned getRoutes to grab the full version options details
+        router.getRoutes({ excludeVersionedRoutes: true }),
+        router.versioned.getRoutes(),
+      ].flat();
+
+      deprecatedRoutes.push(
+        ...allRouterRoutes
+          .flat()
+          .map((route) => {
+            if (route.isVersioned === true) {
+              return [...route.handlers.entries()].map(([_, { options }]) => {
+                const deprecated = options.options?.deprecated;
+                return { route, version: `${options.version}`, deprecated };
+              });
+            }
+            return { route, version: undefined, deprecated: route.options.deprecated };
+          })
+          .flat()
+          .filter(({ deprecated }) => isObject(deprecated))
+          .flatMap(({ route, deprecated, version }) => {
+            return {
+              routeDeprecationOptions: deprecated!,
+              routeMethod: route.method as RouteMethod,
+              routePath: route.path,
+              routeVersion: version,
+            };
+          })
+      );
+    }
+
+    return deprecatedRoutes;
+  }
+  /*
+    private getRestrictedRoutes(): RouterRestrictedRouteDetails[] {
+    const restrictedRoutes: RouterRestrictedRouteDetails[] = [];
+
+    for (const router of this.registeredRouters) {
+      const allRouterRoutes = [
+        // exclude so we dont get double entries.
+        // we need to call the versioned getRoutes to grab the full version options details
+        router.getRoutes({ excludeVersionedRoutes: true }),
+        router.versioned.getRoutes(),
+      ].flat();
+
+      restrictedRoutes.push(
+        ...allRouterRoutes
+          .flat()
+          .map((route) => {
+            if (route.isVersioned === true) {
+              return [...route.handlers.entries()].map(([version, { options }]) => {
+                const restricted = options.options?.access === 'internal'; // here we're diverging a bit from how deprecated is implemented
+                return { route, version: `${version}`, restricted };
+              });
+            }
+            return { route, version: undefined, restricted: route.options.access === 'internel' };
+          })
+          .flat()
+          .filter(({ restricted }) => isObject(restricted))
+          .flatMap(({ route, restricted, version }) => {
+            return {
+              routeRestrictedOptions: restricted!,
+              routeMethod: route.method as RouteMethod,
+              routePath: route.path,
+              routeVersion: version,
+            };
+          })
+      );
+    }
+
+    return restrictedRoutes;
+  }
+  */
 
   private setupGracefulShutdownHandlers() {
     this.registerOnPreRouting((request, response, toolkit) => {
@@ -693,12 +776,13 @@ export class HttpServer {
     this.log.debug(`registering route handler for [${route.path}]`);
     // Hapi does not allow payload validation to be specified for 'head' or 'get' requests
     const validate = isSafeMethod(route.method) ? undefined : { payload: true };
-    const { authRequired, tags, body = {}, timeout } = route.options;
+    const { authRequired, tags, body = {}, timeout, deprecated } = route.options;
     const { accepts: allow, override, maxBytes, output, parse } = body;
 
     const kibanaRouteOptions: KibanaRouteOptions = {
       xsrfRequired: route.options.xsrfRequired ?? !isSafeMethod(route.method),
       access: route.options.access ?? 'internal',
+      deprecated,
       security: route.security,
     };
     // Log HTTP API target consumer.
