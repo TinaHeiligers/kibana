@@ -159,3 +159,16 @@ export interface CoreDeprecatedApiUsageStats {
   apiTotalCalls: number;
   apiLastCalledAt: string;
 }
+
+/**
+ * @public
+ *
+ * CoreRestrictedApiUsageStats are collected over time while Kibana is running.
+ */
+export interface CoreRestrictedApiUsageStats {
+  apiId: string;
+  totalMarkedAsResolved: number;
+  markedAsResolvedLastCalledAt: string;
+  apiTotalCalls: number;
+  apiLastCalledAt: string;
+}

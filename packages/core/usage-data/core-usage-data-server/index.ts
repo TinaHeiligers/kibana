@@ -20,5 +20,7 @@ export type {
   CoreServicesUsageData,
   CoreUsageStats,
   CoreDeprecatedApiUsageStats,
+  CoreRestrictedApiUsageStats,
   DeprecatedApiUsageFetcher,
+  RestrictedApiUsageFetcher,
 } from './src';

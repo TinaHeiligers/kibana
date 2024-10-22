@@ -13,6 +13,7 @@ import type {
   IRouter,
   RequestHandlerContextBase,
   RouterDeprecatedRouteDetails,
+  RouterRestrictedRouteDetails,
 } from './router';
 import type {
   AuthenticationHandler,
@@ -368,6 +369,15 @@ export interface HttpServiceSetup<
    * @returns {RouterDeprecatedRouteDetails[]}
    */
   getDeprecatedRoutes: () => RouterDeprecatedRouteDetails[];
+
+  // /**
+  //  * Provides a list of all registered restricted routes {{@link RouterRestrictedRouteDetails | information}}.
+  //  * The routers will be evaluated everytime this function gets called to
+  //  * accommodate for any late route registrations
+  //  * @returns {RouterRestrictedRouteDetails[]}
+  //  */
+  // @Tina TODO fix up, we're not adding `restricted` to versioned routes because we already have the `access` parameter set in route.options.
+  getRestrictedRoutes: () => RouterRestrictedRouteDetails[];
 }
 
 /** @public */

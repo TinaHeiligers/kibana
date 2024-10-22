@@ -37,7 +37,10 @@ import {
   takeUntil,
   tap,
 } from 'rxjs';
-import type { DeprecatedApiUsageFetcher } from '@kbn/core-usage-data-server';
+import type {
+  DeprecatedApiUsageFetcher,
+  RestrictedApiUsageFetcher,
+} from '@kbn/core-usage-data-server';
 
 export const BULK_CREATE_STATS_PREFIX = 'apiCalls.savedObjectsBulkCreate';
 export const BULK_GET_STATS_PREFIX = 'apiCalls.savedObjectsBulkGet';
@@ -119,6 +122,16 @@ export interface CoreUsageDeprecatedApiEvent {
   incrementBy: number;
 }
 
+/**
+ * Interface that models core events triggered by API restrictions. (e.g. calls to HTTP APIs with `access:internal`)
+ * @internal
+ */
+export interface CoreUsageRestrictedApiEvent {
+  id: string;
+  resolved: boolean;
+  incrementBy: number;
+}
+
 /** @internal */
 export interface CoreUsageStatsClientParams {
   debugLogger: (message: string) => void;
@@ -128,6 +141,7 @@ export interface CoreUsageStatsClientParams {
   incrementUsageCounter: (params: CoreIncrementCounterParams) => void;
   bufferTimeMs?: number;
   fetchDeprecatedUsageStats: DeprecatedApiUsageFetcher;
+  fetchRestrictedUsageStats: RestrictedApiUsageFetcher;
 }
 
 /** @internal */
@@ -140,6 +154,8 @@ export class CoreUsageStatsClient implements ICoreUsageStatsClient {
   private readonly coreUsageEvents$ = new Subject<CoreUsageEvent>();
   private readonly coreUsageDeprecatedApiCalls$ = new Subject<CoreUsageDeprecatedApiEvent>();
   private readonly fetchDeprecatedUsageStats: DeprecatedApiUsageFetcher;
+  private readonly coreUsageRestrictedApiCalls$ = new Subject<CoreUsageRestrictedApiEvent>();
+  private readonly fetchRestrictedUsageStats: RestrictedApiUsageFetcher;
 
   constructor({
     debugLogger,
@@ -149,11 +165,13 @@ export class CoreUsageStatsClient implements ICoreUsageStatsClient {
     incrementUsageCounter,
     bufferTimeMs = DEFAULT_BUFFER_TIME_MS,
     fetchDeprecatedUsageStats,
+    fetchRestrictedUsageStats,
   }: CoreUsageStatsClientParams) {
     this.debugLogger = debugLogger;
     this.basePath = basePath;
     this.repositoryPromise = repositoryPromise;
     this.fetchDeprecatedUsageStats = fetchDeprecatedUsageStats;
+    this.fetchRestrictedUsageStats = fetchRestrictedUsageStats;
     this.fieldsToIncrement$
       .pipe(
         takeUntil(stop$),
@@ -218,6 +236,28 @@ export class CoreUsageStatsClient implements ICoreUsageStatsClient {
       )
       .subscribe();
 
+    this.coreUsageRestrictedApiCalls$
+      .pipe(
+        takeUntil(stop$),
+        tap(({ id, incrementBy, resolved }) => {
+          incrementUsageCounter({
+            counterName: id,
+            counterType: `restricted_api_call:${resolved ? 'resolved' : 'total'}`,
+            incrementBy,
+          });
+
+          if (resolved) {
+            // increment number of times the marked_as_resolve has been called
+            incrementUsageCounter({
+              counterName: id,
+              counterType: 'restricted_api_call:marked_as_resolved',
+              incrementBy: 1,
+            });
+          }
+        })
+      )
+      .subscribe();
+
     this.coreUsageEvents$
       .pipe(
         takeUntil(stop$),
@@ -265,6 +305,20 @@ export class CoreUsageStatsClient implements ICoreUsageStatsClient {
   public async getDeprecatedApiUsageStats() {
     const repository = await this.repositoryPromise;
     return await this.fetchDeprecatedUsageStats({ soClient: repository });
+  }
+
+  public async incrementRestrictedApi(
+    id: string,
+    { resolved = false, incrementBy = 1 }: { resolved: boolean; incrementBy: number }
+  ) {
+    const restrictedField = resolved ? 'restricted_api_calls_resolved' : 'restricted_api_calls';
+    this.coreUsageRestrictedApiCalls$.next({ id, resolved, incrementBy });
+    this.fieldsToIncrement$.next([`${restrictedField}.total`]);
+  }
+
+  public async getRestrictedApiUsageStats() {
+    const repository = await this.repositoryPromise;
+    return await this.fetchRestrictedUsageStats({ soClient: repository });
   }
 
   public async incrementSavedObjectsBulkCreate(options: BaseIncrementOptions) {

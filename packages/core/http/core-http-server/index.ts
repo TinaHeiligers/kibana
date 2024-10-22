@@ -94,6 +94,7 @@ export type {
   RouteRegistrar,
   RouterRoute,
   RouterDeprecatedRouteDetails,
+  RouterRestrictedRouteDetails,
   IKibanaSocket,
   KibanaErrorResponseFactory,
   KibanaRedirectionResponseFactory,

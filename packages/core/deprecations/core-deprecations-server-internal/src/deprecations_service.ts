@@ -23,7 +23,11 @@ import { InternalCoreUsageDataSetup } from '@kbn/core-usage-data-base-server-int
 import { DeprecationsFactory } from './deprecations_factory';
 import { registerRoutes } from './routes';
 import { config as deprecationConfig, DeprecationConfigType } from './deprecation_config';
-import { registerApiDeprecationsInfo, registerConfigDeprecationsInfo } from './deprecations';
+import {
+  registerApiDeprecationsInfo,
+  registerApiRestrictionsInfo,
+  registerConfigDeprecationsInfo,
+} from './deprecations';
 
 export interface InternalDeprecationsServiceStart {
   /**
@@ -83,6 +87,12 @@ export class DeprecationsService
     });
 
     registerApiDeprecationsInfo({
+      deprecationsFactory: this.deprecationsFactory,
+      http,
+      coreUsageData,
+    });
+
+    registerApiRestrictionsInfo({
       deprecationsFactory: this.deprecationsFactory,
       http,
       coreUsageData,

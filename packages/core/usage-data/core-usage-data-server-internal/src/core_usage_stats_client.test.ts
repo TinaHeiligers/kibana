@@ -53,6 +53,7 @@ describe('CoreUsageStatsClient', () => {
       basePath: basePathMock,
       repositoryPromise: Promise.resolve(repositoryMock),
       fetchDeprecatedUsageStats: jest.fn(),
+      fetchRestrictedUsageStats: jest.fn(),
       stop$,
       incrementUsageCounter: incrementUsageCounterMock,
     });

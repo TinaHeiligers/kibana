@@ -189,6 +189,7 @@ export class HttpService
         Router.on('onPostValidate', cb);
       },
       getRegisteredDeprecatedApis: () => serverContract.getDeprecatedRoutes(),
+      getRegisteredRestrictedApis: () => serverContract.getRestrictedRoutes(),
       externalUrl: new ExternalUrlConfig(config.externalUrl),
       createRouter: <Context extends RequestHandlerContextBase = RequestHandlerContextBase>(
         path: string,

@@ -8,7 +8,11 @@
  */
 
 import type { KibanaRequest } from '@kbn/core-http-server';
-import type { CoreUsageStats, CoreDeprecatedApiUsageStats } from '@kbn/core-usage-data-server';
+import type {
+  CoreUsageStats,
+  CoreDeprecatedApiUsageStats,
+  CoreRestrictedApiUsageStats,
+} from '@kbn/core-usage-data-server';
 
 /** @internal */
 export interface BaseIncrementOptions {
@@ -41,6 +45,13 @@ export interface ICoreUsageStatsClient {
   getDeprecatedApiUsageStats(): Promise<CoreDeprecatedApiUsageStats[]>;
 
   incrementDeprecatedApi(
+    counterName: string,
+    options: { resolved?: boolean; incrementBy?: number }
+  ): Promise<void>;
+
+  getRestrictedApiUsageStats(): Promise<CoreRestrictedApiUsageStats[]>;
+
+  incrementRestrictedApi(
     counterName: string,
     options: { resolved?: boolean; incrementBy?: number }
   ): Promise<void>;

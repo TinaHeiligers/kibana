@@ -39,7 +39,7 @@ export interface BaseDeprecationDetails {
    * Predefined types are necessary to reduce having similar definitions with different keywords
    * across kibana deprecations.
    */
-  deprecationType?: 'config' | 'api' | 'feature';
+  deprecationType?: 'config' | 'api' | 'feature' | 'restriction';
   /** (optional) link to the documentation for more details on the deprecation. */
   documentationUrl?: string;
   /** (optional) specify the fix for this deprecation requires a full kibana restart. */
@@ -98,6 +98,13 @@ export interface ApiDeprecationDetails extends BaseDeprecationDetails {
 /**
  * @public
  */
+export interface ApiRestrictionDetails extends BaseDeprecationDetails {
+  apiId: string;
+  deprecationType: 'restriction';
+}
+/**
+ * @public
+ */
 export interface ConfigDeprecationDetails extends BaseDeprecationDetails {
   configPath: string;
   deprecationType: 'config';
@@ -116,7 +123,8 @@ export interface FeatureDeprecationDetails extends BaseDeprecationDetails {
 export type DeprecationsDetails =
   | ConfigDeprecationDetails
   | ApiDeprecationDetails
-  | FeatureDeprecationDetails;
+  | FeatureDeprecationDetails
+  | ApiDeprecationDetails;
 
 /**
  * @public

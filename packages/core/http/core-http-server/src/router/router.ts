@@ -10,7 +10,7 @@
 import type { Request, ResponseObject, ResponseToolkit } from '@hapi/hapi';
 import type Boom from '@hapi/boom';
 import type { VersionedRouter } from '../versioning';
-import type { RouteConfig, RouteDeprecationInfo, RouteMethod } from './route';
+import type { RouteConfig, RouteDeprecationInfo, RouteMethod, RouteRestrictionInfo } from './route';
 import type { RequestHandler, RequestHandlerWrapper } from './request_handler';
 import type { RequestHandlerContextBase } from './request_handler_context';
 import type { RouteConfigOptions } from './route';
@@ -149,3 +149,26 @@ export interface RouterDeprecatedRouteDetails {
   routePath: string;
   routeVersion?: string;
 }
+
+// @TINA verify we need this as an object, http_server's not happy with this
+/** @public */
+export interface RouterRestrictedRouteDetails {
+  routeRestrictionOptions: RouteRestrictionInfo;
+  routeMethod: RouteMethod;
+  routePath: string;
+  routeVersion?: string;
+}
+/**
+RouterRestriedRouteDetails {
+  routeRestrictionOptions: {
+    documentationUrl: string;
+    severity: 'warning' | 'critical';
+    reason: {
+      type: 'restricted';
+    }
+  },
+  routeMethod: 'get',
+  routePath: '/api/something',
+  routeVersion?
+}
+*/

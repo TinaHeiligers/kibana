@@ -126,6 +126,18 @@ export interface RouteDeprecationInfo {
 }
 
 /**
+ * Route Restriction info
+ * This information will assist Kibana HTTP API users when upgrading to new versions
+ * of the Elastic stack (via Upgrade Assistant)
+ */
+export interface RouteRestrictionInfo {
+  documentationUrl: string;
+  severity: 'warning' | 'critical';
+  reason: {
+    type: 'restricted';
+  };
+}
+/**
  * bump deprecation reason denotes a new version of the API is available
  */
 interface VersionBumpDeprecationType {

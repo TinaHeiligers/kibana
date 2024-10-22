@@ -37,6 +37,8 @@ import type {
   IAuthHeadersStorage,
   RouterDeprecatedRouteDetails,
   RouteMethod,
+  RouterRestrictedRouteDetails,
+  VersionedRouterRoute,
 } from '@kbn/core-http-server';
 import { performance } from 'perf_hooks';
 import { isBoom } from '@hapi/boom';
@@ -57,6 +59,17 @@ import { BasePath } from './base_path_service';
 import { getEcsResponseLog } from './logging';
 import { StaticAssets, type InternalStaticAssets } from './static_assets';
 
+const buildRouteRestrictionOptions = (route: VersionedRouterRoute | RouterRoute) => {
+  return {
+    routeRestrictionOptions: {
+      documentationUrl: 'http://elastic.co',
+      severity: 'warning',
+      reason: {
+        type: 'restricted',
+      },
+    },
+  };
+};
 /**
  * Adds ELU timings for the executed function to the current's context transaction
  *
@@ -143,6 +156,7 @@ export interface HttpServerSetup {
   registerOnPostAuth: HttpServiceSetup['registerOnPostAuth'];
   registerOnPreResponse: HttpServiceSetup['registerOnPreResponse'];
   getDeprecatedRoutes: HttpServiceSetup['getDeprecatedRoutes'];
+  getRestrictedRoutes: HttpServiceSetup['getRestrictedRoutes'];
   authRequestHeaders: IAuthHeadersStorage;
   auth: HttpAuth;
   getServerInfo: () => HttpServerInfo;
@@ -284,6 +298,7 @@ export class HttpServer {
     return {
       registerRouter: this.registerRouter.bind(this),
       getDeprecatedRoutes: this.getDeprecatedRoutes.bind(this),
+      getRestrictedRoutes: this.getRestrictedRoutes.bind(this),
       registerRouterAfterListening: this.registerRouterAfterListening.bind(this),
       registerStaticDir: this.registerStaticDir.bind(this),
       staticAssets,
@@ -426,6 +441,52 @@ export class HttpServer {
     }
 
     return deprecatedRoutes;
+  }
+
+  private getRestrictedRoutes(): RouterRestrictedRouteDetails[] {
+    const restrictedRoutes: RouterRestrictedRouteDetails[] = [];
+    for (const router of this.registeredRouters) {
+      const allRouterRoutes = [
+        // exclude so we dont get double entries.
+        // we only need base options to check access
+        router.getRoutes({ excludeVersionedRoutes: true }),
+        router.versioned.getRoutes(),
+      ].flat();
+      restrictedRoutes.push(
+        // @ts-ignore
+        ...allRouterRoutes
+          .flat()
+          .map((route) => {
+            const isRestricted = route.options.access === 'internal'; // here we're diverging a bit from how deprecated is implemented
+            // this mapping is causing issues.
+            if (route.isVersioned === true) {
+              return [...route.handlers.entries()].map(([version]) => {
+                return {
+                  route,
+                  version: `${version}`,
+                  restricted: isRestricted && buildRouteRestrictionOptions(route),
+                };
+              });
+            }
+            return {
+              route,
+              version: undefined,
+              restricted: isRestricted && buildRouteRestrictionOptions(route),
+            };
+          })
+          .flat()
+          .filter(({ restricted }) => isObject(restricted))
+          .flatMap(({ route, restricted, version }) => {
+            return {
+              routeRestrictedOptions: restricted!,
+              routeMethod: route.method as RouteMethod,
+              routePath: route.path,
+              routeVersion: version,
+            };
+          })
+      );
+    }
+    return restrictedRoutes;
   }
 
   private setupGracefulShutdownHandlers() {
