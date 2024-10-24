@@ -316,6 +316,40 @@ GET .kibana_usage_counters/_search
 
 ```
 
+#### Kibana internal API access deprecation: // @Tina TODO: modify and update
+Run kibana locally with the test example plugin that has internal routes
+```
+yarn start --plugin-path=examples/routing_example --plugin-path=examples/developer_examples
+```
+
+The following internal routes examples are registered inside the folder: `examples/routing_example/server/routes/message_routes`
+//  /internal/get_message
+Run them in the console to trigger the access deprecation condition so they show up in the UA:
+
+```
+# Versioned routes: Version 1 is internal
+GET kbn:/api/routing_example/internal/get_message
+```
+
+1. You can also mark as deprecated in the UA to remove the route from the list.
+2. Check the telemetry response to see the reported data about the internal route.
+4. Internally you can see the access restriction counters from the dev console by running the following:
+```
+GET .kibana_usage_counters/_search
+{
+    "query": {
+        "bool": {
+            "should": [
+              {"match": { "usage-counter.counterType": "restricted_api_call:total"}},
+              {"match": { "usage-counter.counterType": "restricted_api_call:resolved"}},
+              {"match": { "usage-counter.counterType": "restricted_api_call:marked_as_resolved"}}
+            ]
+        }
+    }
+}
+
+```
+
 For a complete list of Kibana deprecations, refer to the [8.0 Kibana deprecations meta issue](https://github.com/elastic/kibana/issues/109166).
 
 ### Errors

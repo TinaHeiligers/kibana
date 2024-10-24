@@ -132,7 +132,7 @@ export interface RouteDeprecationInfo {
  */
 export interface RouteRestrictionInfo {
   documentationUrl: string;
-  severity: 'warning' | 'critical';
+  severity: 'warning' | 'critical'; // warn when restriction disabled, critical when restriction enabled (default)
   reason: {
     type: 'restricted';
   };

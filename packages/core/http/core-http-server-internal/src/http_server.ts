@@ -445,6 +445,7 @@ export class HttpServer {
 
   private getRestrictedRoutes(): RouterRestrictedRouteDetails[] {
     const restrictedRoutes: RouterRestrictedRouteDetails[] = [];
+
     for (const router of this.registeredRouters) {
       const allRouterRoutes = [
         // exclude so we dont get double entries.
@@ -453,32 +454,39 @@ export class HttpServer {
         router.versioned.getRoutes(),
       ].flat();
       restrictedRoutes.push(
-        // @ts-ignore
         ...allRouterRoutes
           .flat()
           .map((route) => {
-            const isRestricted = route.options.access === 'internal'; // here we're diverging a bit from how deprecated is implemented
-            // this mapping is causing issues.
             if (route.isVersioned === true) {
               return [...route.handlers.entries()].map(([version]) => {
                 return {
                   route,
                   version: `${version}`,
-                  restricted: isRestricted && buildRouteRestrictionOptions(route),
+                  access: route.options.access,
                 };
               });
             }
             return {
               route,
               version: undefined,
-              restricted: isRestricted && buildRouteRestrictionOptions(route),
+              access: route.options.access,
             };
           })
           .flat()
-          .filter(({ restricted }) => isObject(restricted))
-          .flatMap(({ route, restricted, version }) => {
+          .filter(({ access }) => access === 'internal')
+          .flatMap(({ route, version, access }) => {
             return {
-              routeRestrictedOptions: restricted!,
+              routeRestrictionOptions: {
+                documentationUrl: 'https://www.elastic.co/guide/en/kibana/8.x/api.html',
+                // set severity based on server.restrictInternalApis (if true, severity is critical, if false, severity is warning)
+                severity:
+                  this.config?.restrictInternalApis !== false
+                    ? ('critical' as const)
+                    : ('warning' as const),
+                reason: {
+                  type: 'restricted' as const,
+                },
+              },
               routeMethod: route.method as RouteMethod,
               routePath: route.path,
               routeVersion: version,

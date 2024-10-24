@@ -17,7 +17,11 @@ export {
 export { registerOpsStatsCollector } from './ops_stats';
 export { registerCloudProviderUsageCollector } from './cloud';
 export { registerCspCollector } from './csp';
-export { registerCoreUsageCollector, fetchDeprecatedApiCounterStats } from './core';
+export {
+  registerCoreUsageCollector,
+  fetchDeprecatedApiCounterStats,
+  fetchRestrictedApiCounterStats,
+} from './core';
 export { registerLocalizationUsageCollector } from './localization';
 export { registerConfigUsageCollector } from './config_usage';
 export { registerUiCountersUsageCollector } from './ui_counters';

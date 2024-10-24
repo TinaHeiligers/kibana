@@ -226,6 +226,7 @@ export function createPluginSetupContext<TPlugin, TPluginDependencies>({
     http: {
       createCookieSessionStorageFactory: deps.http.createCookieSessionStorageFactory,
       getDeprecatedRoutes: deps.http.getDeprecatedRoutes,
+      getRestrictedRoutes: deps.http.getRestrictedRoutes,
       registerRouteHandlerContext: <
         Context extends RequestHandlerContext,
         ContextName extends keyof Omit<Context, 'resolve'>
@@ -285,6 +286,7 @@ export function createPluginSetupContext<TPlugin, TPluginDependencies>({
     coreUsageData: {
       registerUsageCounter: deps.coreUsageData.registerUsageCounter,
       registerDeprecatedUsageFetch: deps.coreUsageData.registerDeprecatedUsageFetch,
+      registerRestrictedUsageFetch: deps.coreUsageData.registerRestrictedUsageFetch,
     },
     plugins: {
       onSetup: (...dependencyNames) => runtimeResolver.onSetup(plugin.name, dependencyNames),
