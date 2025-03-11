@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { SavedObjectsType, SavedObjectsModelVersion } from '@kbn/core-saved-objects-server';
+import type { SavedObjectsModelVersion } from '@kbn/core-saved-objects-server';
 import {
   getModelVersionMapForTypes,
   getLatestModelVersion,
@@ -17,10 +17,11 @@ import {
   getLatestMappingsVersionNumber,
   getLatestMappingsModelVersion,
   getLatestMappingsVirtualVersionMap,
+  type InternalSavedObjectsType,
 } from './version_map';
 
 describe('ModelVersion map utilities', () => {
-  const buildType = (parts: Partial<SavedObjectsType> = {}): SavedObjectsType => ({
+  const buildType = (parts: Partial<InternalSavedObjectsType> = {}): InternalSavedObjectsType => ({
     name: 'test-type',
     hidden: false,
     namespaceType: 'single',

@@ -23,6 +23,7 @@ export {
   getLatestMappingsVirtualVersionMap,
   type ModelVersionMap,
   type VirtualVersionMap,
+  type InternalSavedObjectsType,
 } from './version_map';
 export {
   compareVirtualVersions,

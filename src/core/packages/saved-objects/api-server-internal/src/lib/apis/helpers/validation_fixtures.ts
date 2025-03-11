@@ -8,9 +8,9 @@
  */
 
 import { schema } from '@kbn/config-schema';
-import { SavedObjectsType } from '@kbn/core-saved-objects-server';
+import { InternalSavedObjectsType } from '@kbn/core-saved-objects-base-server-internal';
 
-export const typedef: Partial<SavedObjectsType> = {
+export const typedef: Partial<InternalSavedObjectsType> = {
   mappings: {
     properties: {
       foo: {
@@ -33,7 +33,7 @@ export const typedef: Partial<SavedObjectsType> = {
   switchToModelVersionAt: '8.10.0',
 };
 
-export const typedef1: Partial<SavedObjectsType> = {
+export const typedef1: Partial<InternalSavedObjectsType> = {
   mappings: {
     properties: {
       foo: {
@@ -80,7 +80,7 @@ export const typedef1: Partial<SavedObjectsType> = {
   },
 };
 
-export const typedef2: Partial<SavedObjectsType> = {
+export const typedef2: Partial<InternalSavedObjectsType> = {
   mappings: {
     properties: {
       foo: {

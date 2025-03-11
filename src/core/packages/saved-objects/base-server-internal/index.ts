@@ -69,6 +69,7 @@ export {
   getLatestMappingsVirtualVersionMap,
   type ModelVersionMap,
   type VirtualVersionMap,
+  type InternalSavedObjectsType,
   compareVirtualVersions,
   type CompareModelVersionMapParams,
   type CompareModelVersionStatus,

@@ -9,6 +9,7 @@
 
 import { deepFreeze } from '@kbn/std';
 import type { SavedObjectsType, ISavedObjectTypeRegistry } from '@kbn/core-saved-objects-server';
+import { InternalSavedObjectsType } from './model_version';
 
 /**
  * Core internal implementation of {@link ISavedObjectTypeRegistry}.
@@ -16,7 +17,7 @@ import type { SavedObjectsType, ISavedObjectTypeRegistry } from '@kbn/core-saved
  * @internal should only be used outside of Core for testing purposes.
  */
 export class SavedObjectTypeRegistry implements ISavedObjectTypeRegistry {
-  private readonly types = new Map<string, SavedObjectsType>();
+  private readonly types = new Map<string, InternalSavedObjectsType>();
 
   /**
    * Register a {@link SavedObjectsType | type} inside the registry.
@@ -24,7 +25,7 @@ export class SavedObjectTypeRegistry implements ISavedObjectTypeRegistry {
    *
    * @internal
    */
-  public registerType(type: SavedObjectsType) {
+  public registerType(type: InternalSavedObjectsType) {
     if (this.types.has(type.name)) {
       throw new Error(`Type '${type.name}' is already registered`);
     }
