@@ -9,7 +9,7 @@
 
 import { deepFreeze } from '@kbn/std';
 import type { SavedObjectsType, ISavedObjectTypeRegistry } from '@kbn/core-saved-objects-server';
-import { InternalSavedObjectsType } from './model_version';
+import { InternalSavedObjectsType } from './model_version/internal_types';
 
 /**
  * Core internal implementation of {@link ISavedObjectTypeRegistry}.

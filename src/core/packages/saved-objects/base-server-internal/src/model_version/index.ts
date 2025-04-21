@@ -14,6 +14,7 @@ export {
   modelVersionToVirtualVersion,
   virtualVersionToModelVersion,
 } from './conversion';
+export { type InternalSavedObjectsType } from './internal_types';
 export {
   getModelVersionMapForTypes,
   getLatestModelVersion,
@@ -23,7 +24,6 @@ export {
   getLatestMappingsVirtualVersionMap,
   type ModelVersionMap,
   type VirtualVersionMap,
-  type InternalSavedObjectsType,
 } from './version_map';
 export {
   compareVirtualVersions,
