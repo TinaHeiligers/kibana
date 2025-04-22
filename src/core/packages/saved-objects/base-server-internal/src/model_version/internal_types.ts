@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 import type { SavedObjectsType } from '@kbn/core-saved-objects-server';
+import { globalSwitchToModelVersionAt } from './constants';
 /**
  * @internal
  */
@@ -14,5 +15,5 @@ export interface InternalSavedObjectsType extends SavedObjectsType {
   /**
    * @remarks All types were forced to switch to use the new API during `8.10.0`.
    */
-  switchToModelVersionAt?: string;
+  switchToModelVersionAt: typeof globalSwitchToModelVersionAt;
 }
