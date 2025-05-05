@@ -8,8 +8,9 @@
  */
 
 import Semver from 'semver';
-import type { SavedObjectsType } from '@kbn/core-saved-objects-server';
+
 import { assertValidModelVersion, modelVersionToVirtualVersion } from './conversion';
+import type { InternalSavedObjectsType } from './internal_types';
 
 /**
  * Represents the virtual version of a given SO type.
@@ -36,7 +37,7 @@ export type VirtualVersionMap = Record<string, VirtualVersion>;
 /**
  * Returns the latest registered model version number for the given type.
  */
-export const getLatestModelVersion = (type: SavedObjectsType): number => {
+export const getLatestModelVersion = (type: InternalSavedObjectsType): number => {
   const versionMap =
     typeof type.modelVersions === 'function' ? type.modelVersions() : type.modelVersions ?? {};
   return Object.keys(versionMap).reduce<number>((memo, current) => {
@@ -44,7 +45,7 @@ export const getLatestModelVersion = (type: SavedObjectsType): number => {
   }, 0);
 };
 
-export const getLatestMigrationVersion = (type: SavedObjectsType): string => {
+export const getLatestMigrationVersion = (type: InternalSavedObjectsType): string => {
   const migrationMap =
     typeof type.migrations === 'function' ? type.migrations() : type.migrations ?? {};
   return Object.keys(migrationMap).reduce<string>((memo, current) => {
@@ -55,7 +56,7 @@ export const getLatestMigrationVersion = (type: SavedObjectsType): string => {
 /**
  * Build a version map for the given types.
  */
-export const getModelVersionMapForTypes = (types: SavedObjectsType[]): ModelVersionMap => {
+export const getModelVersionMapForTypes = (types: InternalSavedObjectsType[]): ModelVersionMap => {
   return types.reduce<ModelVersionMap>((versionMap, type) => {
     versionMap[type.name] = getLatestModelVersion(type);
     return versionMap;
@@ -68,7 +69,7 @@ export const getModelVersionMapForTypes = (types: SavedObjectsType[]): ModelVers
  * already switched to using them (switchToModelVersionAt is set),
  * or the latest migration version for the type otherwise.
  */
-export const getCurrentVirtualVersion = (type: SavedObjectsType): string => {
+export const getCurrentVirtualVersion = (type: InternalSavedObjectsType): string => {
   if (type.switchToModelVersionAt) {
     const modelVersion = getLatestModelVersion(type);
     return modelVersionToVirtualVersion(modelVersion);
@@ -81,7 +82,7 @@ export const getCurrentVirtualVersion = (type: SavedObjectsType): string => {
  * Returns a map of virtual model version for the given types.
  * See {@link getCurrentVirtualVersion}
  */
-export const getVirtualVersionMap = (types: SavedObjectsType[]): VirtualVersionMap => {
+export const getVirtualVersionMap = (types: InternalSavedObjectsType[]): VirtualVersionMap => {
   return types.reduce<VirtualVersionMap>((versionMap, type) => {
     versionMap[type.name] = getCurrentVirtualVersion(type);
     return versionMap;
@@ -92,7 +93,7 @@ export const getVirtualVersionMap = (types: SavedObjectsType[]): VirtualVersionM
  * Returns the latest version number that includes changes in the mappings, for the given type.
  * If none of the versions are updating the mappings, it will return 0
  */
-export const getLatestMappingsVersionNumber = (type: SavedObjectsType): number => {
+export const getLatestMappingsVersionNumber = (type: InternalSavedObjectsType): number => {
   const versionMap =
     typeof type.modelVersions === 'function' ? type.modelVersions() : type.modelVersions ?? {};
   return Object.entries(versionMap)
@@ -110,7 +111,7 @@ export const getLatestMappingsVersionNumber = (type: SavedObjectsType): number =
  * already switched to using them (switchToModelVersionAt is set),
  * or the latest migration version for the type otherwise.
  */
-export const getLatestMappingsModelVersion = (type: SavedObjectsType): string => {
+export const getLatestMappingsModelVersion = (type: InternalSavedObjectsType): string => {
   if (type.switchToModelVersionAt) {
     const modelVersion = getLatestMappingsVersionNumber(type);
     return modelVersionToVirtualVersion(modelVersion);
@@ -124,7 +125,7 @@ export const getLatestMappingsModelVersion = (type: SavedObjectsType): string =>
  * See {@link getLatestMappingsModelVersion}
  */
 export const getLatestMappingsVirtualVersionMap = (
-  types: SavedObjectsType[]
+  types: InternalSavedObjectsType[]
 ): VirtualVersionMap => {
   return types.reduce<VirtualVersionMap>((versionMap, type) => {
     versionMap[type.name] = getLatestMappingsModelVersion(type);

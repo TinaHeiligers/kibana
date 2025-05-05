@@ -7,29 +7,32 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import Semver from 'semver';
+// import Semver from 'semver';
 import type { SavedObjectsType } from '@kbn/core-saved-objects-server';
-import { globalSwitchToModelVersionAt } from '@kbn/core-saved-objects-base-server-internal';
+import {
+  InternalSavedObjectsType,
+  globalSwitchToModelVersionAt,
+} from '@kbn/core-saved-objects-base-server-internal';
 
 /**
  * Apply global defaults to the provided SO type.
  */
-export const applyTypeDefaults = (type: SavedObjectsType): SavedObjectsType => {
-  let switchToModelVersionAt = type.switchToModelVersionAt;
-  if (switchToModelVersionAt) {
-    if (!Semver.valid(switchToModelVersionAt)) {
-      throw new Error(
-        `Type ${type.name}: invalid switchToModelVersionAt provided: ${switchToModelVersionAt}`
-      );
-    }
-    if (Semver.gt(switchToModelVersionAt, globalSwitchToModelVersionAt)) {
-      throw new Error(
-        `Type ${type.name}: provided switchToModelVersionAt (${switchToModelVersionAt}) is higher than maximum (${globalSwitchToModelVersionAt})`
-      );
-    }
-  } else {
-    switchToModelVersionAt = globalSwitchToModelVersionAt;
-  }
+export const applyTypeDefaults = (type: SavedObjectsType): InternalSavedObjectsType => {
+  const switchToModelVersionAt = globalSwitchToModelVersionAt;
+  // if (switchToModelVersionAt) {
+  //   if (!Semver.valid(switchToModelVersionAt)) {
+  //     throw new Error(
+  //       `Type ${type.name}: invalid switchToModelVersionAt provided: ${switchToModelVersionAt}`
+  //     );
+  //   }
+  //   if (Semver.gt(switchToModelVersionAt, globalSwitchToModelVersionAt)) {
+  //     throw new Error(
+  //       `Type ${type.name}: provided switchToModelVersionAt (${switchToModelVersionAt}) is higher than maximum (${globalSwitchToModelVersionAt})`
+  //     );
+  //   }
+  // } else {
+  //   switchToModelVersionAt = globalSwitchToModelVersionAt;
+  // }
 
   return {
     ...type,

@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { SavedObjectsType, SavedObjectsModelVersion } from '@kbn/core-saved-objects-server';
+import type { SavedObjectsModelVersion } from '@kbn/core-saved-objects-server';
 import {
   getModelVersionMapForTypes,
   getLatestModelVersion,
@@ -18,9 +18,10 @@ import {
   getLatestMappingsModelVersion,
   getLatestMappingsVirtualVersionMap,
 } from './version_map';
+import { InternalSavedObjectsType } from './internal_types';
 
 describe('ModelVersion map utilities', () => {
-  const buildType = (parts: Partial<SavedObjectsType> = {}): SavedObjectsType => ({
+  const buildType = (parts: Partial<InternalSavedObjectsType> = {}): InternalSavedObjectsType => ({
     name: 'test-type',
     hidden: false,
     namespaceType: 'single',
@@ -214,9 +215,9 @@ describe('ModelVersion map utilities', () => {
               '7.17.2': dummyMigration,
               '8.6.0': dummyMigration,
             },
-            modelVersions: {
-              1: dummyModelVersion(),
-            },
+            // modelVersions: {
+            //   1: dummyModelVersion(),
+            // },
           })
         )
       ).toEqual('8.6.0');
@@ -226,7 +227,7 @@ describe('ModelVersion map utilities', () => {
       expect(
         getCurrentVirtualVersion(
           buildType({
-            switchToModelVersionAt: '8.7.0',
+            switchToModelVersionAt: '8.10.0',
             migrations: {
               '7.17.2': dummyMigration,
               '8.6.0': dummyMigration,
@@ -246,7 +247,7 @@ describe('ModelVersion map utilities', () => {
         getVirtualVersionMap([
           buildType({
             name: 'foo',
-            switchToModelVersionAt: '8.7.0',
+            switchToModelVersionAt: '8.10.0',
             migrations: {
               '7.17.2': dummyMigration,
               '8.6.0': dummyMigration,
@@ -261,13 +262,11 @@ describe('ModelVersion map utilities', () => {
               '7.17.2': dummyMigration,
               '8.6.0': dummyMigration,
             },
-            modelVersions: {
-              1: dummyModelVersion(),
-            },
+            modelVersions: {},
           }),
           buildType({
             name: 'dolly',
-            switchToModelVersionAt: '8.7.0',
+            switchToModelVersionAt: '8.10.0',
             migrations: {
               '7.17.2': dummyMigration,
               '8.6.0': dummyMigration,

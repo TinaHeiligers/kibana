@@ -21,42 +21,50 @@ const createType = (parts: Partial<SavedObjectsType> = {}): SavedObjectsType => 
 
 describe('applyTypeDefaults', () => {
   describe('switchToModelVersionAt', () => {
-    it(`keeps the type's switchToModelVersionAt if lesser than the global version`, () => {
-      const type = createType({
-        switchToModelVersionAt: '8.4.0',
-      });
+    // it(`keeps the type's switchToModelVersionAt if lesser than the global version`, () => {
+    //   const type = createType({
+    //     switchToModelVersionAt: '8.4.0',
+    //   });
 
-      const result = applyTypeDefaults(type);
-      expect(result.switchToModelVersionAt).toEqual('8.4.0');
-    });
+    //   const result = applyTypeDefaults(type);
+    //   expect(result.switchToModelVersionAt).toEqual('8.4.0');
+    // });
 
-    it(`sets switchToModelVersionAt to the global version if unspecified`, () => {
+    // it(`sets switchToModelVersionAt to the global version if unspecified`, () => {
+    //   const type = createType({
+    //     switchToModelVersionAt: undefined,
+    //   });
+
+    //   const result = applyTypeDefaults(type);
+    //   expect(result.switchToModelVersionAt).toEqual(globalSwitchToModelVersionAt);
+    // });
+
+    // it(`throws if switchToModelVersionAt is invalid`, () => {
+    //   const type = createType({
+    //     switchToModelVersionAt: 'foobar',
+    //   });
+
+    //   expect(() => applyTypeDefaults(type)).toThrowErrorMatchingInlineSnapshot(
+    //     `"Type test: invalid switchToModelVersionAt provided: foobar"`
+    //   );
+    // });
+
+    // it(`throws if type version is greater than the global version`, () => {
+    //   const type = createType({
+    //     switchToModelVersionAt: '9.2.0',
+    //   });
+
+    //   expect(() => applyTypeDefaults(type)).toThrowErrorMatchingInlineSnapshot(
+    //     `"Type test: provided switchToModelVersionAt (9.2.0) is higher than maximum (8.10.0)"`
+    //   );
+    // });
+    it(`sets switchToModelVersionAt to the global version by default`, () => {
       const type = createType({
-        switchToModelVersionAt: undefined,
+        // switchToModelVersionAt: undefined,
       });
 
       const result = applyTypeDefaults(type);
       expect(result.switchToModelVersionAt).toEqual(globalSwitchToModelVersionAt);
-    });
-
-    it(`throws if switchToModelVersionAt is invalid`, () => {
-      const type = createType({
-        switchToModelVersionAt: 'foobar',
-      });
-
-      expect(() => applyTypeDefaults(type)).toThrowErrorMatchingInlineSnapshot(
-        `"Type test: invalid switchToModelVersionAt provided: foobar"`
-      );
-    });
-
-    it(`throws if type version is greater than the global version`, () => {
-      const type = createType({
-        switchToModelVersionAt: '9.2.0',
-      });
-
-      expect(() => applyTypeDefaults(type)).toThrowErrorMatchingInlineSnapshot(
-        `"Type test: provided switchToModelVersionAt (9.2.0) is higher than maximum (8.10.0)"`
-      );
     });
   });
 });
