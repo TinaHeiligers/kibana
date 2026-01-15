@@ -4,7 +4,7 @@ Understood!  Let me create a test suite that works with Kibana's existing Jest c
 
 ### **1. Main Test File - SchemaExtractor Tests**
 
-```typescript name=oas_docs/scripts/lib/__tests__/schema-extractor.test.ts url=https://github.com/elastic/kibana/blob/main/oas_docs/scripts/lib/__tests__/schema-extractor.test.ts
+```typescript name=oas_docs/scripts/lib/__tests__/schema-extractor.test.ts url=https://github.com/elastic/kibana/tree/main/oas_docs/scripts/lib/__tests__/schema-extractor.test.ts
 /*
  * Copyright Elasticsearch B. V. and/or licensed to Elasticsearch B.V. under one
  * or more contributor license agreements.  Licensed under the "Elastic License
@@ -1121,7 +1121,7 @@ function createDeeplyNestedDocument(depth: number): OpenAPIV3.Document {
 
 ### **2. FileHandler Tests**
 
-```typescript name=oas_docs/scripts/lib/__tests__/file-handler.test.ts url=https://github.com/elastic/kibana/blob/main/oas_docs/scripts/lib/__tests__/file-handler.test.ts
+```typescript name=oas_docs/scripts/lib/__tests__/file-handler.test.ts url=https://github.com/elastic/kibana/tree/main/oas_docs/scripts/lib/__tests__/file-handler.test.ts
 /*
  * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
  * or more contributor license agreements. Licensed under the "Elastic License
@@ -1365,7 +1365,7 @@ invalid:  yaml:   content:   [
 
 ### **3. Validator Tests**
 
-```typescript name=oas_docs/scripts/lib/__tests__/validator.test.ts url=https://github.com/elastic/kibana/blob/main/oas_docs/scripts/lib/__tests__/validator.test.ts
+```typescript name=oas_docs/scripts/lib/__tests__/validator.test.ts url=https://github.com/elastic/kibana/tree/main/oas_docs/scripts/lib/__tests__/validator.test.ts
 /*
  * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
  * or more contributor license agreements. Licensed under the "Elastic License
@@ -1664,7 +1664,7 @@ describe('Validator', () => {
 
 ### **4. CLI Handler Tests**
 
-```typescript name=oas_docs/scripts/lib/__tests__/cli-handler.test.ts url=https://github.com/elastic/kibana/blob/main/oas_docs/scripts/lib/__tests__/cli-handler.test. ts
+```typescript name=oas_docs/scripts/lib/__tests__/cli-handler.test.ts url=https://github.com/elastic/kibana/tree/main/oas_docs/scripts/lib/__tests__/cli-handler.test. ts
 /*
  * Copyright Elasticsearch B.V.  and/or licensed to Elasticsearch B.V. under one
  * or more contributor license agreements. Licensed under the "Elastic License

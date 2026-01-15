@@ -16,7 +16,7 @@ The OAS generation pipeline works as follows:
 
 ### The Problem
 
-Currently, the `kbn-router-to-openapispec` zod converter ([`lib. ts`](https://github.com/elastic/kibana/blob/main/src/platform/packages/shared/kbn-router-to-openapispec/src/oas_converter/zod/lib.ts#L296-L304)) uses `$refStrategy:  'none'`, which inlines all schemas: 
+Currently, the `kbn-router-to-openapispec` zod converter ([`lib. ts`](https://github.com/elastic/kibana/tree/main/src/platform/packages/shared/kbn-router-to-openapispec/src/oas_converter/zod/lib.ts#L296-L304)) uses `$refStrategy:  'none'`, which inlines all schemas: 
 
 ```typescript
 export const convert = (schema: z.ZodTypeAny) => {

@@ -4,7 +4,7 @@
 
 ### **1. Standalone Schema Extraction Module**
 
-```typescript name=schema-extractor.ts url=https://github.com/elastic/kibana/blob/main/oas_docs/scripts/lib/schema-extractor.ts
+```typescript name=schema-extractor.ts url=https://github.com/elastic/kibana/tree/main/oas_docs/scripts/lib/schema-extractor.ts
 /*
  * Copyright Elasticsearch B. V. and/or licensed to Elasticsearch B.V. under one
  * or more contributor license agreements. Licensed under the "Elastic License
@@ -522,7 +522,7 @@ export class SchemaExtractor {
 
 ### **2. Integration Script for OAS Pipeline**
 
-```javascript name=extract-inline-schemas. js url=https://github.com/elastic/kibana/blob/main/oas_docs/scripts/extract-inline-schemas.js
+```javascript name=extract-inline-schemas. js url=https://github.com/elastic/kibana/tree/main/oas_docs/scripts/extract-inline-schemas.js
 #!/usr/bin/env node
 
 /**
@@ -625,7 +625,7 @@ try {
 
 ### **3. Updated Merge Scripts**
 
-```javascript name=merge_ess_oas.js url=https://github.com/elastic/kibana/blob/main/oas_docs/scripts/merge_ess_oas.js
+```javascript name=merge_ess_oas.js url=https://github.com/elastic/kibana/tree/main/oas_docs/scripts/merge_ess_oas.js
 #!/usr/bin/env node
 
 /*
@@ -702,7 +702,7 @@ mergeEssOas();
 
 ### **4. Updated Makefile**
 
-```makefile name=oas_docs/makefile url=https://github.com/elastic/kibana/blob/main/oas_docs/makefile
+```makefile name=oas_docs/makefile url=https://github.com/elastic/kibana/tree/main/oas_docs/makefile
 # ELASTICSEARCH CONFIDENTIAL
 # __________________
 #
@@ -765,7 +765,7 @@ help: ## Show this help message
 
 ### **5. Test Script for Post-Processing**
 
-```bash name=test-schema-extraction.sh url=https://github.com/elastic/kibana/blob/main/oas_docs/scripts/test-schema-extraction.sh
+```bash name=test-schema-extraction.sh url=https://github.com/elastic/kibana/tree/main/oas_docs/scripts/test-schema-extraction.sh
 #!/bin/bash
 
 ###############################################################################

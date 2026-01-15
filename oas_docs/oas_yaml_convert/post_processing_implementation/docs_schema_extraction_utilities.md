@@ -4,7 +4,7 @@ Now I'll create comprehensive documentation for the schema extraction utilities:
 
 ### **1. Main README**
 
-````markdown name=oas_docs/scripts/README.md url=https://github.com/elastic/kibana/blob/main/oas_docs/scripts/README.md
+````markdown name=oas_docs/scripts/README.md url=https://github.com/elastic/kibana/tree/main/oas_docs/scripts/README.md
 # Schema Extraction Utilities
 
 Tools for post-processing OpenAPI documents to refactor inline schemas into reusable components.
@@ -454,7 +454,7 @@ For issues, questions, or improvements:
 
 ### **2. API Reference Guide**
 
-````markdown name=oas_docs/scripts/lib/API. md url=https://github.com/elastic/kibana/blob/main/oas_docs/scripts/lib/API.md
+````markdown name=oas_docs/scripts/lib/API. md url=https://github.com/elastic/kibana/tree/main/oas_docs/scripts/lib/API.md
 # API Reference
 
 ## SchemaExtractor
@@ -1005,7 +1005,7 @@ Common errors:
 
 ### **3. Integration Guide**
 
-````markdown name=oas_docs/scripts/INTEGRATION.md url=https://github.com/elastic/kibana/blob/main/oas_docs/scripts/INTEGRATION.md
+````markdown name=oas_docs/scripts/INTEGRATION.md url=https://github.com/elastic/kibana/tree/main/oas_docs/scripts/INTEGRATION.md
 # Integration Guide
 
 Instructions for integrating schema extraction into your CI/CD pipeline and build process.
@@ -1380,7 +1380,7 @@ echo "All extractions complete"
 
 ### **4. Troubleshooting Guide**
 
-````markdown name=oas_docs/scripts/TROUBLESHOOTING.md url=https://github.com/elastic/kibana/blob/main/oas_docs/scripts/TROUBLESHOOTING.md
+````markdown name=oas_docs/scripts/TROUBLESHOOTING.md url=https://github.com/elastic/kibana/tree/main/oas_docs/scripts/TROUBLESHOOTING.md
 # Troubleshooting Guide
 
 Common issues and solutions when using schema extraction utilities.
