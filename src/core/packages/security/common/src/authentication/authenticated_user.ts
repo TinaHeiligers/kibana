@@ -91,4 +91,10 @@ export interface AuthenticatedUser extends User {
    * Metadata of the API key that was used to authenticate the user.
    */
   api_key?: ApiKeyDescriptor;
+
+  /**
+   * The HTTP Authorization scheme used to authenticate the user (e.g. `'apikey'`, `'bearer'`, `'basic'`).
+   * Only set when the HTTP authentication provider handled the request; `null` otherwise.
+   */
+  http_authentication_scheme: string | null;
 }

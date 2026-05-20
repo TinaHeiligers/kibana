@@ -14,20 +14,27 @@ import type {
   OnPreResponseInfo,
   KibanaRequest,
 } from '@kbn/core-http-server';
+import type { GetAuthState } from '@kbn/core-http-server';
 import {
   getWarningHeaderMessageFromRouteDeprecation,
   isSafeMethod,
 } from '@kbn/core-http-router-server-internal';
 import type { Logger } from '@kbn/logging';
 import { KIBANA_BUILD_NR_HEADER } from '@kbn/core-http-common';
+import type { AuthenticatedUser } from '@kbn/core-security-common';
 import type { HttpConfig } from './http_config';
 
 const VERSION_HEADER = 'kbn-version';
 const XSRF_HEADER = 'kbn-xsrf';
 const KIBANA_NAME_HEADER = 'kbn-name';
 
-export const createXsrfPostAuthHandler = (config: HttpConfig): OnPostAuthHandler => {
-  const { allowlist, disableProtection } = config.xsrf;
+const CREDENTIAL_SCHEMES_EXEMPT_FROM_XSRF = new Set(['apikey', 'bearer']);
+
+export const createXsrfPostAuthHandler = (
+  config: HttpConfig,
+  getAuthState: GetAuthState
+): OnPostAuthHandler => {
+  const { allowlist, disableProtection, allowCredentialHeaders } = config.xsrf;
 
   return (request, response, toolkit) => {
     if (
@@ -36,6 +43,14 @@ export const createXsrfPostAuthHandler = (config: HttpConfig): OnPostAuthHandler
       request.route.options.xsrfRequired === false
     ) {
       return toolkit.next();
+    }
+
+    if (allowCredentialHeaders && !isSafeMethod(request.route.method)) {
+      const authState = getAuthState<AuthenticatedUser>(request);
+      const scheme = authState.state?.http_authentication_scheme;
+      if (scheme != null && CREDENTIAL_SCHEMES_EXEMPT_FROM_XSRF.has(scheme)) {
+        return toolkit.next();
+      }
     }
 
     const hasVersionHeader = VERSION_HEADER in request.headers;

@@ -198,6 +198,7 @@ export abstract class BaseAuthenticationProvider<TState = unknown> {
         this.options.isElasticCloudDeployment() &&
         authenticationInfo.authentication_realm.type === 'saml' &&
         authenticationInfo.authentication_realm.name === ELASTIC_CLOUD_SSO_REALM_NAME,
+      http_authentication_scheme: null,
     } as AuthenticatedUser);
   }
 
