@@ -110,7 +110,7 @@ describe('xsrf post-auth handler', () => {
 
   describe('non destructive methods', () => {
     it('accepts requests without version or xsrf header', () => {
-      const config = createConfig({ xsrf: { allowlist: [], disableProtection: false } });
+      const config = createConfig({ xsrf: { allowlist: [], disableProtection: false, allowCredentialHeaders: false } });
       const handler = createXsrfPostAuthHandler(config, createGetAuthState());
       const request = forgeRequest({ method: 'get', headers: {} });
 
@@ -126,7 +126,7 @@ describe('xsrf post-auth handler', () => {
 
   describe('destructive methods', () => {
     it('accepts requests with xsrf header', () => {
-      const config = createConfig({ xsrf: { allowlist: [], disableProtection: false } });
+      const config = createConfig({ xsrf: { allowlist: [], disableProtection: false, allowCredentialHeaders: false } });
       const handler = createXsrfPostAuthHandler(config, createGetAuthState());
       const request = forgeRequest({ method: 'post', headers: { 'kbn-xsrf': 'xsrf' } });
 
@@ -140,7 +140,7 @@ describe('xsrf post-auth handler', () => {
     });
 
     it('accepts requests with version header', () => {
-      const config = createConfig({ xsrf: { allowlist: [], disableProtection: false } });
+      const config = createConfig({ xsrf: { allowlist: [], disableProtection: false, allowCredentialHeaders: false } });
       const handler = createXsrfPostAuthHandler(config, createGetAuthState());
       const request = forgeRequest({ method: 'post', headers: { 'kbn-version': 'some-version' } });
 
@@ -154,7 +154,7 @@ describe('xsrf post-auth handler', () => {
     });
 
     it('returns a bad request if called without xsrf or version header', () => {
-      const config = createConfig({ xsrf: { allowlist: [], disableProtection: false } });
+      const config = createConfig({ xsrf: { allowlist: [], disableProtection: false, allowCredentialHeaders: false } });
       const handler = createXsrfPostAuthHandler(config, createGetAuthState());
       const request = forgeRequest({ method: 'post' });
 
@@ -173,7 +173,7 @@ describe('xsrf post-auth handler', () => {
     });
 
     it('accepts requests if protection is disabled', () => {
-      const config = createConfig({ xsrf: { allowlist: [], disableProtection: true } });
+      const config = createConfig({ xsrf: { allowlist: [], disableProtection: true, allowCredentialHeaders: false } });
       const handler = createXsrfPostAuthHandler(config, createGetAuthState());
       const request = forgeRequest({ method: 'post', headers: {} });
 
@@ -188,7 +188,7 @@ describe('xsrf post-auth handler', () => {
 
     it('accepts requests if path is allowlisted', () => {
       const config = createConfig({
-        xsrf: { allowlist: ['/some-path'], disableProtection: false },
+        xsrf: { allowlist: ['/some-path'], disableProtection: false, allowCredentialHeaders: false },
       });
       const handler = createXsrfPostAuthHandler(config, createGetAuthState());
       const request = forgeRequest({ method: 'post', headers: {}, path: '/some-path' });
@@ -204,7 +204,7 @@ describe('xsrf post-auth handler', () => {
 
     it('accepts requests if xsrf protection on a route is disabled', () => {
       const config = createConfig({
-        xsrf: { allowlist: [], disableProtection: false },
+        xsrf: { allowlist: [], disableProtection: false, allowCredentialHeaders: false },
       });
       const handler = createXsrfPostAuthHandler(config, createGetAuthState());
       const request = forgeRequest({
