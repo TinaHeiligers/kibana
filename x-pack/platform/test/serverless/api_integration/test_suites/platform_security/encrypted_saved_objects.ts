@@ -33,15 +33,11 @@ export default function ({ getService }: FtrProviderContext) {
           ({ body, status } = await supertestWithoutAuth
             .post('/api/encrypted_saved_objects/_rotate_key')
             .set(roleAuthc.apiKeyHeader));
-          // API-key-authenticated requests bypass the xsrf check, so the request
-          // proceeds to the handler. The config does not contain decryptionOnlyKeys,
-          // so the API errors for that reason rather than a missing header reason.
+          // xsrf bypass exposes internal access denied without internal header
           expect(body).toEqual({
             statusCode: 400,
             error: 'Bad Request',
-            message: expect.stringContaining(
-              'Kibana is not configured to support encryption key rotation. Update `kibana.yml` to include `xpack.encryptedSavedObjects.keyRotation.decryptionOnlyKeys` to rotate your encryption keys.'
-            ),
+            message: expect.stringContaining('exists but is not available with the current configuration'),
           });
           expect(status).toBe(400);
 
@@ -49,7 +45,8 @@ export default function ({ getService }: FtrProviderContext) {
             .post('/api/encrypted_saved_objects/_rotate_key')
             .set(internalReqHeader)
             .set(roleAuthc.apiKeyHeader));
-          // same result when using the internal header explicitly
+          // with the internal origin header the route is accessible; the config does
+          // not contain decryptionOnlyKeys so the handler returns its own 400.
           expect(body).toEqual({
             statusCode: 400,
             error: 'Bad Request',
