@@ -210,6 +210,7 @@ export default function ({ getService }: FtrProviderContext) {
         authentication_type: 'realm',
         elastic_cloud_user: false,
         profile_uid: jestExpect.any(String),
+        http_authentication_scheme: null,
       });
 
       checkCookieIsSet(parseCookie(response.headers['set-cookie'][0])!);

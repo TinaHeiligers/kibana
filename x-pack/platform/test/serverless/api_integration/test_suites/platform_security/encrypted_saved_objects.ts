@@ -33,11 +33,15 @@ export default function ({ getService }: FtrProviderContext) {
           ({ body, status } = await supertestWithoutAuth
             .post('/api/encrypted_saved_objects/_rotate_key')
             .set(roleAuthc.apiKeyHeader));
-          // expect a rejection because we're not using the internal header
+          // API-key-authenticated requests bypass the xsrf check, so the request
+          // proceeds to the handler. The config does not contain decryptionOnlyKeys,
+          // so the API errors for that reason rather than a missing header reason.
           expect(body).toEqual({
             statusCode: 400,
             error: 'Bad Request',
-            message: expect.stringContaining('Request must contain a kbn-xsrf header.'),
+            message: expect.stringContaining(
+              'Kibana is not configured to support encryption key rotation. Update `kibana.yml` to include `xpack.encryptedSavedObjects.keyRotation.decryptionOnlyKeys` to rotate your encryption keys.'
+            ),
           });
           expect(status).toBe(400);
 
@@ -45,10 +49,7 @@ export default function ({ getService }: FtrProviderContext) {
             .post('/api/encrypted_saved_objects/_rotate_key')
             .set(internalReqHeader)
             .set(roleAuthc.apiKeyHeader));
-          // expect a different, legitimate error when we use the internal header
-          // the config does not contain decryptionOnlyKeys, so when the API is
-          // called successfully, it will error for this reason, and not for an
-          // access or or missing header reason
+          // same result when using the internal header explicitly
           expect(body).toEqual({
             statusCode: 400,
             error: 'Bad Request',
