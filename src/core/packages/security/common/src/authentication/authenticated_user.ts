@@ -96,7 +96,7 @@ export interface AuthenticatedUser extends User {
    * The HTTP Authorization scheme used to authenticate the user, set by the HTTP
    * authentication provider (`HTTPAuthenticationProvider`).
    * `null` when authentication does not use an Authorization header
-   * (session-cookie, PKI, SAML, etc. authenticate through other mechanisms).
+   * (session-cookie, PKI, SAML, etc).
    *
    * Must be lowercase.
    *

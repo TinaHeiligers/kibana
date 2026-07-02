@@ -33,7 +33,8 @@ export const createXsrfPostAuthHandler = (
   getAuthState: GetAuthState
 ): OnPostAuthHandler => {
   const { allowlist, disableProtection, allowedSchemes } = config.xsrf;
-  // Declaring `Set<string>` because `scheme` can be any auth scheme (e.g. `basic`).
+  // Scheme values are arbitrary strings at runtime. `Set<string>` prevents
+  // inferring a narrow literal union from allowedSchemes.
   const exemptSchemes: Set<string> = new Set(allowedSchemes);
 
   return (request, response, toolkit) => {
