@@ -32,6 +32,7 @@ const xsrfDisabledTestPath = '/xsrf/test/route/disabled';
 const kibanaName = 'my-kibana-name';
 const internalOriginHeader = 'x-elastic-internal-origin';
 const internalProductQueryParam = 'elasticInternalOrigin';
+const destructiveMethods = ['POST', 'PUT', 'DELETE'] as const;
 const setupDeps = {
   context: contextServiceMock.createSetupContract(),
   executionContext: executionContextServiceMock.createInternalSetupContract(),
@@ -171,7 +172,6 @@ describe('core lifecycle handlers', () => {
 
   describe('xsrf post-auth handler', () => {
     const testPath = '/xsrf/test/route';
-    const destructiveMethods = ['POST', 'PUT', 'DELETE'];
     const nonDestructiveMethods = ['GET', 'HEAD'];
 
     const getSupertest = (method: string, path: string): supertest.Test => {
@@ -395,6 +395,14 @@ describe('xsrf post-auth handler with allowedSchemes (Authorization bypass)', ()
       { path: testPath, validate: false, security: { authz: { enabled: false, reason: '' } } },
       (context, req, res) => res.ok({ body: 'ok' })
     );
+    router.put(
+      { path: testPath, validate: false, security: { authz: { enabled: false, reason: '' } } },
+      (context, req, res) => res.ok({ body: 'ok' })
+    );
+    router.delete(
+      { path: testPath, validate: false, security: { authz: { enabled: false, reason: '' } } },
+      (context, req, res) => res.ok({ body: 'ok' })
+    );
     innerServer = serverSetup.server;
     await server.start();
   };
@@ -403,57 +411,75 @@ describe('xsrf post-auth handler with allowedSchemes (Authorization bypass)', ()
     await server.stop();
   });
 
-  it('accepts a POST with apikey scheme and no kbn-xsrf when apikey is allowed', async () => {
-    await bootServer(['apikey', 'bearer']);
-    await supertest(innerServer.listener)
-      .post(testPath)
-      .set(schemeHeader, 'apikey')
-      .expect(200, 'ok');
-  });
+  const getSupertest = (
+    method: (typeof destructiveMethods)[number],
+    path: string
+  ): supertest.Test =>
+    (supertest(innerServer.listener) as any)[method.toLowerCase()](path) as supertest.Test;
 
-  it('accepts a POST with bearer scheme and no kbn-xsrf when bearer is allowed', async () => {
-    await bootServer(['apikey', 'bearer']);
-    await supertest(innerServer.listener)
-      .post(testPath)
-      .set(schemeHeader, 'bearer')
-      .expect(200, 'ok');
-  });
+  it.each(destructiveMethods)(
+    'accepts a %s with apikey scheme and no kbn-xsrf when apikey is allowed',
+    async (method) => {
+      await bootServer(['apikey', 'bearer']);
+      await getSupertest(method, testPath).set(schemeHeader, 'apikey').expect(200, 'ok');
+    }
+  );
 
-  it('rejects a POST with basic scheme even when apikey and bearer are allowed', async () => {
-    await bootServer(['apikey', 'bearer']);
-    await supertest(innerServer.listener).post(testPath).set(schemeHeader, 'basic').expect(400, {
-      statusCode: 400,
-      error: 'Bad Request',
-      message: 'Request must contain a kbn-xsrf header.',
-    });
-  });
+  it.each(destructiveMethods)(
+    'accepts a %s with bearer scheme and no kbn-xsrf when bearer is allowed',
+    async (method) => {
+      await bootServer(['apikey', 'bearer']);
+      await getSupertest(method, testPath).set(schemeHeader, 'bearer').expect(200, 'ok');
+    }
+  );
 
-  it('rejects a POST with no auth scheme (null) when apikey and bearer are allowed', async () => {
-    await bootServer(['apikey', 'bearer']);
-    await supertest(innerServer.listener).post(testPath).expect(400, {
-      statusCode: 400,
-      error: 'Bad Request',
-      message: 'Request must contain a kbn-xsrf header.',
-    });
-  });
+  it.each(destructiveMethods)(
+    'rejects a %s with basic scheme even when apikey and bearer are allowed',
+    async (method) => {
+      await bootServer(['apikey', 'bearer']);
+      await getSupertest(method, testPath).set(schemeHeader, 'basic').expect(400, {
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'Request must contain a kbn-xsrf header.',
+      });
+    }
+  );
 
-  it('rejects a POST with bearer scheme when only apikey is allowed', async () => {
-    await bootServer(['apikey']);
-    await supertest(innerServer.listener).post(testPath).set(schemeHeader, 'bearer').expect(400, {
-      statusCode: 400,
-      error: 'Bad Request',
-      message: 'Request must contain a kbn-xsrf header.',
-    });
-  });
+  it.each(destructiveMethods)(
+    'rejects a %s with no auth scheme (null) when apikey and bearer are allowed',
+    async (method) => {
+      await bootServer(['apikey', 'bearer']);
+      await getSupertest(method, testPath).expect(400, {
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'Request must contain a kbn-xsrf header.',
+      });
+    }
+  );
 
-  it('rejects a POST with apikey scheme when no schemes are allowed (traditional default)', async () => {
-    await bootServer([]);
-    await supertest(innerServer.listener).post(testPath).set(schemeHeader, 'apikey').expect(400, {
-      statusCode: 400,
-      error: 'Bad Request',
-      message: 'Request must contain a kbn-xsrf header.',
-    });
-  });
+  it.each(destructiveMethods)(
+    'rejects a %s with bearer scheme when only apikey is allowed',
+    async (method) => {
+      await bootServer(['apikey']);
+      await getSupertest(method, testPath).set(schemeHeader, 'bearer').expect(400, {
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'Request must contain a kbn-xsrf header.',
+      });
+    }
+  );
+
+  it.each(destructiveMethods)(
+    'rejects a %s with apikey scheme when no schemes are allowed (traditional default)',
+    async (method) => {
+      await bootServer([]);
+      await getSupertest(method, testPath).set(schemeHeader, 'apikey').expect(400, {
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'Request must contain a kbn-xsrf header.',
+      });
+    }
+  );
 
   it('accepts a GET with no kbn-xsrf regardless of scheme (safe-method short-circuit)', async () => {
     await bootServer(['apikey', 'bearer']);
@@ -463,14 +489,16 @@ describe('xsrf post-auth handler with allowedSchemes (Authorization bypass)', ()
       .expect(200, 'ok');
   });
 
-  it('accepts a POST that carries the kbn-xsrf header alongside the bypass config', async () => {
-    await bootServer(['apikey', 'bearer']);
-    await supertest(innerServer.listener)
-      .post(testPath)
-      .set(schemeHeader, 'basic')
-      .set(xsrfHeader, 'anything')
-      .expect(200, 'ok');
-  });
+  it.each(destructiveMethods)(
+    'accepts a %s that carries the kbn-xsrf header alongside the bypass config',
+    async (method) => {
+      await bootServer(['apikey', 'bearer']);
+      await getSupertest(method, testPath)
+        .set(schemeHeader, 'basic')
+        .set(xsrfHeader, 'anything')
+        .expect(200, 'ok');
+    }
+  );
 });
 
 describe('core lifecycle handlers with restrict internal routes enforced', () => {
