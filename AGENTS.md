@@ -95,3 +95,16 @@ Follow existing patterns in the target area first; below are common defaults.
 - Make focused changes; avoid unrelated refactors.
 - Update docs and tests when behavior or usage changes.
 - Never remove, skip, or comment out tests to make them pass; fix the underlying code.
+
+## Cursor Cloud specific instructions
+Kibana requires Node `24.18.0` (see `.nvmrc`). The VM has an `/exec-daemon/node` (Node 22) shim that shadows `nvm` in `PATH`, so the startup update script and `~/.bashrc` prepend the nvm Node 24 bin dir. In new interactive shells `node -v` should already be `v24.18.0`; if it isn't, run `export PATH="$NVM_DIR/versions/node/v24.18.0/bin:$PATH"` before any `yarn`/`node scripts/*` command (otherwise tooling silently runs under Node 22).
+
+Running the stack (two long-lived services, best in separate tmux sessions):
+- Elasticsearch: `yarn es snapshot --license trial -E discovery.type=single-node` (listens on `:9200`, creds `elastic` / `changeme`).
+- Kibana dev server: `NODE_OPTIONS="--max-old-space-size=8192" yarn start --no-base-path` (listens on `:5601`, same creds). Start ES first. First boot builds ~222 optimizer bundles and takes several minutes.
+- The larger `NODE_OPTIONS` heap is required: without it the optimizer worker OOMs (V8 ~4GB default) while building big bundles like `lens`/`securitySolution`.
+
+Non-obvious gotcha — "Elastic did not load properly" after a crash: if a `yarn start` is interrupted (e.g. optimizer OOM), a bundle's output dir under `<module>/target/public/` can be left with a stale `.kbn-optimizer-cache` but no `*.js`. On restart the optimizer trusts the cache and skips rebuilding, so the browser fails to load that bundle. Fix: stop Kibana, delete the incomplete dirs, and restart. Find them with:
+`for d in $(find . -path "*target/public" -type d); do [ -f "$d/.kbn-optimizer-cache" ] && [ -z "$(ls "$d"/*.js 2>/dev/null)" ] && echo "$d"; done`
+
+Standard lint/test/type-check commands live in the sections above (`node scripts/jest`, `node scripts/eslint`, `node scripts/type_check --project ...`) — always scope them to a single package/config.
