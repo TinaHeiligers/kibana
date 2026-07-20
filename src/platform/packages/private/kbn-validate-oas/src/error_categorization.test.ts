@@ -114,24 +114,14 @@ describe('countSeverities', () => {
 
     expect(countSeverities(issues)).toEqual({ errors: 2, warnings: 1 });
   });
-
-  it('excludes compatibility-sourced issues', () => {
-    const issues: OasIssue[] = [
-      { path: '', message: '', source: 'schema', severity: 'error', category: 'structural' },
-      { path: '', message: '', source: 'compatibility', severity: 'error', category: 'structural' },
-    ];
-
-    expect(countSeverities(issues)).toEqual({ errors: 1, warnings: 0 });
-  });
 });
 
 describe('computeBreakdown', () => {
-  it('nests category subtotals under each severity bucket, excluding compatibility', () => {
+  it('nests category subtotals under each severity bucket', () => {
     const issues: OasIssue[] = [
       { path: '', message: '', source: 'schema', severity: 'error', category: 'structural' },
       { path: '', message: '', source: 'schema', severity: 'warning', category: 'quality' },
       { path: '', message: '', source: 'schema', severity: 'warning', category: 'quality' },
-      { path: '', message: '', source: 'compatibility', severity: 'error', category: 'structural' },
     ];
 
     expect(computeBreakdown(issues)).toEqual({
@@ -196,6 +186,13 @@ describe('hasSeverityIncrease', () => {
   it('fails on category-swap: errors up and warnings down', () => {
     const baseline: Baseline = { [yamlPath]: { errors: 1, warnings: 5 } };
     const current: Baseline = { [yamlPath]: { errors: 2, warnings: 3 } };
+
+    expect(hasSeverityIncrease(baseline, current, yamlPaths)).toBe(true);
+  });
+
+  it('fails on category-swap: warnings up and errors down', () => {
+    const baseline: Baseline = { [yamlPath]: { errors: 2, warnings: 3 } };
+    const current: Baseline = { [yamlPath]: { errors: 1, warnings: 5 } };
 
     expect(hasSeverityIncrease(baseline, current, yamlPaths)).toBe(true);
   });

@@ -9,7 +9,7 @@
 
 import type { ErrorObject } from 'ajv-draft-04';
 
-export type IssueSource = 'schema' | 'compatibility' | 'ref-resolution';
+export type IssueSource = 'schema' | 'ref-resolution';
 export type IssueSeverity = 'error' | 'warning';
 export type IssueCategory = 'structural' | 'quality';
 
@@ -69,13 +69,9 @@ export const classifyRefError = (message: string): OasIssue => ({
   category: 'structural',
 });
 
-// Compatibility issues keep an independent hard-fail path (see cli.ts).
 export const countSeverities = (issues: OasIssue[]): SeverityCounts =>
   issues.reduce<SeverityCounts>(
     (counts, issue) => {
-      if (issue.source === 'compatibility') {
-        return counts;
-      }
       if (issue.severity === 'error') {
         counts.errors++;
       } else {
@@ -89,9 +85,6 @@ export const countSeverities = (issues: OasIssue[]): SeverityCounts =>
 export const computeBreakdown = (issues: OasIssue[]): CategoryBreakdown =>
   issues.reduce<CategoryBreakdown>(
     (breakdown, issue) => {
-      if (issue.source === 'compatibility') {
-        return breakdown;
-      }
       breakdown[issue.severity === 'error' ? 'errors' : 'warnings'][issue.category]++;
       return breakdown;
     },

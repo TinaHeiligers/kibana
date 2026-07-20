@@ -15,8 +15,10 @@ Every finding is classified on two axes:
 
 **Policy v1** is a strict 1:1 map:
 
-- Structural findings (schema shape, unresolved `$ref`, compatibility) → `error`.
+- Structural findings (schema shape, unresolved `$ref`) → `error`.
 - Quality findings (missing `description` / `summary` / `example` / `examples`) → `warning`.
+
+Compatibility findings are not part of this taxonomy; they keep a separate hard-fail path and are excluded from baseline counts.
 
 ## Default output
 
