@@ -22,6 +22,7 @@ import {
   computeBreakdown,
   isNewBaselineShape,
   isLegacyBaselineShape,
+  hasSeverityIncrease,
   type OasIssue,
   type Baseline,
   type SeverityCounts,
@@ -215,14 +216,10 @@ run(
 
       const baseline = parsedBaseline;
 
-      let increased = false;
       let report = '';
       for (const yamlPath of yamlPaths) {
         const prev: SeverityCounts = baseline[yamlPath] ?? { errors: 0, warnings: 0 };
         const curr = severityCounts[yamlPath];
-        if (curr.errors > prev.errors || curr.warnings > prev.warnings) {
-          increased = true;
-        }
         report += `\n${yamlPath}: ${formatAxis('errors', curr.errors, prev.errors)}, ${formatAxis(
           'warnings',
           curr.warnings,
@@ -245,7 +242,7 @@ run(
         log.error('Compatibility validation failed.');
         process.exit(1);
       }
-      if (increased) {
+      if (hasSeverityIncrease(baseline, severityCounts, yamlPaths)) {
         log.error(
           'Error or warning count has increased compared to baseline, not updating the baseline count; exit(1).'
         );
@@ -272,10 +269,21 @@ run(
         );
       }
       process.exit(1);
-    } else {
-      log.success(`No errors found in the OAS spec`);
-      process.exit(0);
     }
+
+    // Warnings-only results exit 0 by design (errors gate the non-assert path).
+    const totalWarnings = Object.values(severityCounts).reduce(
+      (sum, { warnings }) => sum + warnings,
+      0
+    );
+    if (totalWarnings > 0) {
+      log.warning(
+        `Found ${pluralize(totalWarnings, 'warning')} and no errors in the OAS spec; exiting 0.`
+      );
+    } else {
+      log.success('No errors found in the OAS spec');
+    }
+    process.exit(0);
   },
   {
     description: 'Validate Kibana OAS YAML files (in oas_docs/output)',

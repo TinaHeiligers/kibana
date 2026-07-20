@@ -11,12 +11,13 @@ import type { ErrorObject } from 'ajv-draft-04';
 import {
   classifySchemaError,
   classifyRefError,
-  classifyCompatibilityIssue,
   countSeverities,
   computeBreakdown,
   isNewBaselineShape,
   isLegacyBaselineShape,
+  hasSeverityIncrease,
   type OasIssue,
+  type Baseline,
 } from './error_categorization';
 
 const schemaError = (overrides: Partial<ErrorObject> = {}): ErrorObject => ({
@@ -97,23 +98,6 @@ describe('classifyRefError', () => {
   });
 });
 
-describe('classifyCompatibilityIssue', () => {
-  it('classifies a compatibility issue as structural/error from compatibility', () => {
-    const issue = classifyCompatibilityIssue({
-      path: '/paths/~1api~1test/get',
-      message: 'incompatible',
-      ruleId: 'some-rule',
-    });
-
-    expect(issue).toMatchObject({
-      source: 'compatibility',
-      severity: 'error',
-      category: 'structural',
-      ruleId: 'some-rule',
-    });
-  });
-});
-
 describe('countSeverities', () => {
   it('counts errors and warnings from schema and ref sources', () => {
     const issues: OasIssue[] = [
@@ -174,5 +158,52 @@ describe('baseline shape guards', () => {
 
     expect(isLegacyBaselineShape(baseline)).toBe(true);
     expect(isNewBaselineShape(baseline)).toBe(false);
+  });
+
+  it('rejects an empty object baseline', () => {
+    expect(isNewBaselineShape({})).toBe(false);
+    expect(isLegacyBaselineShape({})).toBe(false);
+  });
+
+  it('rejects a malformed baseline', () => {
+    const malformed = {
+      './oas_docs/output/kibana.yaml': { errors: '1', warnings: 16 },
+    };
+
+    expect(isNewBaselineShape(malformed)).toBe(false);
+    expect(isLegacyBaselineShape(malformed)).toBe(false);
+  });
+});
+
+describe('hasSeverityIncrease', () => {
+  const yamlPath = './oas_docs/output/kibana.yaml';
+  const yamlPaths = [yamlPath];
+
+  it('fails when only warnings rise', () => {
+    const baseline: Baseline = { [yamlPath]: { errors: 1, warnings: 2 } };
+    const current: Baseline = { [yamlPath]: { errors: 1, warnings: 3 } };
+
+    expect(hasSeverityIncrease(baseline, current, yamlPaths)).toBe(true);
+  });
+
+  it('fails when only errors rise', () => {
+    const baseline: Baseline = { [yamlPath]: { errors: 1, warnings: 2 } };
+    const current: Baseline = { [yamlPath]: { errors: 2, warnings: 2 } };
+
+    expect(hasSeverityIncrease(baseline, current, yamlPaths)).toBe(true);
+  });
+
+  it('fails on category-swap: errors up and warnings down', () => {
+    const baseline: Baseline = { [yamlPath]: { errors: 1, warnings: 5 } };
+    const current: Baseline = { [yamlPath]: { errors: 2, warnings: 3 } };
+
+    expect(hasSeverityIncrease(baseline, current, yamlPaths)).toBe(true);
+  });
+
+  it('passes when neither axis increases', () => {
+    const baseline: Baseline = { [yamlPath]: { errors: 2, warnings: 5 } };
+    const current: Baseline = { [yamlPath]: { errors: 1, warnings: 5 } };
+
+    expect(hasSeverityIncrease(baseline, current, yamlPaths)).toBe(false);
   });
 });
