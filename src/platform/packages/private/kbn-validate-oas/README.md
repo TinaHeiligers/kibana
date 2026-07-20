@@ -37,7 +37,7 @@ structural/quality subtotals within each severity bucket:
 
 ```json
 {
-  "./oas_docs/output/kibana.yaml": { "errors": 1, "warnings": 16 }
+  "./oas_docs/output/kibana.yaml": { "errors": 0, "warnings": 16 }
 }
 ```
 
