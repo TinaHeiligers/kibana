@@ -292,7 +292,7 @@ run(
       boolean: ['assert-no-error-increase', 'update-baseline', 'skip-printing-issues', 'breakdown'],
       string: ['path', 'only'],
       help: `
-      --assert-no-error-increase  Will error if the number of errors or warnings in the OAS spec compared to the baseline has increased (per bundle, on either axis).
+      --assert-no-error-increase  Gates CI on both the error AND warning counts per bundle. Despite the flag name, a warning increase also fails — a quality-warning increase can mask a structural regression hiding behind a description cleanup. Fails if either axis rises above baseline for any bundle.
       --update-baseline          Update or create the baseline file with current { errors, warnings } counts.
       --breakdown                Print structural/quality category subtotals within each severity bucket.
       --path                     Pass in the (start of) a custom API route path (for example /api/fleet/agent_policies), can be specified multiple times.

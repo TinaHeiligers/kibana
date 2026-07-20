@@ -112,6 +112,9 @@ export const isLegacyBaselineShape = (value: unknown): boolean =>
   Object.values(value).length > 0 &&
   Object.values(value).every((entry) => typeof entry === 'number');
 
+// Gates on both axes: a warning increase is also a failure. Without this, a quality-warning
+// increase (missing descriptions) could hide behind a structural cleanup that lowers the error
+// count, leaving the total unchanged and CI green despite a real regression.
 export const hasSeverityIncrease = (
   baseline: Baseline,
   current: Baseline,
