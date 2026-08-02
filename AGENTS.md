@@ -100,3 +100,17 @@ Follow existing patterns in the target area first; below are common defaults.
 - Make focused changes; avoid unrelated refactors.
 - Update docs and tests when behavior or usage changes.
 - Never remove, skip, or comment out tests to make them pass; fix the underlying code.
+
+## Cursor Cloud specific instructions
+Dependencies are refreshed automatically on startup via `yarn kbn bootstrap` (the configured update script). Node/yarn versions are already correct. The notes below are the non-obvious bits for running the stack.
+
+### Running the dev stack (Elasticsearch + Kibana)
+Both are long-running foreground processes — run each in its own tmux session, not as one-shot background jobs.
+- Elasticsearch: `yarn es snapshot` — downloads a nightly ES snapshot into `.es/` (only the first run downloads; subsequent runs reuse it), then serves on `http://localhost:9200` with `elastic:changeme` (trial license, security + SAML mock realm enabled). Wait for the `kbn/es setup complete` / cluster `GREEN` line. The `vm.max_map_count [65530] is too low` bootstrap warning is harmless here.
+- Kibana: `yarn start` (after ES is up). First start compiles ~226 optimizer bundles (a few minutes) before the server is usable. Ready when the log prints `Kibana is now available`.
+
+### Non-obvious gotchas
+- Kibana dev serves under a **random basepath** (e.g. `http://localhost:5601/bxz`), printed in the logs as `http server running at ...`. Bare `http://localhost:5601/` will not work — always use the basepath from the log.
+- Dev is auto-configured with the **SAML Mock IdP**, so the default login page is SAML. For scripted/basic login use `http://localhost:5601/<basepath>/login?auth_provider_hint=cloud-basic` and log in as `elastic` / `changeme`.
+- REST calls to Kibana work with basic auth `elastic:changeme`; POST/PUT/DELETE require the `kbn-xsrf: true` header (e.g. `curl -u elastic:changeme -H 'kbn-xsrf: true' ...`). ES is reachable directly at `:9200` with the same credentials.
+- Playwright browsers are already installed under `~/.cache/ms-playwright`; launch chromium with `--no-sandbox` in this VM.
