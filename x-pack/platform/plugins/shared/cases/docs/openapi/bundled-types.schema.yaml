@@ -2023,6 +2023,7 @@ components:
             - tags
             - title
             - user
+            - api_contracts_probe
           example: create_case
   schemas:
     assignees:
@@ -4166,6 +4167,13 @@ components:
               type: string
               enum:
                 - alert
+    payload_api_contracts_probe:
+      type: object
+      description: Probe payload for the API contracts check. Mirrors adding a user-action variant.
+      properties:
+        probe:
+          type: string
+          description: Marker value for the api contracts probe.
     payload_assignees:
       type: object
       properties:
@@ -4459,6 +4467,7 @@ components:
             - $ref: '#/components/schemas/payload_tags'
             - $ref: '#/components/schemas/payload_title'
             - $ref: '#/components/schemas/payload_user_comment'
+            - $ref: '#/components/schemas/payload_api_contracts_probe'
         version:
           type: string
           example: WzM1ODg4LDFd
@@ -4482,6 +4491,7 @@ components:
             - status
             - tags
             - title
+            - api_contracts_probe
           example: create_case
     add_case_file_request:
       title: Add case file request properties
