@@ -143981,6 +143981,7 @@ components:
             - tags
             - title
             - user
+            - api_contracts_probe
           example: create_case
           type: string
         type: array
@@ -146046,6 +146047,13 @@ components:
               enum:
                 - alert
               type: string
+    Cases_payload_api_contracts_probe:
+      description: Probe payload for the API contracts check. Mirrors adding a user-action variant.
+      properties:
+        probe:
+          description: Marker value for the api contracts probe.
+          type: string
+      type: object
     Cases_payload_assignees:
       type: object
       properties:
@@ -146980,6 +146988,7 @@ components:
             - $ref: '#/components/schemas/Cases_payload_tags'
             - $ref: '#/components/schemas/Cases_payload_title'
             - $ref: '#/components/schemas/Cases_payload_user_comment'
+            - $ref: '#/components/schemas/Cases_payload_api_contracts_probe'
         type:
           description: The type of action.
           enum:
@@ -146999,6 +147008,7 @@ components:
             - status
             - tags
             - title
+            - api_contracts_probe
           example: create_case
           type: string
         version:

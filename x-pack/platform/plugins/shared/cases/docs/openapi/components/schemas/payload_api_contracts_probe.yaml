@@ -1,0 +1,6 @@
+type: object
+description: Probe payload for the API contracts check. Mirrors adding a user-action variant.
+properties:
+  probe:
+    type: string
+    description: Marker value for the api contracts probe.

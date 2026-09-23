@@ -21,4 +21,5 @@ schema:
       - tags
       - title
       - user
+      - api_contracts_probe
     example: create_case
