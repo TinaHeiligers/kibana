@@ -125,17 +125,17 @@ ${renderTable(entries)}
 // Lower rank is kept when the comment has to be shortened. Report-only and
 // experimental rows are visibility; gating rows are what the author must act on.
 const truncationRank = (entry: ImpactEntry): number => {
-  if (entry.tier === 'stable' && !entry.allowlisted && !entry.reportOnly) {
-    return 0;
-  }
-  if (entry.tier === 'tech_preview' && !entry.allowlisted && !entry.reportOnly) {
-    return 1;
+  if (!entry.allowlisted && !entry.reportOnly) {
+    if (entry.tier === 'stable') {
+      return 0;
+    }
+    if (entry.tier === 'tech_preview') {
+      return 1;
+    }
+    return 3;
   }
   if (entry.allowlisted) {
     return 2;
-  }
-  if (entry.tier === 'experimental' && !entry.allowlisted && !entry.reportOnly) {
-    return 3;
   }
   return 4;
 };
