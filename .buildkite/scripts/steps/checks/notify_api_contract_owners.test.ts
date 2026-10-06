@@ -11,7 +11,12 @@ jest.mock('#pipeline-utils', () => ({
   upsertComment: jest.fn(),
 }));
 
-import { buildCommentBody, type ImpactEntry } from './notify_api_contract_owners.ts';
+import {
+  buildCommentBody,
+  GITHUB_COMMENT_MAX_LENGTH,
+  postedCommentLength,
+  type ImpactEntry,
+} from './notify_api_contract_owners.ts';
 
 const entry = (overrides: Partial<ImpactEntry> = {}): ImpactEntry => ({
   path: '/api/spaces/space',
@@ -297,6 +302,91 @@ describe('buildCommentBody', () => {
         expect(body.indexOf('### Stable (GA)')).toBeLessThan(body.indexOf('### Approved'));
         expect(body.indexOf('### Approved')).toBeLessThan(body.indexOf('### What to do'));
       });
+    });
+  });
+
+  describe('GitHub comment length', () => {
+    const reason = 'r'.repeat(900);
+
+    it('posts a short comment unchanged', () => {
+      const body = buildCommentBody([entry()]);
+
+      expect(body).not.toContain('GitHub limits a comment');
+      expect(postedCommentLength(body)).toBeLessThanOrEqual(GITHUB_COMMENT_MAX_LENGTH);
+    });
+
+    it('drops lower-priority rows first and keeps the release note guidance', () => {
+      const stable = entry({ path: '/api/gating/stable', reason });
+      const techPreview = entry({
+        path: '/api/gating/tech-preview',
+        tier: 'tech_preview',
+        reason,
+      });
+      const approved = entry({ path: '/api/gating/approved', allowlisted: true, reason });
+      const experimental = Array.from({ length: 80 }, (_, i) =>
+        entry({
+          path: `/api/experimental/${String(i).padStart(3, '0')}`,
+          tier: 'experimental',
+          reason,
+        })
+      );
+      const reportOnly = Array.from({ length: 80 }, (_, i) =>
+        entry({
+          path: `/api/report-only/${String(i).padStart(3, '0')}`,
+          reportOnly: true,
+          policyReason: 'Additive response variant.',
+          reason,
+        })
+      );
+
+      const body = buildCommentBody([
+        ...reportOnly,
+        ...experimental,
+        approved,
+        techPreview,
+        stable,
+      ]);
+      const experimentalShown = experimental.filter((change) => body.includes(change.path));
+      const reportOnlyShown = reportOnly.filter((change) => body.includes(change.path));
+
+      expect(postedCommentLength(body)).toBeLessThanOrEqual(GITHUB_COMMENT_MAX_LENGTH);
+      expect(body).toContain('/api/gating/stable');
+      expect(body).toContain('/api/gating/tech-preview');
+      expect(body).toContain('/api/gating/approved');
+      expect(body).toContain('### Release note');
+      expect(body).toContain(' of 163 change(s)');
+      expect(reportOnlyShown.length).toBeLessThan(reportOnly.length);
+      if (reportOnlyShown.length > 0) {
+        expect(experimentalShown).toHaveLength(experimental.length);
+      }
+      expect(experimentalShown.length).toBeLessThan(experimental.length);
+      expect(body).toContain(experimental[0].path);
+      expect(body).not.toContain(experimental[experimental.length - 1].path);
+      expect(body).not.toContain(reportOnly[reportOnly.length - 1].path);
+    });
+
+    it('keeps the gating guidance when every row is too long to include', () => {
+      const body = buildCommentBody([
+        entry({ path: '/api/huge', reason: 'x'.repeat(80_000) }),
+      ]);
+
+      expect(postedCommentLength(body)).toBeLessThanOrEqual(GITHUB_COMMENT_MAX_LENGTH);
+      expect(body).toContain('Showing 0 of 1 change(s)');
+      expect(body).toContain('### Release note');
+      expect(body).toContain('release_note:breaking');
+      expect(body).not.toContain('/api/huge');
+    });
+
+    it('keeps the allowlisted guidance when an approved list does not fit', () => {
+      const body = buildCommentBody([
+        entry({ path: '/api/approved-huge', allowlisted: true, reason: 'x'.repeat(80_000) }),
+      ]);
+
+      expect(postedCommentLength(body)).toBeLessThanOrEqual(GITHUB_COMMENT_MAX_LENGTH);
+      expect(body).toContain('Showing 0 of 1 change(s)');
+      expect(body).toContain('The approved breaking change(s) still ship with this PR');
+      expect(body).not.toContain('**Fix the breaking change**');
+      expect(body).not.toContain('/api/approved-huge');
     });
   });
 });

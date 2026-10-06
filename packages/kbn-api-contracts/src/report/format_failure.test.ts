@@ -9,6 +9,7 @@
 
 import { formatFailure } from './format_failure';
 import { README_LINK } from './links';
+import releaseNote from './release_note.json' with { type: 'json' };
 import type { ImpactReportEntry } from './write_impact_report';
 
 const stableEntry = (path: string, reason = 'Endpoint removed'): ImpactReportEntry => ({
@@ -165,6 +166,10 @@ describe('formatFailure', () => {
     expectOutputContains(output, `for tier definitions and the allowlist workflow: ${README_LINK}`);
     expect(output).not.toContain('Need help?');
     expect(output).not.toContain('issues/new');
+  });
+
+  it('uses the shared release note label inside the shared step', () => {
+    expect(releaseNote.labelStep).toContain(`\`${releaseNote.label}\``);
   });
 
   it('asks for the release_note:breaking label and a release note when a change gates', () => {

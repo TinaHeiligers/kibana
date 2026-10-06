@@ -10,6 +10,8 @@
 import { readFileSync, existsSync } from 'fs';
 import { basename } from 'node:path';
 import { upsertComment } from '#pipeline-utils';
+// Wording shared with the CI log. JSON so this step does not load the package.
+import releaseNote from '../../../../packages/kbn-api-contracts/src/report/release_note.json' with { type: 'json' };
 
 // Mirrors StabilityTier in @kbn/api-contracts. Kept as a local type because the
 // notifier only reads the JSON report
@@ -35,6 +37,14 @@ interface ImpactReport {
 // Kept stable so CI reruns on in-flight PRs update the existing comment in place
 // rather than posting a duplicate alongside the old one.
 const COMMENT_CONTEXT = 'api-contracts-breaking';
+
+// upsertComment prepends this marker. GitHub rejects the combined body past the limit.
+const COMMENT_MARKER = `<!-- kbn-message-context:${COMMENT_CONTEXT} -->\n`;
+
+export const GITHUB_COMMENT_MAX_LENGTH = 65_536;
+
+export const postedCommentLength = (commentBody: string): number =>
+  COMMENT_MARKER.length + commentBody.length;
 
 const ALLOWLIST_PATH = 'packages/kbn-api-contracts/allowlist.json';
 const README_PATH = 'packages/kbn-api-contracts/README.md';
@@ -72,9 +82,6 @@ ${renderTable(entries)}
 `;
 };
 
-// Shown when nothing gates. Edit the wording here.
-const RELEASE_NOTE_PROMPT = 'Optional: release note describing the change in the PR description';
-
 const renderExperimentalSection = (entries: ImpactEntry[]): string => {
   if (entries.length === 0) {
     return '';
@@ -86,12 +93,6 @@ Experimental APIs are allowed to introduce breaking changes. These are listed fo
 ${renderTable(entries)}
 `;
 };
-
-const RELEASE_NOTE_LABEL = 'release_note:breaking';
-
-// Shown only when a stable or Technical Preview change gates. Edit the wording here.
-const RELEASE_NOTE_GUIDANCE =
-  "Add a `## Release note` section to the PR description. The release notes script publishes that text as this change's entry in the Breaking changes section of the Kibana release notes, so write it for API users: what changed, how it affects them, and what they need to do.";
 
 const renderReportOnlySection = (entries: ImpactEntry[]): string => {
   if (entries.length === 0) {
@@ -121,9 +122,36 @@ ${renderTable(entries)}
 `;
 };
 
-export const buildCommentBody = (allEntries: ImpactEntry[]): string => {
-  const allowlisted = allEntries.filter((e) => e.allowlisted);
-  const entries = allEntries.filter((e) => !e.allowlisted);
+// Lower rank is kept when the comment has to be shortened. Report-only and
+// experimental rows are visibility; gating rows are what the author must act on.
+const truncationRank = (entry: ImpactEntry): number => {
+  if (entry.allowlisted) {
+    return 2;
+  }
+  if (entry.reportOnly) {
+    return 4;
+  }
+  if (entry.tier === 'experimental') {
+    return 3;
+  }
+  if (entry.tier === 'tech_preview') {
+    return 1;
+  }
+  return 0;
+};
+
+const orderEntriesForTruncation = (entries: ImpactEntry[]): ImpactEntry[] =>
+  entries
+    .map((entry, index) => ({ entry, index }))
+    .sort((a, b) => truncationRank(a.entry) - truncationRank(b.entry) || a.index - b.index)
+    .map(({ entry }) => entry);
+
+const truncationNote = (shown: number, total: number): string =>
+  `> [!NOTE]\n> Showing ${shown} of ${total} change(s). GitHub limits a comment to 65,536 characters, so the rest are only in the API contracts CI log.`;
+
+const renderComment = (allEntries: ImpactEntry[], shownEntries: ImpactEntry[]): string => {
+  const allowlisted = shownEntries.filter((e) => e.allowlisted);
+  const entries = shownEntries.filter((e) => !e.allowlisted);
   const gating = entries.filter((e) => !e.reportOnly);
 
   const gatingSections = [
@@ -151,24 +179,33 @@ export const buildCommentBody = (allEntries: ImpactEntry[]): string => {
     .filter(Boolean)
     .join('\n');
 
-  const hasGating = gating.some((e) => e.tier !== 'experimental');
+  const omitted = allEntries.length - shownEntries.length;
+  const noteBlock =
+    omitted > 0 ? `${truncationNote(shownEntries.length, allEntries.length)}\n\n` : '';
 
-  if (!hasGating && allowlisted.length > 0) {
+  // The variant follows the full report. Dropping rows to fit the comment must
+  // not turn a gating result into the informational footer.
+  const hasGating = allEntries.some(
+    (entry) => !entry.allowlisted && !entry.reportOnly && entry.tier !== 'experimental'
+  );
+  const hasAllowlisted = allEntries.some((entry) => entry.allowlisted);
+
+  if (!hasGating && hasAllowlisted) {
     return `## API Contract Breaking Changes
 
 The Stable or Technical Preview breaking change(s) below are approved in the allowlist, so they do not fail this check. They still ship as breaking changes and need a release note.
 
 ${sections}
-### What to do
+${noteBlock}### What to do
 
 Nothing here blocks merge. The approved breaking change(s) still ship with this PR, so:
 
-- add the \`${RELEASE_NOTE_LABEL}\` PR label (replacing any other \`release_note:*\` label).
-- add release note text to the PR description, see the Release note section below.
+- ${releaseNote.labelStep}.
+- ${releaseNote.textStep}.
 
 ### Release note
 
-${RELEASE_NOTE_GUIDANCE}
+${releaseNote.guidance}
 
 See the [\`@kbn/api-contracts\` README](https://github.com/elastic/kibana/blob/main/${README_PATH}) for tier definitions and the allowlist workflow.`;
   }
@@ -179,9 +216,9 @@ See the [\`@kbn/api-contracts\` README](https://github.com/elastic/kibana/blob/m
 No stable or Technical Preview breaking changes were detected. The change(s) below are informational and do not fail this check.
 
 ${sections}
-### What to do
+${noteBlock}### What to do
 
-Nothing here blocks merge. ${RELEASE_NOTE_PROMPT}
+Nothing here blocks merge. ${releaseNote.optionalPrompt}
 
 See the [\`@kbn/api-contracts\` README](https://github.com/elastic/kibana/blob/main/${README_PATH}) for tier definitions and the rule policy.`;
   }
@@ -191,19 +228,49 @@ See the [\`@kbn/api-contracts\` README](https://github.com/elastic/kibana/blob/m
 The following breaking change(s) were detected across the public OpenAPI surface, grouped by stability tier. Stable and Technical Preview changes fail the check and should be resolved; Experimental and reported-only changes are informational.
 
 ${sections}
-### What to do
+${noteBlock}### What to do
 
 1. **Fix the breaking change** if it was unintentional.
 2. **If intentional**:
    - add an approved entry to [\`${ALLOWLIST_PATH}\`](https://github.com/elastic/kibana/blob/main/${ALLOWLIST_PATH}) and coordinate with the owning team. Use the \`oasdiffId\` and \`source\` values from the table above to [scope the allowlist entry](https://github.com/elastic/kibana/blob/main/${README_PATH}#granular-suppression) to this specific change.
-   - add the \`${RELEASE_NOTE_LABEL}\` PR label (replacing any other \`release_note:*\` label).
-   - add release note text to the PR description, see the Release note section below.
+   - ${releaseNote.labelStep}.
+   - ${releaseNote.textStep}.
 
 ### Release note
 
-${RELEASE_NOTE_GUIDANCE}
+${releaseNote.guidance}
 
 See the [\`@kbn/api-contracts\` README](https://github.com/elastic/kibana/blob/main/${README_PATH}) for tier definitions and the allowlist workflow.`;
+};
+
+export const buildCommentBody = (allEntries: ImpactEntry[]): string => {
+  const full = renderComment(allEntries, allEntries);
+  if (postedCommentLength(full) <= GITHUB_COMMENT_MAX_LENGTH) {
+    return full;
+  }
+
+  const ordered = orderEntriesForTruncation(allEntries);
+  let low = 0;
+  let high = ordered.length;
+  let best = 0;
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const body = renderComment(allEntries, ordered.slice(0, mid));
+    if (postedCommentLength(body) <= GITHUB_COMMENT_MAX_LENGTH) {
+      best = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  const fitted = renderComment(allEntries, ordered.slice(0, best));
+  if (postedCommentLength(fitted) > GITHUB_COMMENT_MAX_LENGTH) {
+    throw new Error(
+      `API contracts comment is ${postedCommentLength(fitted)} characters, above GitHub's ${GITHUB_COMMENT_MAX_LENGTH} character limit, even with no change rows`
+    );
+  }
+  return fitted;
 };
 
 const isImpactReport = (report: unknown): report is ImpactReport =>
