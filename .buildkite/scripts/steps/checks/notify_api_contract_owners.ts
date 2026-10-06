@@ -122,22 +122,23 @@ ${renderTable(entries)}
 `;
 };
 
-// Lower rank is kept when the comment has to be shortened. Report-only and
-// experimental rows are visibility; gating rows are what the author must act on.
+// Lower rank is kept when the comment has to be shortened.
+const TRUNCATION_RANK = {
+  stable: 0,
+  tech_preview: 1,
+  allowlisted: 2,
+  experimental: 3,
+  reportOnly: 4,
+} as const;
+
 const truncationRank = (entry: ImpactEntry): number => {
-  if (!entry.allowlisted && !entry.reportOnly) {
-    if (entry.tier === 'stable') {
-      return 0;
-    }
-    if (entry.tier === 'tech_preview') {
-      return 1;
-    }
-    return 3;
-  }
   if (entry.allowlisted) {
-    return 2;
+    return TRUNCATION_RANK.allowlisted;
   }
-  return 4;
+  if (entry.reportOnly) {
+    return TRUNCATION_RANK.reportOnly;
+  }
+  return TRUNCATION_RANK[entry.tier];
 };
 
 const orderEntriesForTruncation = (entries: ImpactEntry[]): ImpactEntry[] =>
