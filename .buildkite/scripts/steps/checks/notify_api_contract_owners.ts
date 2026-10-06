@@ -8,10 +8,9 @@
  */
 
 import { readFileSync, existsSync } from 'fs';
-import { basename } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { upsertComment } from '#pipeline-utils';
-// Wording shared with the CI log. JSON so this step does not load the package.
-import releaseNote from '../../../../packages/kbn-api-contracts/src/report/release_note.json' with { type: 'json' };
+import { getKibanaDir } from '../../../pipeline-utils/get_kibana_dir.ts';
 
 // Mirrors StabilityTier in @kbn/api-contracts. Kept as a local type because the
 // notifier only reads the JSON report
@@ -48,6 +47,20 @@ export const postedCommentLength = (commentBody: string): number =>
 
 const ALLOWLIST_PATH = 'packages/kbn-api-contracts/allowlist.json';
 const README_PATH = 'packages/kbn-api-contracts/README.md';
+const RELEASE_NOTE_COPY_PATH = 'packages/kbn-api-contracts/src/report/release_note.json';
+
+interface ReleaseNoteCopy {
+  label: string;
+  labelStep: string;
+  textStep: string;
+  guidance: string;
+  optionalPrompt: string;
+}
+
+// Shared with the CI log. Read from the checkout; this step does not load the package.
+const releaseNote = JSON.parse(
+  readFileSync(resolve(getKibanaDir(), RELEASE_NOTE_COPY_PATH), 'utf8')
+) as ReleaseNoteCopy;
 
 const TIER_LABEL: Record<Tier, string> = {
   stable: 'Stable (GA)',
@@ -148,7 +161,7 @@ const orderEntriesForTruncation = (entries: ImpactEntry[]): ImpactEntry[] =>
     .map(({ entry }) => entry);
 
 const truncationNote = (shown: number, total: number): string =>
-  `> [!NOTE]\n> Showing ${shown} of ${total} change(s). GitHub limits a comment to 65,536 characters, so the rest are only in the API contracts CI log.`;
+  `> [!NOTE]\n> Showing ${shown} of ${total} change(s). The rest are only in the API contracts CI log.`;
 
 const renderComment = (allEntries: ImpactEntry[], shownEntries: ImpactEntry[]): string => {
   const allowlisted = shownEntries.filter((e) => e.allowlisted);
@@ -250,22 +263,15 @@ export const buildCommentBody = (allEntries: ImpactEntry[]): string => {
     return full;
   }
 
-  const ordered = orderEntriesForTruncation(allEntries);
-  let low = 0;
-  let high = ordered.length;
-  let best = 0;
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    const body = renderComment(allEntries, ordered.slice(0, mid));
-    if (postedCommentLength(body) <= GITHUB_COMMENT_MAX_LENGTH) {
-      best = mid;
-      low = mid + 1;
-    } else {
-      high = mid - 1;
+  const shown: ImpactEntry[] = [];
+  for (const entry of orderEntriesForTruncation(allEntries)) {
+    const candidate = [...shown, entry];
+    if (postedCommentLength(renderComment(allEntries, candidate)) <= GITHUB_COMMENT_MAX_LENGTH) {
+      shown.push(entry);
     }
   }
 
-  const fitted = renderComment(allEntries, ordered.slice(0, best));
+  const fitted = renderComment(allEntries, shown);
   if (postedCommentLength(fitted) > GITHUB_COMMENT_MAX_LENGTH) {
     throw new Error(
       `API contracts comment is ${postedCommentLength(fitted)} characters, above GitHub's ${GITHUB_COMMENT_MAX_LENGTH} character limit, even with no change rows`

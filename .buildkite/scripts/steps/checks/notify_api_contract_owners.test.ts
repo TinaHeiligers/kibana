@@ -306,69 +306,41 @@ describe('buildCommentBody', () => {
   });
 
   describe('GitHub comment length', () => {
-    const reason = 'r'.repeat(900);
+    const longerThanTheComment = 'x'.repeat(GITHUB_COMMENT_MAX_LENGTH);
 
     it('posts a short comment unchanged', () => {
       const body = buildCommentBody([entry()]);
 
-      expect(body).not.toContain('GitHub limits a comment');
+      expect(body).not.toContain('The rest are only in the API contracts CI log');
       expect(postedCommentLength(body)).toBeLessThanOrEqual(GITHUB_COMMENT_MAX_LENGTH);
     });
 
-    it('drops lower-priority rows first and keeps the release note guidance', () => {
-      const stable = entry({ path: '/api/gating/stable', reason });
-      const techPreview = entry({
-        path: '/api/gating/tech-preview',
-        tier: 'tech_preview',
-        reason,
-      });
-      const approved = entry({ path: '/api/gating/approved', allowlisted: true, reason });
-      const experimental = Array.from({ length: 80 }, (_, i) =>
+    it('leaves out rows that do not fit and keeps higher-priority rows', () => {
+      const body = buildCommentBody([
         entry({
-          path: `/api/experimental/${String(i).padStart(3, '0')}`,
-          tier: 'experimental',
-          reason,
-        })
-      );
-      const reportOnly = Array.from({ length: 80 }, (_, i) =>
-        entry({
-          path: `/api/report-only/${String(i).padStart(3, '0')}`,
+          path: '/api/report-only',
           reportOnly: true,
-          policyReason: 'Additive response variant.',
-          reason,
-        })
-      );
-
-      const body = buildCommentBody([
-        ...reportOnly,
-        ...experimental,
-        approved,
-        techPreview,
-        stable,
+          policyReason: 'Additive.',
+          reason: longerThanTheComment,
+        }),
+        entry({ path: '/api/experimental', tier: 'experimental', reason: longerThanTheComment }),
+        entry({ path: '/api/approved', allowlisted: true }),
+        entry({ path: '/api/tech-preview', tier: 'tech_preview' }),
+        entry({ path: '/api/stable' }),
       ]);
-      const experimentalShown = experimental.filter((change) => body.includes(change.path));
-      const reportOnlyShown = reportOnly.filter((change) => body.includes(change.path));
 
       expect(postedCommentLength(body)).toBeLessThanOrEqual(GITHUB_COMMENT_MAX_LENGTH);
-      expect(body).toContain('/api/gating/stable');
-      expect(body).toContain('/api/gating/tech-preview');
-      expect(body).toContain('/api/gating/approved');
+      expect(body).toContain('/api/stable');
+      expect(body).toContain('/api/tech-preview');
+      expect(body).toContain('/api/approved');
       expect(body).toContain('### Release note');
-      expect(body).toContain(' of 163 change(s)');
-      expect(reportOnlyShown.length).toBeLessThan(reportOnly.length);
-      if (reportOnlyShown.length > 0) {
-        expect(experimentalShown).toHaveLength(experimental.length);
-      }
-      expect(experimentalShown.length).toBeLessThan(experimental.length);
-      expect(body).toContain(experimental[0].path);
-      expect(body).not.toContain(experimental[experimental.length - 1].path);
-      expect(body).not.toContain(reportOnly[reportOnly.length - 1].path);
+      expect(body).toContain('Showing 3 of 5 change(s)');
+      expect(body).not.toContain('/api/experimental');
+      expect(body).not.toContain('/api/report-only');
     });
 
-    it('keeps the gating guidance when every row is too long to include', () => {
-      const body = buildCommentBody([
-        entry({ path: '/api/huge', reason: 'x'.repeat(80_000) }),
-      ]);
+    it('keeps the gating guidance when the only row does not fit', () => {
+      const body = buildCommentBody([entry({ path: '/api/huge', reason: longerThanTheComment })]);
 
       expect(postedCommentLength(body)).toBeLessThanOrEqual(GITHUB_COMMENT_MAX_LENGTH);
       expect(body).toContain('Showing 0 of 1 change(s)');
@@ -377,9 +349,9 @@ describe('buildCommentBody', () => {
       expect(body).not.toContain('/api/huge');
     });
 
-    it('keeps the allowlisted guidance when an approved list does not fit', () => {
+    it('keeps the allowlisted guidance when an approved row does not fit', () => {
       const body = buildCommentBody([
-        entry({ path: '/api/approved-huge', allowlisted: true, reason: 'x'.repeat(80_000) }),
+        entry({ path: '/api/approved-huge', allowlisted: true, reason: longerThanTheComment }),
       ]);
 
       expect(postedCommentLength(body)).toBeLessThanOrEqual(GITHUB_COMMENT_MAX_LENGTH);

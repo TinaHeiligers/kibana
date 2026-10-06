@@ -161,7 +161,7 @@ Tier and rule policy are independent. A stable-tier change still doesn't gate wh
 
 CI posts (or updates) a PR comment whenever there is anything to report, **regardless of whether the check fails** (the check can exit 0 with nothing gating, e.g. when every gating break is allowlisted, only experimental changes were found, or only report-only rules matched). The comment groups gating changes by stability tier. Allowlisted stable and Technical Preview changes, experimental changes, and report-only rules each appear in their own non-blocking section. Allowlisted experimental and report-only changes are left out. When there is nothing to report, no comment is posted.
 
-GitHub limits a comment to 65,536 characters. The guidance is small; the change table is what grows, and a break that fans out across many operations can pass the limit. The comment then keeps the release note guidance and as many rows as fit, dropping report-only rows first, then experimental, then allowlisted, then Technical Preview, then stable. It says how many changes were left in the CI log.
+When the change list would make the comment too long for GitHub, the comment still carries what the author has to act on: release note guidance when a breaking change ships, and the note that nothing blocks merge when it does not. Rows that do not fit are left out, with a count of how many. The full list stays in the CI log.
 
 ### Release note suggestions
 
